@@ -2,7 +2,7 @@
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Image from 'next/image';
-import { Upload, Calendar, MapPin, User, MessageSquare, Tag, CheckCircle2, Clock } from 'lucide-react';
+import { Upload, Calendar, MapPin, User, MessageSquare, Tag, CheckCircle2, Clock, ShoppingBag } from 'lucide-react';
 
 interface Service {
     id: string;
@@ -13,12 +13,22 @@ interface Service {
     badgeText?: string;
 }
 
+interface Addon {
+    id: string;
+    name: string;
+    price: number;
+    applicable_categories?: string[];
+    is_active: boolean;
+}
+
 export default function BookingForm() {
     const [loading, setLoading] = useState(false);
     const [services, setServices] = useState<Service[]>([]);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
     const [proofFile, setProofFile] = useState<File | null>(null);
     const [proofPreview, setProofPreview] = useState<string>('');
+    const [availableAddons, setAvailableAddons] = useState<Addon[]>([]);
+    const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
 
     const [formData, setFormData] = useState({
         name: '',
@@ -54,6 +64,47 @@ export default function BookingForm() {
     const handleServiceSelect = (service: Service) => {
         setFormData(prev => ({ ...prev, category: service.name }));
         setSelectedService(service);
+        setSelectedAddons(new Map()); // Reset add-ons when changing service
+
+        // Fetch applicable add-ons for this service
+        fetch(`/api/addons?active=true&category=${encodeURIComponent(service.name)}`)
+            .then(res => res.json())
+            .then((data: Addon[]) => setAvailableAddons(data))
+            .catch(err => console.error("Failed to fetch add-ons", err));
+    };
+
+    const toggleAddon = (addonId: string) => {
+        setSelectedAddons(prev => {
+            const newMap = new Map(prev);
+            if (newMap.has(addonId)) {
+                newMap.delete(addonId);
+            } else {
+                newMap.set(addonId, 1);
+            }
+            return newMap;
+        });
+    };
+
+    const updateAddonQuantity = (addonId: string, quantity: number) => {
+        if (quantity < 1) {
+            setSelectedAddons(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(addonId);
+                return newMap;
+            });
+        } else {
+            setSelectedAddons(prev => new Map(prev).set(addonId, quantity));
+        }
+    };
+
+    const calculateTotal = () => {
+        if (!selectedService) return 0;
+        const basePrice = selectedService.basePrice - selectedService.discountValue;
+        const addonsTotal = Array.from(selectedAddons.entries()).reduce((total, [addonId, quantity]) => {
+            const addon = availableAddons.find(a => a.id === addonId);
+            return total + (addon ? addon.price * quantity : 0);
+        }, 0);
+        return basePrice + addonsTotal;
     };
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +143,17 @@ export default function BookingForm() {
         setLoading(true);
 
         try {
+            // Prepare add-ons data
+            const addonsData = Array.from(selectedAddons.entries()).map(([addonId, quantity]) => {
+                const addon = availableAddons.find(a => a.id === addonId);
+                return {
+                    addon_id: addonId,
+                    addon_name: addon?.name || '',
+                    quantity,
+                    price_at_booking: addon?.price || 0
+                };
+            });
+
             // Construct JSON payload
             const jsonPayload = {
                 customer: {
@@ -106,7 +168,7 @@ export default function BookingForm() {
                     location_link: formData.category.toLowerCase().includes('outdoor') ? formData.location_link : ''
                 },
                 finance: {
-                    total_price: selectedService.basePrice - selectedService.discountValue,
+                    total_price: calculateTotal(),
                     payments: [
                         {
                             date: new Date().toISOString().split('T')[0] ?? '',
@@ -115,7 +177,8 @@ export default function BookingForm() {
                             // proof_filename will be set by server after file upload
                         }
                     ]
-                }
+                },
+                addons: addonsData.length > 0 ? addonsData : undefined
             };
 
             // Use FormData for multipart upload
@@ -199,6 +262,57 @@ export default function BookingForm() {
                             })}
                         </div>
                     </div>
+
+                    {/* ADD-ONS SELECTION */}
+                    {availableAddons.length > 0 && (
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-top-4 duration-300">
+                            <div className="flex items-center gap-2 mb-4 text-gray-800 font-bold">
+                                <ShoppingBag className="text-blue-600" size={20} />
+                                <h3>Tambahan (Opsional)</h3>
+                            </div>
+                            <div className="space-y-3">
+                                {availableAddons.map(addon => {
+                                    const isSelected = selectedAddons.has(addon.id);
+                                    const quantity = selectedAddons.get(addon.id) || 1;
+                                    return (
+                                        <div key={addon.id} className="flex items-center justify-between p-3 border rounded-lg hover:border-blue-300 transition-colors">
+                                            <label className="flex items-center gap-3 cursor-pointer flex-1">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={() => toggleAddon(addon.id)}
+                                                    className="w-5 h-5 text-blue-600 rounded"
+                                                />
+                                                <div className="flex-1">
+                                                    <div className="font-semibold text-gray-800">{addon.name}</div>
+                                                    <div className="text-sm text-green-600 font-bold">+Rp {addon.price.toLocaleString()}</div>
+                                                </div>
+                                            </label>
+                                            {isSelected && (
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateAddonQuantity(addon.id, quantity - 1)}
+                                                        className="w-8 h-8 flex items-center justify-center border rounded-lg hover:bg-gray-100 font-bold"
+                                                    >
+                                                        -
+                                                    </button>
+                                                    <span className="w-8 text-center font-bold">{quantity}</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => updateAddonQuantity(addon.id, quantity + 1)}
+                                                        className="w-8 h-8 flex items-center justify-center border rounded-lg hover:bg-gray-100 font-bold"
+                                                    >
+                                                        +
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
 
                     {selectedService && selectedService.name.toLowerCase().includes('outdoor') && (
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-top-4 duration-300">

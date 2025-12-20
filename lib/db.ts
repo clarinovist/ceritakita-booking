@@ -25,6 +25,18 @@ export function getDb(): Database.Database {
 function initializeSchema() {
   if (!db) return;
 
+  // Create photographers table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS photographers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      phone TEXT,
+      specialty TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Create bookings table
   db.exec(`
     CREATE TABLE IF NOT EXISTS bookings (
@@ -45,8 +57,13 @@ function initializeSchema() {
       -- Finance
       total_price INTEGER NOT NULL DEFAULT 0,
 
+      -- Photographer assignment
+      photographer_id TEXT,
+
       -- Timestamps
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+      FOREIGN KEY (photographer_id) REFERENCES photographers(id)
     )
   `);
 
@@ -65,12 +82,45 @@ function initializeSchema() {
     )
   `);
 
+  // Create add-ons table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS addons (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      price INTEGER NOT NULL,
+      applicable_categories TEXT,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Create booking_addons junction table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS booking_addons (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      booking_id TEXT NOT NULL,
+      addon_id TEXT NOT NULL,
+      quantity INTEGER DEFAULT 1,
+      price_at_booking INTEGER NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+      FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE CASCADE,
+      FOREIGN KEY (addon_id) REFERENCES addons(id) ON DELETE CASCADE,
+      UNIQUE(booking_id, addon_id)
+    )
+  `);
+
   // Create indexes for better query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
     CREATE INDEX IF NOT EXISTS idx_bookings_customer_name ON bookings(customer_name);
     CREATE INDEX IF NOT EXISTS idx_bookings_booking_date ON bookings(booking_date);
+    CREATE INDEX IF NOT EXISTS idx_bookings_photographer_id ON bookings(photographer_id);
     CREATE INDEX IF NOT EXISTS idx_payments_booking_id ON payments(booking_id);
+    CREATE INDEX IF NOT EXISTS idx_photographers_is_active ON photographers(is_active);
+    CREATE INDEX IF NOT EXISTS idx_addons_is_active ON addons(is_active);
+    CREATE INDEX IF NOT EXISTS idx_booking_addons_booking_id ON booking_addons(booking_id);
+    CREATE INDEX IF NOT EXISTS idx_booking_addons_addon_id ON booking_addons(addon_id);
   `);
 }
 

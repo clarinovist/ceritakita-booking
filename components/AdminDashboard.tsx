@@ -6,7 +6,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Booking, Payment, Service, FinanceData } from '@/lib/storage';
-import { Euro, XCircle, LayoutGrid, List, Tag, Save, Plus, Edit, Trash2, LogOut, User, Calendar } from 'lucide-react';
+import { Euro, XCircle, LayoutGrid, List, Tag, Save, Plus, Edit, Trash2, LogOut, User, Calendar, Download, Camera, ShoppingBag } from 'lucide-react';
 import { useSession, signOut } from "next-auth/react";
 import DashboardMetrics from './DashboardMetrics';
 
@@ -15,14 +15,35 @@ type BookingUpdate = {
     finance?: FinanceData;
     booking?: Booking['booking'];
     customer?: Booking['customer'];
+    photographer_id?: string;
 };
+
+interface Photographer {
+    id: string;
+    name: string;
+    phone?: string;
+    specialty?: string;
+    is_active: boolean;
+    created_at: string;
+}
+
+interface Addon {
+    id: string;
+    name: string;
+    price: number;
+    applicable_categories?: string[];
+    is_active: boolean;
+    created_at: string;
+}
 
 export default function AdminDashboard() {
     const { data: session } = useSession();
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [services, setServices] = useState<Service[]>([]);
+    const [photographers, setPhotographers] = useState<Photographer[]>([]);
+    const [addons, setAddons] = useState<Addon[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-    const [viewMode, setViewMode] = useState<'dashboard' | 'calendar' | 'table' | 'services'>('dashboard');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'calendar' | 'table' | 'services' | 'photographers' | 'addons'>('dashboard');
     const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Canceled' | 'Rescheduled'>('All');
 
     // Date Range State
@@ -42,6 +63,26 @@ export default function AdminDashboard() {
         badgeText: ''
     });
 
+    // Photographer CRUD state
+    const [isPhotographerModalOpen, setIsPhotographerModalOpen] = useState(false);
+    const [editingPhotographer, setEditingPhotographer] = useState<Photographer | null>(null);
+    const [photographerFormData, setPhotographerFormData] = useState({
+        name: '',
+        phone: '',
+        specialty: '',
+        is_active: true
+    });
+
+    // Addon CRUD state
+    const [isAddonModalOpen, setIsAddonModalOpen] = useState(false);
+    const [editingAddon, setEditingAddon] = useState<Addon | null>(null);
+    const [addonFormData, setAddonFormData] = useState({
+        name: '',
+        price: 0,
+        applicable_categories: [] as string[],
+        is_active: true
+    });
+
     // Helper Finance
     const calculateFinance = (b: Booking) => {
         const total = b.finance.total_price;
@@ -52,13 +93,17 @@ export default function AdminDashboard() {
 
     const fetchData = async () => {
         try {
-            const [resBookings, resServices] = await Promise.all([
+            const [resBookings, resServices, resPhotographers, resAddons] = await Promise.all([
                 fetch('/api/bookings'),
-                fetch('/api/services')
+                fetch('/api/services'),
+                fetch('/api/photographers'),
+                fetch('/api/addons')
             ]);
 
             if (resBookings.ok) setBookings(await resBookings.json());
             if (resServices.ok) setServices(await resServices.json());
+            if (resPhotographers.ok) setPhotographers(await resPhotographers.json());
+            if (resAddons.ok) setAddons(await resAddons.json());
 
         } catch (err) {
             console.error(err);
@@ -157,6 +202,257 @@ export default function AdminDashboard() {
         await saveAllServices(updated);
     };
 
+    // Photographer Management
+    const handleOpenAddPhotographerModal = () => {
+        setEditingPhotographer(null);
+        setPhotographerFormData({ name: '', phone: '', specialty: '', is_active: true });
+        setIsPhotographerModalOpen(true);
+    };
+
+    const handleOpenEditPhotographerModal = (photographer: Photographer) => {
+        setEditingPhotographer(photographer);
+        setPhotographerFormData({
+            name: photographer.name,
+            phone: photographer.phone || '',
+            specialty: photographer.specialty || '',
+            is_active: photographer.is_active
+        });
+        setIsPhotographerModalOpen(true);
+    };
+
+    const handleDeletePhotographer = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this photographer? This will remove them from all assigned bookings.")) return;
+
+        try {
+            const res = await fetch(`/api/photographers?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setPhotographers(prev => prev.filter(p => p.id !== id));
+                alert("Photographer deleted successfully");
+            } else {
+                throw new Error("Failed");
+            }
+        } catch {
+            alert("Error deleting photographer");
+        }
+    };
+
+    const handleSavePhotographer = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            if (editingPhotographer) {
+                // Update existing photographer
+                const res = await fetch('/api/photographers', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: editingPhotographer.id, ...photographerFormData })
+                });
+
+                if (res.ok) {
+                    setPhotographers(prev => prev.map(p =>
+                        p.id === editingPhotographer.id ? { ...p, ...photographerFormData } : p
+                    ));
+                    setIsPhotographerModalOpen(false);
+                    alert("Photographer updated successfully");
+                } else {
+                    throw new Error("Failed");
+                }
+            } else {
+                // Create new photographer
+                const res = await fetch('/api/photographers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(photographerFormData)
+                });
+
+                if (res.ok) {
+                    const newPhotographer = await res.json();
+                    setPhotographers(prev => [newPhotographer, ...prev]);
+                    setIsPhotographerModalOpen(false);
+                    alert("Photographer created successfully");
+                } else {
+                    throw new Error("Failed");
+                }
+            }
+        } catch {
+            alert("Error saving photographer");
+        }
+    };
+
+    const togglePhotographerActive = async (id: string, active: boolean) => {
+        try {
+            const res = await fetch('/api/photographers', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, is_active: active })
+            });
+
+            if (res.ok) {
+                setPhotographers(prev => prev.map(p => p.id === id ? { ...p, is_active: active } : p));
+            } else {
+                throw new Error("Failed");
+            }
+        } catch {
+            alert("Error updating photographer");
+        }
+    };
+
+    // Add-on Management
+    const handleOpenAddAddonModal = () => {
+        setEditingAddon(null);
+        setAddonFormData({ name: '', price: 0, applicable_categories: [], is_active: true });
+        setIsAddonModalOpen(true);
+    };
+
+    const handleOpenEditAddonModal = (addon: Addon) => {
+        setEditingAddon(addon);
+        setAddonFormData({
+            name: addon.name,
+            price: addon.price,
+            applicable_categories: addon.applicable_categories || [],
+            is_active: addon.is_active
+        });
+        setIsAddonModalOpen(true);
+    };
+
+    const handleDeleteAddon = async (id: string) => {
+        if (!confirm("Are you sure you want to delete this add-on?")) return;
+
+        try {
+            const res = await fetch(`/api/addons?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                setAddons(prev => prev.filter(a => a.id !== id));
+                alert("Add-on deleted successfully");
+            } else {
+                throw new Error("Failed");
+            }
+        } catch {
+            alert("Error deleting add-on");
+        }
+    };
+
+    const handleSaveAddon = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        try {
+            if (editingAddon) {
+                const res = await fetch('/api/addons', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: editingAddon.id, ...addonFormData })
+                });
+
+                if (res.ok) {
+                    setAddons(prev => prev.map(a =>
+                        a.id === editingAddon.id ? { ...a, ...addonFormData } : a
+                    ));
+                    setIsAddonModalOpen(false);
+                    alert("Add-on updated successfully");
+                } else {
+                    throw new Error("Failed");
+                }
+            } else {
+                const res = await fetch('/api/addons', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(addonFormData)
+                });
+
+                if (res.ok) {
+                    const newAddon = await res.json();
+                    setAddons(prev => [newAddon, ...prev]);
+                    setIsAddonModalOpen(false);
+                    alert("Add-on created successfully");
+                } else {
+                    throw new Error("Failed");
+                }
+            }
+        } catch {
+            alert("Error saving add-on");
+        }
+    };
+
+    const toggleAddonActive = async (id: string, active: boolean) => {
+        try {
+            const res = await fetch('/api/addons', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, is_active: active })
+            });
+
+            if (res.ok) {
+                setAddons(prev => prev.map(a => a.id === id ? { ...a, is_active: active } : a));
+            } else {
+                throw new Error("Failed");
+            }
+        } catch {
+            alert("Error updating add-on");
+        }
+    };
+
+    const toggleCategoryForAddon = (category: string) => {
+        setAddonFormData(prev => {
+            const cats = prev.applicable_categories || [];
+            if (cats.includes(category)) {
+                return { ...prev, applicable_categories: cats.filter(c => c !== category) };
+            } else {
+                return { ...prev, applicable_categories: [...cats, category] };
+            }
+        });
+    };
+
+    // Export Handlers
+    const handleExportBookings = async () => {
+        try {
+            const params = new URLSearchParams({
+                status: filterStatus,
+                startDate: dateRange.start,
+                endDate: dateRange.end
+            });
+
+            const response = await fetch(`/api/export/bookings?${params}`);
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ceritakita-bookings-${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Failed to export bookings');
+        }
+    };
+
+    const handleExportFinancial = async () => {
+        try {
+            const params = new URLSearchParams({
+                startDate: dateRange.start,
+                endDate: dateRange.end
+            });
+
+            const response = await fetch(`/api/export/financial?${params}`);
+            if (!response.ok) throw new Error('Export failed');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ceritakita-financial-report-${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (error) {
+            console.error('Export error:', error);
+            alert('Failed to export financial report');
+        }
+    };
+
     // Convert bookings to events
     const events = bookings.filter(b => b.status === 'Active' || b.status === 'Rescheduled').map(b => ({
         id: b.id,
@@ -181,14 +477,14 @@ export default function AdminDashboard() {
             <div className="bg-white border-b px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-10">
                 <div className="flex items-center gap-6">
                     <h1 className="text-2xl font-bold text-blue-900">Admin Panel</h1>
-                    <div className="flex bg-gray-100 p-1 rounded-lg">
-                        {(['dashboard', 'calendar', 'table', 'services'] as const).map((mode) => (
+                    <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
+                        {(['dashboard', 'calendar', 'table', 'services', 'photographers', 'addons'] as const).map((mode) => (
                             <button
                                 key={mode}
                                 onClick={() => setViewMode(mode)}
-                                className={`px-4 py-2 rounded-md capitalize transition font-semibold text-sm ${viewMode === mode ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-4 py-2 rounded-md capitalize transition font-semibold text-sm whitespace-nowrap ${viewMode === mode ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                {mode}
+                                {mode === 'addons' ? 'Add-ons' : mode}
                             </button>
                         ))}
                     </div>
@@ -211,6 +507,27 @@ export default function AdminDashboard() {
                             className="bg-transparent outline-none cursor-pointer"
                         />
                     </div>
+
+                    {/* Export Buttons */}
+                    <div className="hidden md:flex items-center gap-2">
+                        <button
+                            onClick={handleExportBookings}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
+                            title="Export filtered bookings to Excel"
+                        >
+                            <Download size={14} />
+                            <span className="hidden lg:inline">Bookings</span>
+                        </button>
+                        <button
+                            onClick={handleExportFinancial}
+                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                            title="Export financial report to Excel"
+                        >
+                            <Download size={14} />
+                            <span className="hidden lg:inline">Financial</span>
+                        </button>
+                    </div>
+
                     <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100">
                         <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center">
                             <User size={14} />
@@ -434,6 +751,142 @@ export default function AdminDashboard() {
                         </div>
                     </div>
                 )}
+
+                {/* VIEW: PHOTOGRAPHERS */}
+                {viewMode === 'photographers' && (
+                    <div className="bg-white rounded-xl shadow overflow-hidden animate-in fade-in">
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-700 flex items-center gap-2"><Camera size={18} /> Manage Photographers</h3>
+                            <button onClick={handleOpenAddPhotographerModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
+                                <Plus size={16} /> Add New Photographer
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 text-gray-500">
+                                    <tr>
+                                        <th className="px-6 py-3">Photographer Name</th>
+                                        <th className="px-6 py-3">Phone</th>
+                                        <th className="px-6 py-3">Specialty</th>
+                                        <th className="px-6 py-3 text-center">Active</th>
+                                        <th className="px-6 py-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {photographers.length === 0 && (
+                                        <tr><td colSpan={5} className="text-center p-8 text-gray-400">No photographers found. Add one to get started!</td></tr>
+                                    )}
+                                    {photographers.map(photographer => (
+                                        <tr key={photographer.id} className="hover:bg-gray-50 group">
+                                            <td className="px-6 py-4 font-semibold">{photographer.name}</td>
+                                            <td className="px-6 py-4 text-gray-600">
+                                                {photographer.phone || <span className="text-gray-300 italic">No phone</span>}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {photographer.specialty ? (
+                                                    <span className="bg-purple-100 text-purple-700 text-xs font-medium px-2 py-1 rounded-full">
+                                                        {photographer.specialty}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-300 text-xs italic">No specialty</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <button
+                                                    onClick={() => togglePhotographerActive(photographer.id, !photographer.is_active)}
+                                                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-colors ${photographer.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                                >
+                                                    {photographer.is_active ? 'Active' : 'Inactive'}
+                                                </button>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => handleOpenEditPhotographerModal(photographer)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDeletePhotographer(photographer.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
+
+                {/* VIEW: ADD-ONS */}
+                {viewMode === 'addons' && (
+                    <div className="bg-white rounded-xl shadow overflow-hidden animate-in fade-in">
+                        <div className="p-4 border-b flex justify-between items-center bg-gray-50">
+                            <h3 className="font-bold text-gray-700 flex items-center gap-2"><ShoppingBag size={18} /> Manage Add-ons</h3>
+                            <button onClick={handleOpenAddAddonModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
+                                <Plus size={16} /> Add New Add-on
+                            </button>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm text-left">
+                                <thead className="bg-gray-50 text-gray-500">
+                                    <tr>
+                                        <th className="px-6 py-3">Add-on Name</th>
+                                        <th className="px-6 py-3">Price (Rp)</th>
+                                        <th className="px-6 py-3">Applicable To</th>
+                                        <th className="px-6 py-3 text-center">Active</th>
+                                        <th className="px-6 py-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {addons.length === 0 && (
+                                        <tr><td colSpan={5} className="text-center p-8 text-gray-400">No add-ons found. Add one to get started!</td></tr>
+                                    )}
+                                    {addons.map(addon => (
+                                        <tr key={addon.id} className="hover:bg-gray-50 group">
+                                            <td className="px-6 py-4 font-semibold">{addon.name}</td>
+                                            <td className="px-6 py-4 text-green-600 font-bold">
+                                                Rp {addon.price.toLocaleString()}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {addon.applicable_categories && addon.applicable_categories.length > 0 ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {addon.applicable_categories.map(cat => (
+                                                            <span key={cat} className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
+                                                                {cat}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs italic">All Categories</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <button
+                                                    onClick={() => toggleAddonActive(addon.id, !addon.is_active)}
+                                                    className={`px-3 py-1 rounded-full text-[10px] font-black uppercase transition-colors ${addon.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}
+                                                >
+                                                    {addon.is_active ? 'Active' : 'Inactive'}
+                                                </button>
+                                            </td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => handleOpenEditAddonModal(addon)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleDeleteAddon(addon.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-lg">
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* Service Edit/Add Modal */}
@@ -512,6 +965,141 @@ export default function AdminDashboard() {
                 </div>
             )}
 
+            {/* Photographer Edit/Add Modal */}
+            {isPhotographerModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                            <h2 className="text-xl font-bold">{editingPhotographer ? 'Edit Photographer' : 'Add New Photographer'}</h2>
+                            <button onClick={() => setIsPhotographerModalOpen(false)} className="text-gray-400 hover:text-red-500">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSavePhotographer} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Photographer Name</label>
+                                <input
+                                    required
+                                    type="text"
+                                    value={photographerFormData.name}
+                                    onChange={e => setPhotographerFormData({ ...photographerFormData, name: e.target.value })}
+                                    placeholder="e.g. John Doe"
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Phone Number</label>
+                                <input
+                                    type="text"
+                                    value={photographerFormData.phone}
+                                    onChange={e => setPhotographerFormData({ ...photographerFormData, phone: e.target.value })}
+                                    placeholder="e.g. 081234567890"
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Specialty</label>
+                                <input
+                                    type="text"
+                                    value={photographerFormData.specialty}
+                                    onChange={e => setPhotographerFormData({ ...photographerFormData, specialty: e.target.value })}
+                                    placeholder="e.g. Wedding, Portrait, Outdoor"
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="photographer_active"
+                                    checked={photographerFormData.is_active}
+                                    onChange={e => setPhotographerFormData({ ...photographerFormData, is_active: e.target.checked })}
+                                    className="w-5 h-5 text-blue-600 rounded"
+                                />
+                                <label htmlFor="photographer_active" className="text-sm font-bold text-gray-700 cursor-pointer">Photographer is Active</label>
+                            </div>
+                            <div className="pt-4 flex gap-3">
+                                <button type="button" onClick={() => setIsPhotographerModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                                <button type="submit" className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                    <Save size={18} />
+                                    {editingPhotographer ? 'Update Photographer' : 'Create Photographer'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Add-on Edit/Add Modal */}
+            {isAddonModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                            <h2 className="text-xl font-bold">{editingAddon ? 'Edit Add-on' : 'Add New Add-on'}</h2>
+                            <button onClick={() => setIsAddonModalOpen(false)} className="text-gray-400 hover:text-red-500">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSaveAddon} className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Add-on Name</label>
+                                <input
+                                    required
+                                    type="text"
+                                    value={addonFormData.name}
+                                    onChange={e => setAddonFormData({ ...addonFormData, name: e.target.value })}
+                                    placeholder="e.g. Extra Hour, Drone Shots"
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Price (Rp)</label>
+                                <input
+                                    required
+                                    type="number"
+                                    value={addonFormData.price}
+                                    onChange={e => setAddonFormData({ ...addonFormData, price: Number(e.target.value) })}
+                                    placeholder="e.g. 500000"
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-2">Applicable To (leave empty for all)</label>
+                                <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border rounded-lg p-2">
+                                    {services.map(service => (
+                                        <label key={service.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                            <input
+                                                type="checkbox"
+                                                checked={addonFormData.applicable_categories.includes(service.name)}
+                                                onChange={() => toggleCategoryForAddon(service.name)}
+                                                className="w-4 h-4 text-blue-600 rounded"
+                                            />
+                                            <span className="text-xs">{service.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2 pt-2">
+                                <input
+                                    type="checkbox"
+                                    id="addon_active"
+                                    checked={addonFormData.is_active}
+                                    onChange={e => setAddonFormData({ ...addonFormData, is_active: e.target.checked })}
+                                    className="w-5 h-5 text-blue-600 rounded"
+                                />
+                                <label htmlFor="addon_active" className="text-sm font-bold text-gray-700 cursor-pointer">Add-on is Active</label>
+                            </div>
+                            <div className="pt-4 flex gap-3">
+                                <button type="button" onClick={() => setIsAddonModalOpen(false)} className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
+                                <button type="submit" className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2">
+                                    <Save size={18} />
+                                    {editingAddon ? 'Update Add-on' : 'Create Add-on'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Detail Modal (Reused) */}
             {selectedBooking && selectedBooking.booking && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -565,6 +1153,29 @@ export default function AdminDashboard() {
                                         <option value="Canceled">Canceled</option>
                                     </select>
                                 </div>
+
+                                <div className="bg-purple-50 p-4 rounded border border-purple-100">
+                                    <h4 className="font-bold text-purple-800 text-sm mb-2 flex items-center gap-2">
+                                        <Camera size={14} /> Assign Photographer
+                                    </h4>
+                                    <select
+                                        value={selectedBooking.photographer_id || ''}
+                                        onChange={(e) => handleUpdate(selectedBooking.id, { photographer_id: e.target.value || undefined })}
+                                        className="w-full p-2 border rounded bg-white"
+                                    >
+                                        <option value="">-- Not Assigned --</option>
+                                        {photographers.filter(p => p.is_active).map(photographer => (
+                                            <option key={photographer.id} value={photographer.id}>
+                                                {photographer.name} {photographer.specialty ? `(${photographer.specialty})` : ''}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {selectedBooking.photographer_id && (
+                                        <p className="text-xs text-purple-600 mt-1">
+                                            Assigned to: {photographers.find(p => p.id === selectedBooking.photographer_id)?.name || 'Unknown'}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Right: Finance */}
@@ -599,6 +1210,35 @@ export default function AdminDashboard() {
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Add-ons List */}
+                                {selectedBooking.addons && selectedBooking.addons.length > 0 && (
+                                    <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+                                        <h4 className="font-bold text-sm mb-3 flex items-center gap-2">
+                                            <ShoppingBag size={14} className="text-blue-600" />
+                                            Selected Add-ons
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {selectedBooking.addons.map((addon, idx) => (
+                                                <div key={idx} className="flex justify-between text-sm">
+                                                    <span>
+                                                        {addon.addon_name}
+                                                        {addon.quantity > 1 && <span className="text-gray-500"> x{addon.quantity}</span>}
+                                                    </span>
+                                                    <span className="font-bold text-green-600">
+                                                        Rp {(addon.price_at_booking * addon.quantity).toLocaleString()}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                            <div className="border-t pt-2 mt-2 flex justify-between font-bold">
+                                                <span>Add-ons Subtotal:</span>
+                                                <span className="text-blue-600">
+                                                    Rp {selectedBooking.addons.reduce((sum, a) => sum + (a.price_at_booking * a.quantity), 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* Payments List */}
                                 <div className="bg-gray-50 rounded-lg p-4">

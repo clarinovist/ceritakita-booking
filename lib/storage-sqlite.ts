@@ -5,6 +5,7 @@
 
 import getDb from './db';
 import type Database from 'better-sqlite3';
+import { getBookingAddons, setBookingAddons, type BookingAddon } from './addons';
 
 export interface Payment {
   date: string;
@@ -31,12 +32,14 @@ export interface Booking {
     total_price: number;
     payments: Payment[];
   };
+  photographer_id?: string;
+  addons?: BookingAddon[];
 }
 
 /**
  * Convert database row to Booking object
  */
-function rowToBooking(row: any, payments: Payment[]): Booking {
+function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[]): Booking {
   return {
     id: row.id,
     created_at: row.created_at,
@@ -55,6 +58,8 @@ function rowToBooking(row: any, payments: Payment[]): Booking {
       total_price: row.total_price,
       payments,
     },
+    photographer_id: row.photographer_id || undefined,
+    addons: addons && addons.length > 0 ? addons : undefined,
   };
 }
 
@@ -89,7 +94,8 @@ export function readData(): Booking[] {
 
   return rows.map(row => {
     const payments = getPaymentsForBooking(row.id);
-    return rowToBooking(row, payments);
+    const addons = getBookingAddons(row.id);
+    return rowToBooking(row, payments, addons);
   });
 }
 
@@ -104,7 +110,8 @@ export function readBooking(id: string): Booking | null {
   if (!row) return null;
 
   const payments = getPaymentsForBooking(id);
-  return rowToBooking(row, payments);
+  const addons = getBookingAddons(id);
+  return rowToBooking(row, payments, addons);
 }
 
 /**
@@ -126,8 +133,8 @@ export function writeData(bookings: Booking[]): void {
         id, created_at, status,
         customer_name, customer_whatsapp, customer_category,
         booking_date, booking_notes, booking_location_link,
-        total_price
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        total_price, photographer_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertPayment = db.prepare(`
@@ -147,7 +154,8 @@ export function writeData(bookings: Booking[]): void {
         booking.booking.date,
         booking.booking.notes || null,
         booking.booking.location_link || null,
-        booking.finance.total_price
+        booking.finance.total_price,
+        booking.photographer_id || null
       );
 
       // Insert payments
@@ -179,8 +187,8 @@ export function createBooking(booking: Booking): void {
         id, created_at, status,
         customer_name, customer_whatsapp, customer_category,
         booking_date, booking_notes, booking_location_link,
-        total_price
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        total_price, photographer_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -193,7 +201,8 @@ export function createBooking(booking: Booking): void {
       booking.booking.date,
       booking.booking.notes || null,
       booking.booking.location_link || null,
-      booking.finance.total_price
+      booking.finance.total_price,
+      booking.photographer_id || null
     );
 
     // Insert payments
@@ -212,6 +221,15 @@ export function createBooking(booking: Booking): void {
           payment.proof_filename || null
         );
       }
+    }
+
+    // Insert add-ons
+    if (booking.addons && booking.addons.length > 0) {
+      setBookingAddons(booking.id, booking.addons.map(addon => ({
+        addon_id: addon.addon_id,
+        quantity: addon.quantity,
+        price: addon.price_at_booking
+      })));
     }
   });
 
@@ -236,6 +254,7 @@ export function updateBooking(booking: Booking): void {
         booking_notes = ?,
         booking_location_link = ?,
         total_price = ?,
+        photographer_id = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
@@ -249,6 +268,7 @@ export function updateBooking(booking: Booking): void {
       booking.booking.notes || null,
       booking.booking.location_link || null,
       booking.finance.total_price,
+      booking.photographer_id || null,
       booking.id
     );
 
@@ -270,6 +290,18 @@ export function updateBooking(booking: Booking): void {
           payment.proof_filename || null
         );
       }
+    }
+
+    // Update add-ons
+    if (booking.addons) {
+      setBookingAddons(booking.id, booking.addons.map(addon => ({
+        addon_id: addon.addon_id,
+        quantity: addon.quantity,
+        price: addon.price_at_booking
+      })));
+    } else {
+      // Clear add-ons if not provided
+      setBookingAddons(booking.id, []);
     }
   });
 
@@ -297,7 +329,8 @@ export function getBookingsByStatus(status: 'Active' | 'Completed' | 'Cancelled'
 
   return rows.map(row => {
     const payments = getPaymentsForBooking(row.id);
-    return rowToBooking(row, payments);
+    const addons = getBookingAddons(row.id);
+    return rowToBooking(row, payments, addons);
   });
 }
 
@@ -318,6 +351,7 @@ export function searchBookings(query: string): Booking[] {
 
   return rows.map(row => {
     const payments = getPaymentsForBooking(row.id);
-    return rowToBooking(row, payments);
+    const addons = getBookingAddons(row.id);
+    return rowToBooking(row, payments, addons);
   });
 }
