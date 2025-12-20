@@ -1,0 +1,82 @@
+[
+  {
+    "id": "2",
+    "name": "Outdoor / On Location",
+    "basePrice": 2000000,
+    "discountValue": 200000,
+    "isActive": true,
+    "badgeText": "Best deal"
+  },
+  {
+    "id": "3",
+    "name": "Wedding",
+    "basePrice": 3000000,
+    "discountValue": 200000,
+    "isActive": true,
+    "badgeText": "with make up"
+  },
+  {
+    "id": "4",
+    "name": "Prewedding Bronze",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true,
+    "badgeText": "PROMO 11.11"
+  },
+  {
+    "id": "5",
+    "name": "Prewedding Silver",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true
+  },
+  {
+    "id": "6",
+    "name": "Prewedding Gold",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true
+  },
+  {
+    "id": "7",
+    "name": "Wisuda",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true
+  },
+  {
+    "id": "8",
+    "name": "Family",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true
+  },
+  {
+    "id": "9",
+    "name": "Birthday",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true
+  },
+  {
+    "id": "10",
+    "name": "Pas Foto",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true
+  },
+  {
+    "id": "11",
+    "name": "Self Photo",
+    "basePrice": 0,
+    "discountValue": 0,
+    "isActive": true
+  },
+  {
+    "id": "0995cf1b-9831-4c71-ba54-3f2d613a01f2",
+    "name": "Promo Christmast",
+    "basePrice": 250000,
+    "discountValue": 10000,
+    "isActive": true
+  }
+]
