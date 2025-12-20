@@ -39,8 +39,10 @@ node_modules/
 
 # data files (local development)
 /data/db.txt
-/data/services.json
 /data/db.txt.backup.*
+/data/bookings.db
+/data/bookings.db-shm
+/data/bookings.db-wal
 
 # uploaded files
 /uploads/

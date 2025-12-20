@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readData, writeData } from '@/lib/storage';
+import { readBooking, updateBooking } from '@/lib/storage-sqlite';
 import { requireAuth } from '@/lib/auth';
 import { updateBookingSchema } from '@/lib/validation';
 
@@ -22,14 +22,8 @@ export async function PUT(req: NextRequest) {
 
         const { id, ...updates } = validationResult.data;
 
-        const data = readData();
-        const index = data.findIndex((b) => b.id === id);
+        const currentBooking = readBooking(id);
 
-        if (index === -1) {
-            return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
-        }
-
-        const currentBooking = data[index];
         if (!currentBooking) {
             return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
         }
@@ -43,8 +37,8 @@ export async function PUT(req: NextRequest) {
             ...(updates.customer && { customer: { ...currentBooking.customer, ...updates.customer } }),
         };
 
-        data[index] = updatedBooking;
-        await writeData(data);
+        // Save to SQLite database
+        updateBooking(updatedBooking);
 
         return NextResponse.json(updatedBooking);
     } catch (error) {

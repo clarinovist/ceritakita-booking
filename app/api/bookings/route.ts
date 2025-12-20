@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readData, writeData, readServices, Booking } from '@/lib/storage';
+import { readData as readDataSQLite, createBooking, type Booking } from '@/lib/storage-sqlite';
+import { readServices } from '@/lib/storage';
 import { requireAuth } from '@/lib/auth';
 import { createBookingSchema } from '@/lib/validation';
 import formidable from 'formidable';
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
     const authCheck = await requireAuth(req);
     if (authCheck) return authCheck;
 
-    const data = readData();
+    const data = readDataSQLite();
     return NextResponse.json(data);
 }
 
@@ -161,9 +162,8 @@ export async function POST(req: NextRequest) {
             }
         };
 
-        const data = readData();
-        data.push(newBooking);
-        await writeData(data);
+        // Save to SQLite database
+        createBooking(newBooking);
 
         return NextResponse.json(newBooking, { status: 201 });
     } catch (error) {
