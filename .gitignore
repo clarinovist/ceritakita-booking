@@ -40,3 +40,7 @@ node_modules/
 # data files (local development)
 /data/db.txt
 /data/services.json
+/data/db.txt.backup.*
+
+# uploaded files
+/uploads/

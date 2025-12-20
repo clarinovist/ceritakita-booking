@@ -1,14 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Booking, Payment, Service } from '@/lib/storage';
+import { Booking, Payment, Service, FinanceData } from '@/lib/storage';
 import { Euro, XCircle, LayoutGrid, List, Tag, Save, Plus, Edit, Trash2, LogOut, User, Calendar } from 'lucide-react';
 import { useSession, signOut } from "next-auth/react";
 import DashboardMetrics from './DashboardMetrics';
+
+type BookingUpdate = {
+    status?: Booking['status'];
+    finance?: FinanceData;
+    booking?: Booking['booking'];
+    customer?: Booking['customer'];
+};
 
 export default function AdminDashboard() {
     const { data: session } = useSession();
@@ -20,8 +27,8 @@ export default function AdminDashboard() {
 
     // Date Range State
     const [dateRange, setDateRange] = useState({
-        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-        end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0]
+        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] ?? '',
+        end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0] ?? ''
     });
 
     // Service CRUD state
@@ -62,7 +69,7 @@ export default function AdminDashboard() {
         fetchData();
     }, []);
 
-    const handleUpdate = async (bookingId: string, updates: any) => {
+    const handleUpdate = async (bookingId: string, updates: BookingUpdate) => {
         try {
             const res = await fetch('/api/bookings/update', {
                 method: 'PUT',
@@ -80,8 +87,8 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleUpdateFinance = (bookingId: string, newFinance: any) => handleUpdate(bookingId, { finance: newFinance });
-    const handleUpdateStatus = (bookingId: string, status: string) => handleUpdate(bookingId, { status });
+    const handleUpdateFinance = (bookingId: string, newFinance: FinanceData) => handleUpdate(bookingId, { finance: newFinance });
+    const handleUpdateStatus = (bookingId: string, status: Booking['status']) => handleUpdate(bookingId, { status });
 
     // Services Management
     const saveAllServices = async (updatedList: Service[]) => {
@@ -161,7 +168,7 @@ export default function AdminDashboard() {
 
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
-            const bDate = b.booking.date.split('T')[0];
+            const bDate = b.booking.date.split('T')[0] ?? '';
             const isInRange = bDate >= dateRange.start && bDate <= dateRange.end;
             const isMatchStatus = filterStatus === 'All' || b.status === filterStatus;
             return isInRange && isMatchStatus;
@@ -175,10 +182,10 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-6">
                     <h1 className="text-2xl font-bold text-blue-900">Admin Panel</h1>
                     <div className="flex bg-gray-100 p-1 rounded-lg">
-                        {['dashboard', 'calendar', 'table', 'services'].map((mode) => (
+                        {(['dashboard', 'calendar', 'table', 'services'] as const).map((mode) => (
                             <button
                                 key={mode}
-                                onClick={() => setViewMode(mode as any)}
+                                onClick={() => setViewMode(mode)}
                                 className={`px-4 py-2 rounded-md capitalize transition font-semibold text-sm ${viewMode === mode ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 {mode}
@@ -287,10 +294,10 @@ export default function AdminDashboard() {
                         <div className="p-4 border-b flex gap-4 items-center bg-gray-50">
                             <h3 className="font-bold text-gray-700 flex items-center gap-2"><List size={18} /> All Bookings</h3>
                             <div className="flex bg-white border rounded-lg overflow-hidden text-sm">
-                                {['All', 'Active', 'Rescheduled', 'Canceled'].map(s => (
+                                {(['All', 'Active', 'Rescheduled', 'Canceled'] as const).map(s => (
                                     <button
                                         key={s}
-                                        onClick={() => setFilterStatus(s as any)}
+                                        onClick={() => setFilterStatus(s)}
                                         className={`px-3 py-1.5 ${filterStatus === s ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-600'}`}
                                     >
                                         {s}
@@ -327,7 +334,7 @@ export default function AdminDashboard() {
                                                 <td className="px-4 py-3">
                                                     <select
                                                         value={b.status}
-                                                        onChange={(e) => handleUpdateStatus(b.id, e.target.value)}
+                                                        onChange={(e) => handleUpdateStatus(b.id, e.target.value as Booking['status'])}
                                                         className={`border-none bg-transparent text-xs font-bold focus:ring-0 cursor-pointer
                                       ${b.status === 'Canceled' ? 'text-red-600' : b.status === 'Rescheduled' ? 'text-orange-600' : 'text-green-600'}`}
                                                     >
@@ -550,7 +557,7 @@ export default function AdminDashboard() {
                                     <h4 className="font-bold text-orange-800 text-sm mb-2">Manage Status</h4>
                                     <select
                                         value={selectedBooking.status}
-                                        onChange={(e) => handleUpdateStatus(selectedBooking.id, e.target.value)}
+                                        onChange={(e) => handleUpdateStatus(selectedBooking.id, e.target.value as Booking['status'])}
                                         className="w-full p-2 border rounded"
                                     >
                                         <option value="Active">Active (Confirmed)</option>
@@ -604,8 +611,15 @@ export default function AdminDashboard() {
                                                     <span className="text-xs text-gray-500">{p.date}</span>
                                                 </div>
                                                 <div className="text-xs text-gray-500">{p.note}</div>
-                                                {p.proof_base64 && (
-                                                    <img src={p.proof_base64} alt="Proof" className="h-20 object-contain self-start border rounded" />
+                                                {(p.proof_filename || p.proof_base64) && (
+                                                    <Image
+                                                        src={p.proof_filename ? `/api/uploads/payment-proofs/${p.proof_filename}` : p.proof_base64 ?? ''}
+                                                        alt="Proof"
+                                                        width={200}
+                                                        height={80}
+                                                        className="h-20 object-contain self-start border rounded"
+                                                        unoptimized={!!p.proof_base64}
+                                                    />
                                                 )}
                                             </div>
                                         ))}
@@ -617,15 +631,16 @@ export default function AdminDashboard() {
                                     className="border-t pt-4 mt-4"
                                     onSubmit={(e) => {
                                         e.preventDefault();
-                                        const form = e.target as any;
-                                        const amount = Number(form.amount.value);
-                                        const note = form.note.value;
+                                        const form = e.target as HTMLFormElement;
+                                        const formData = new FormData(form);
+                                        const amount = Number(formData.get('amount'));
+                                        const note = formData.get('note') ?? '';
                                         if (!amount) return;
 
                                         const newPayment: Payment = {
-                                            date: new Date().toISOString().split('T')[0],
+                                            date: new Date().toISOString().split('T')[0] ?? '',
                                             amount,
-                                            note,
+                                            note: String(note),
                                             proof_base64: ''
                                         };
 

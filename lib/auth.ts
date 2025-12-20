@@ -33,7 +33,7 @@ export async function getSession() {
  *   // Your authenticated logic here
  * }
  */
-export async function requireAuth(req: NextRequest): Promise<NextResponse | null> {
+export async function requireAuth(_req: NextRequest): Promise<NextResponse | null> {
   const session = await getSession();
 
   if (!session) {

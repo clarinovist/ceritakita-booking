@@ -41,7 +41,8 @@ export const paymentSchema = z.object({
   }, 'Invalid date format'),
   amount: z.number().min(0, 'Amount must be positive'),
   note: z.string().max(200, 'Note too long'),
-  proof_base64: z.string().optional().default(''),
+  proof_base64: z.string().optional().default(''),     // Deprecated: kept for backward compatibility
+  proof_filename: z.string().optional().default(''),   // New: relative path from uploads/
 });
 
 // Finance validation schema

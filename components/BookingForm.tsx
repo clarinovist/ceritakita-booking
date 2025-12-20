@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
+import Image from 'next/image';
 import { Upload, Calendar, MapPin, User, MessageSquare, Tag, CheckCircle2, Clock } from 'lucide-react';
 
 interface Service {
@@ -17,6 +17,8 @@ export default function BookingForm() {
     const [loading, setLoading] = useState(false);
     const [services, setServices] = useState<Service[]>([]);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const [proofFile, setProofFile] = useState<File | null>(null);
+    const [proofPreview, setProofPreview] = useState<string>('');
 
     const [formData, setFormData] = useState({
         name: '',
@@ -26,8 +28,7 @@ export default function BookingForm() {
         category: '',
         location_link: '',
         notes: '',
-        dp_amount: '',
-        proof_base64: ''
+        dp_amount: ''
     });
 
     useEffect(() => {
@@ -36,9 +37,10 @@ export default function BookingForm() {
             .then((data: Service[]) => {
                 const active = data.filter(s => s.isActive);
                 setServices(active);
-                if (active.length > 0) {
-                    setFormData(prev => ({ ...prev, category: active[0].name }));
-                    setSelectedService(active[0]);
+                const firstService = active[0];
+                if (firstService) {
+                    setFormData(prev => ({ ...prev, category: firstService.name }));
+                    setSelectedService(firstService);
                 }
             })
             .catch(err => console.error("Failed to fetch services", err));
@@ -56,19 +58,29 @@ export default function BookingForm() {
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            // Check size (e.g. max 5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                alert("File too large (max 5MB)");
-                return;
-            }
+        if (!file) return;
 
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, proof_base64: reader.result as string }));
-            };
-            reader.readAsDataURL(file);
+        // Validation
+        if (file.size > 5 * 1024 * 1024) {
+            alert("File too large (max 5MB)");
+            return;
         }
+
+        const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!allowedTypes.includes(file.type)) {
+            alert("Invalid file type. Only JPEG, PNG, GIF, WEBP allowed.");
+            return;
+        }
+
+        // Store File object for upload
+        setProofFile(file);
+
+        // Generate preview for UI
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setProofPreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
     };
 
     const handleSubmit = async (e: FormEvent) => {
@@ -80,8 +92,8 @@ export default function BookingForm() {
         setLoading(true);
 
         try {
-            // Construct payload
-            const payload = {
+            // Construct JSON payload
+            const jsonPayload = {
                 customer: {
                     name: formData.name,
                     whatsapp: formData.whatsapp,
@@ -94,23 +106,31 @@ export default function BookingForm() {
                     location_link: formData.category.toLowerCase().includes('outdoor') ? formData.location_link : ''
                 },
                 finance: {
-                    // Start with calculated price if available
                     total_price: selectedService.basePrice - selectedService.discountValue,
                     payments: [
                         {
-                            date: new Date().toISOString().split('T')[0],
+                            date: new Date().toISOString().split('T')[0] ?? '',
                             amount: Number(formData.dp_amount) || 0,
-                            note: 'DP Awal',
-                            proof_base64: formData.proof_base64
+                            note: 'DP Awal'
+                            // proof_filename will be set by server after file upload
                         }
                     ]
                 }
             };
 
+            // Use FormData for multipart upload
+            const formPayload = new FormData();
+            formPayload.append('data', JSON.stringify(jsonPayload));
+
+            // Append file if selected
+            if (proofFile) {
+                formPayload.append('proof', proofFile);
+            }
+
             const res = await fetch('/api/bookings', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                // No Content-Type header - browser sets it with boundary for multipart
+                body: formPayload
             });
 
             if (!res.ok) throw new Error('Booking failed');
@@ -246,16 +266,23 @@ export default function BookingForm() {
                             <input required type="number" name="dp_amount" value={formData.dp_amount} onChange={handleChange} placeholder="Masukkan Jumlah DP (Rp)" className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700" />
 
                             <div className="relative group overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-4 transition-all hover:bg-white hover:border-blue-300">
-                                <input required={!formData.proof_base64} type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
-                                {!formData.proof_base64 ? (
+                                <input required={!proofPreview} type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer z-10" />
+                                {!proofPreview ? (
                                     <div className="flex flex-col items-center gap-2 text-gray-500">
                                         <Upload size={32} strokeWidth={1.5} className="group-hover:text-blue-500 transition-colors" />
                                         <p className="text-sm">Klik untuk upload bukti transfer</p>
-                                        <p className="text-[10px]">JPG, PNG max 5MB</p>
+                                        <p className="text-[10px]">JPG, PNG, GIF, WEBP max 5MB</p>
                                     </div>
                                 ) : (
                                     <div className="text-center">
-                                        <img src={formData.proof_base64} alt="Preview" className="h-32 mx-auto rounded-lg object-contain shadow-sm border bg-white" />
+                                        <Image
+                                            src={proofPreview}
+                                            alt="Preview"
+                                            width={300}
+                                            height={128}
+                                            className="h-32 mx-auto rounded-lg object-contain shadow-sm border bg-white"
+                                            unoptimized
+                                        />
                                         <p className="text-xs text-blue-600 mt-2 font-bold italic">Bukti terpilih (klik untuk ganti)</p>
                                     </div>
                                 )}

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import { Booking } from "@/lib/storage";
@@ -80,7 +79,7 @@ export default function DashboardMetrics({ bookings }: Props) {
                             <YAxis allowDecimals={false} />
                             <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px' }} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                                {chartData.map((entry, index) => (
+                                {chartData.map((_, index) => (
                                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                 ))}
                             </Bar>

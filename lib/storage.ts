@@ -8,7 +8,8 @@ export interface Payment {
   date: string;
   amount: number;
   note: string;
-  proof_base64: string;
+  proof_base64?: string;      // Deprecated: kept for backward compatibility during migration
+  proof_filename?: string;    // New: relative path from uploads/ (e.g., "2024-12/bookingId_0_timestamp_uuid.jpg")
 }
 
 export interface FinanceData {
@@ -45,6 +46,8 @@ function ensureDB() {
   }
 }
 
+type RawBooking = Omit<Booking, 'status'> & { status?: Booking['status'] };
+
 export function readData(): Booking[] {
   ensureDB();
 
@@ -52,14 +55,13 @@ export function readData(): Booking[] {
     // Read data without locking for simplicity
     // Locking is only applied on writes to prevent concurrent write issues
     const fileContent = fs.readFileSync(DB_PATH, 'utf-8');
-    const data = JSON.parse(fileContent);
+    const data = JSON.parse(fileContent) as RawBooking[];
 
     // Backward compatibility: Ensure status exists
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return data.map((b: any) => ({
+    return data.map((b): Booking => ({
       ...b,
       status: b.status || 'Active'
-    })) as Booking[];
+    }));
   } catch (error) {
     console.error("Error parsing DB file:", error);
     return [];

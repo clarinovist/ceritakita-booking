@@ -29,13 +29,18 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
         }
 
+        const currentBooking = data[index];
+        if (!currentBooking) {
+            return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
+        }
+
         // Only update allowed fields (no arbitrary field injection)
         const updatedBooking = {
-            ...data[index],
+            ...currentBooking,
             ...(updates.status && { status: updates.status }),
-            ...(updates.booking && { booking: { ...data[index].booking, ...updates.booking } }),
+            ...(updates.booking && { booking: { ...currentBooking.booking, ...updates.booking } }),
             ...(updates.finance && { finance: updates.finance }),
-            ...(updates.customer && { customer: { ...data[index].customer, ...updates.customer } }),
+            ...(updates.customer && { customer: { ...currentBooking.customer, ...updates.customer } }),
         };
 
         data[index] = updatedBooking;
