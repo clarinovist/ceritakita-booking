@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { customer, booking, finance } = validationResult.data;
+        const { customer, booking, finance, photographer_id, addons } = validationResult.data;
 
         // Backend Price Validation
         const services = readServices();
@@ -155,11 +155,16 @@ export async function POST(req: NextRequest) {
             created_at: new Date().toISOString(),
             status: 'Active',
             customer,
-            booking,
+            booking: {
+                ...booking,
+                location_link: booking.location_link || ''
+            },
             finance: {
                 total_price: validatedTotalPrice,
                 payments
-            }
+            },
+            photographer_id,
+            addons
         };
 
         // Save to SQLite database

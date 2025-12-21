@@ -17,7 +17,7 @@ export interface Payment {
 export interface Booking {
   id: string;
   created_at: string;
-  status: 'Active' | 'Completed' | 'Cancelled';
+  status: 'Active' | 'Canceled' | 'Rescheduled' | 'Completed' | 'Cancelled';
   customer: {
     name: string;
     whatsapp: string;

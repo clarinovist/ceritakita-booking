@@ -35,6 +35,8 @@ export async function PUT(req: NextRequest) {
             ...(updates.booking && { booking: { ...currentBooking.booking, ...updates.booking } }),
             ...(updates.finance && { finance: updates.finance }),
             ...(updates.customer && { customer: { ...currentBooking.customer, ...updates.customer } }),
+            ...(updates.photographer_id !== undefined && { photographer_id: updates.photographer_id }),
+            ...(updates.addons !== undefined && { addons: updates.addons }),
         };
 
         // Save to SQLite database

@@ -51,20 +51,32 @@ export const financeSchema = z.object({
   payments: z.array(paymentSchema).default([]),
 });
 
+// Booking addon validation schema
+export const bookingAddonSchema = z.object({
+  addon_id: z.string(),
+  addon_name: z.string(),
+  quantity: z.number().min(1, 'Quantity must be at least 1'),
+  price_at_booking: z.number().min(0, 'Price must be positive'),
+});
+
 // Full booking creation schema
 export const createBookingSchema = z.object({
   customer: customerSchema,
   booking: bookingSchema,
   finance: financeSchema,
+  photographer_id: z.string().optional(),
+  addons: z.array(bookingAddonSchema).optional(),
 });
 
 // Booking update schema (only allow specific fields to be updated)
 export const updateBookingSchema = z.object({
   id: z.string().uuid('Invalid booking ID'),
-  status: z.enum(['Active', 'Canceled', 'Rescheduled']).optional(),
+  status: z.enum(['Active', 'Canceled', 'Rescheduled', 'Completed', 'Cancelled']).optional(),
   booking: bookingSchema.partial().optional(),
   finance: financeSchema.optional(),
   customer: customerSchema.partial().optional(),
+  photographer_id: z.string().optional(),
+  addons: z.array(bookingAddonSchema).optional(),
 });
 
 // Service validation schema

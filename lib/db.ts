@@ -42,7 +42,7 @@ function initializeSchema() {
     CREATE TABLE IF NOT EXISTS bookings (
       id TEXT PRIMARY KEY,
       created_at TEXT NOT NULL,
-      status TEXT NOT NULL CHECK(status IN ('Active', 'Completed', 'Cancelled')),
+      status TEXT NOT NULL CHECK(status IN ('Active', 'Canceled', 'Rescheduled', 'Completed', 'Cancelled')),
 
       -- Customer information
       customer_name TEXT NOT NULL,

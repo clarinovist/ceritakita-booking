@@ -83,6 +83,23 @@ export default function AdminDashboard() {
         is_active: true
     });
 
+    // Booking Creation state (admin)
+    const [isCreateBookingModalOpen, setIsCreateBookingModalOpen] = useState(false);
+    const [bookingFormData, setBookingFormData] = useState({
+        customer_name: '',
+        customer_whatsapp: '',
+        service_id: '',
+        booking_date: '',
+        booking_time: '',
+        booking_notes: '',
+        location_link: '',
+        photographer_id: '',
+        dp_amount: 0,
+        payment_note: 'DP Awal'
+    });
+    const [selectedBookingAddons, setSelectedBookingAddons] = useState<Map<string, number>>(new Map());
+    const [availableBookingAddons, setAvailableBookingAddons] = useState<Addon[]>([]);
+
     // Helper Finance
     const calculateFinance = (b: Booking) => {
         const total = b.finance.total_price;
@@ -401,6 +418,160 @@ export default function AdminDashboard() {
         });
     };
 
+    // Booking Creation Management (Admin)
+    const handleOpenCreateBookingModal = () => {
+        // Reset form
+        setBookingFormData({
+            customer_name: '',
+            customer_whatsapp: '',
+            service_id: '',
+            booking_date: '',
+            booking_time: '',
+            booking_notes: '',
+            location_link: '',
+            photographer_id: '',
+            dp_amount: 0,
+            payment_note: 'DP Awal'
+        });
+        setSelectedBookingAddons(new Map());
+        setAvailableBookingAddons([]);
+        setIsCreateBookingModalOpen(true);
+    };
+
+    const handleServiceChange = async (serviceId: string) => {
+        setBookingFormData(prev => ({ ...prev, service_id: serviceId }));
+        setSelectedBookingAddons(new Map()); // Reset add-ons when changing service
+
+        if (!serviceId) {
+            setAvailableBookingAddons([]);
+            return;
+        }
+
+        // Fetch applicable add-ons for this service
+        const selectedService = services.find(s => s.id === serviceId);
+        if (selectedService) {
+            try {
+                const res = await fetch(`/api/addons?active=true&category=${encodeURIComponent(selectedService.name)}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setAvailableBookingAddons(data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch add-ons', err);
+            }
+        }
+    };
+
+    const toggleBookingAddon = (addonId: string) => {
+        setSelectedBookingAddons(prev => {
+            const newMap = new Map(prev);
+            if (newMap.has(addonId)) {
+                newMap.delete(addonId);
+            } else {
+                newMap.set(addonId, 1);
+            }
+            return newMap;
+        });
+    };
+
+    const updateBookingAddonQuantity = (addonId: string, quantity: number) => {
+        if (quantity < 1) {
+            setSelectedBookingAddons(prev => {
+                const newMap = new Map(prev);
+                newMap.delete(addonId);
+                return newMap;
+            });
+        } else {
+            setSelectedBookingAddons(prev => new Map(prev).set(addonId, quantity));
+        }
+    };
+
+    const calculateBookingTotal = () => {
+        const service = services.find(s => s.id === bookingFormData.service_id);
+        if (!service) return 0;
+
+        const basePrice = service.basePrice - service.discountValue;
+        const addonsTotal = Array.from(selectedBookingAddons.entries()).reduce((total, [addonId, quantity]) => {
+            const addon = availableBookingAddons.find(a => a.id === addonId);
+            return total + (addon ? addon.price * quantity : 0);
+        }, 0);
+
+        return basePrice + addonsTotal;
+    };
+
+    const handleCreateBooking = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!bookingFormData.service_id) {
+            alert('Please select a service');
+            return;
+        }
+
+        try {
+            // Prepare add-ons data
+            const addonsData = Array.from(selectedBookingAddons.entries()).map(([addonId, quantity]) => {
+                const addon = availableBookingAddons.find(a => a.id === addonId);
+                return {
+                    addon_id: addonId,
+                    addon_name: addon?.name || '',
+                    quantity,
+                    price_at_booking: addon?.price || 0
+                };
+            });
+
+            const selectedService = services.find(s => s.id === bookingFormData.service_id);
+
+            // Construct booking payload
+            const payload = {
+                customer: {
+                    name: bookingFormData.customer_name,
+                    whatsapp: bookingFormData.customer_whatsapp,
+                    category: selectedService?.name || '',
+                    serviceId: bookingFormData.service_id
+                },
+                booking: {
+                    date: `${bookingFormData.booking_date}T${bookingFormData.booking_time}`,
+                    notes: bookingFormData.booking_notes,
+                    location_link: bookingFormData.location_link
+                },
+                finance: {
+                    total_price: calculateBookingTotal(),
+                    payments: bookingFormData.dp_amount > 0 ? [{
+                        date: new Date().toISOString().split('T')[0] ?? '',
+                        amount: bookingFormData.dp_amount,
+                        note: bookingFormData.payment_note
+                    }] : []
+                },
+                photographer_id: bookingFormData.photographer_id || undefined,
+                addons: addonsData.length > 0 ? addonsData : undefined
+            };
+
+            const res = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to create booking');
+            }
+
+            const newBooking = await res.json();
+
+            // Update local state
+            setBookings(prev => [newBooking, ...prev]);
+            setIsCreateBookingModalOpen(false);
+            alert('Booking created successfully!');
+
+            // Optionally show the created booking
+            setSelectedBooking(newBooking);
+        } catch (error) {
+            console.error('Error creating booking:', error);
+            alert(`Failed to create booking: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
+
     // Export Handlers
     const handleExportBookings = async () => {
         try {
@@ -597,7 +768,7 @@ export default function AdminDashboard() {
                             plugins={[dayGridPlugin, interactionPlugin]}
                             initialView="dayGridMonth"
                             events={events}
-                            eventClick={(info) => {
+                            eventClick={(info: any) => {
                                 setSelectedBooking(info.event.extendedProps.booking);
                             }}
                             height="100%"
@@ -608,19 +779,27 @@ export default function AdminDashboard() {
                 {/* VIEW: TABLE */}
                 {viewMode === 'table' && (
                     <div className="bg-white rounded-xl shadow overflow-hidden animate-in fade-in min-h-[500px]">
-                        <div className="p-4 border-b flex gap-4 items-center bg-gray-50">
-                            <h3 className="font-bold text-gray-700 flex items-center gap-2"><List size={18} /> All Bookings</h3>
-                            <div className="flex bg-white border rounded-lg overflow-hidden text-sm">
-                                {(['All', 'Active', 'Rescheduled', 'Canceled'] as const).map(s => (
-                                    <button
-                                        key={s}
-                                        onClick={() => setFilterStatus(s)}
-                                        className={`px-3 py-1.5 ${filterStatus === s ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-600'}`}
-                                    >
-                                        {s}
-                                    </button>
-                                ))}
+                        <div className="p-4 border-b flex gap-4 items-center bg-gray-50 justify-between">
+                            <div className="flex gap-4 items-center">
+                                <h3 className="font-bold text-gray-700 flex items-center gap-2"><List size={18} /> All Bookings</h3>
+                                <div className="flex bg-white border rounded-lg overflow-hidden text-sm">
+                                    {(['All', 'Active', 'Rescheduled', 'Canceled'] as const).map(s => (
+                                        <button
+                                            key={s}
+                                            onClick={() => setFilterStatus(s)}
+                                            className={`px-3 py-1.5 ${filterStatus === s ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-600'}`}
+                                        >
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
+                            <button
+                                onClick={handleOpenCreateBookingModal}
+                                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+                            >
+                                <Plus size={16} /> Create Booking
+                            </button>
                         </div>
 
                         <div className="overflow-x-auto">
@@ -1093,6 +1272,249 @@ export default function AdminDashboard() {
                                 <button type="submit" className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2">
                                     <Save size={18} />
                                     {editingAddon ? 'Update Add-on' : 'Create Add-on'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Booking Creation Modal (Admin) */}
+            {isCreateBookingModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50 sticky top-0">
+                            <h2 className="text-xl font-bold">Create New Booking</h2>
+                            <button onClick={() => setIsCreateBookingModalOpen(false)} className="text-gray-400 hover:text-red-500">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateBooking} className="p-6 space-y-6">
+                            {/* Customer Information */}
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                    <User size={16} /> Customer Information
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Customer Name *</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={bookingFormData.customer_name}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, customer_name: e.target.value })}
+                                            placeholder="e.g. John Doe"
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">WhatsApp Number *</label>
+                                        <input
+                                            required
+                                            type="text"
+                                            value={bookingFormData.customer_whatsapp}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, customer_whatsapp: e.target.value })}
+                                            placeholder="e.g. 081234567890"
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Service Selection */}
+                            <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
+                                <h3 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
+                                    <Tag size={16} /> Service Selection
+                                </h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Service Category *</label>
+                                        <select
+                                            required
+                                            value={bookingFormData.service_id}
+                                            onChange={e => handleServiceChange(e.target.value)}
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                                        >
+                                            <option value="">-- Select Service --</option>
+                                            {services.filter(s => s.isActive).map(service => (
+                                                <option key={service.id} value={service.id}>
+                                                    {service.name} - Rp {(service.basePrice - service.discountValue).toLocaleString()}
+                                                    {service.badgeText && ` (${service.badgeText})`}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Add-ons Selection */}
+                                    {availableBookingAddons.length > 0 && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                                                <ShoppingBag size={14} /> Available Add-ons
+                                            </label>
+                                            <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-white">
+                                                {availableBookingAddons.map(addon => (
+                                                    <div key={addon.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                                                        <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedBookingAddons.has(addon.id)}
+                                                                onChange={() => toggleBookingAddon(addon.id)}
+                                                                className="w-4 h-4 text-purple-600 rounded"
+                                                            />
+                                                            <span className="text-sm font-medium">{addon.name}</span>
+                                                            <span className="text-sm text-green-600 font-bold">Rp {addon.price.toLocaleString()}</span>
+                                                        </label>
+                                                        {selectedBookingAddons.has(addon.id) && (
+                                                            <div className="flex items-center gap-2 ml-4">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => updateBookingAddonQuantity(addon.id, (selectedBookingAddons.get(addon.id) || 1) - 1)}
+                                                                    className="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-sm font-bold"
+                                                                >
+                                                                    -
+                                                                </button>
+                                                                <span className="w-8 text-center text-sm font-bold">{selectedBookingAddons.get(addon.id)}</span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => updateBookingAddonQuantity(addon.id, (selectedBookingAddons.get(addon.id) || 1) + 1)}
+                                                                    className="w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded text-sm font-bold"
+                                                                >
+                                                                    +
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Total Price Display */}
+                                    {bookingFormData.service_id && (
+                                        <div className="bg-green-50 p-3 rounded-lg border border-green-200">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-bold text-gray-700">Total Price:</span>
+                                                <span className="text-xl font-black text-green-600">Rp {calculateBookingTotal().toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Booking Details */}
+                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-100">
+                                <h3 className="font-bold text-orange-900 mb-3 flex items-center gap-2">
+                                    <Calendar size={16} /> Booking Details
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Session Date *</label>
+                                        <input
+                                            required
+                                            type="date"
+                                            value={bookingFormData.booking_date}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, booking_date: e.target.value })}
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Session Time *</label>
+                                        <input
+                                            required
+                                            type="time"
+                                            value={bookingFormData.booking_time}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, booking_time: e.target.value })}
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Location Link</label>
+                                        <input
+                                            type="url"
+                                            value={bookingFormData.location_link}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, location_link: e.target.value })}
+                                            placeholder="e.g. Google Maps link"
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Notes</label>
+                                        <textarea
+                                            value={bookingFormData.booking_notes}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, booking_notes: e.target.value })}
+                                            placeholder="Special requests, instructions, etc."
+                                            rows={3}
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Photographer Assignment */}
+                            <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100">
+                                <h3 className="font-bold text-indigo-900 mb-3 flex items-center gap-2">
+                                    <Camera size={16} /> Photographer Assignment (Optional)
+                                </h3>
+                                <select
+                                    value={bookingFormData.photographer_id}
+                                    onChange={e => setBookingFormData({ ...bookingFormData, photographer_id: e.target.value })}
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+                                >
+                                    <option value="">-- Not Assigned --</option>
+                                    {photographers.filter(p => p.is_active).map(photographer => (
+                                        <option key={photographer.id} value={photographer.id}>
+                                            {photographer.name} {photographer.specialty ? `(${photographer.specialty})` : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Payment Information */}
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                <h3 className="font-bold text-green-900 mb-3 flex items-center gap-2">
+                                    <Euro size={16} /> Initial Payment (Optional)
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">DP Amount (Rp)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={bookingFormData.dp_amount}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, dp_amount: Number(e.target.value) })}
+                                            placeholder="0"
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Payment Note</label>
+                                        <input
+                                            type="text"
+                                            value={bookingFormData.payment_note}
+                                            onChange={e => setBookingFormData({ ...bookingFormData, payment_note: e.target.value })}
+                                            placeholder="e.g. DP Awal, Cash, Transfer"
+                                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                                        />
+                                    </div>
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">Leave DP amount as 0 if no payment is made yet</p>
+                            </div>
+
+                            {/* Form Actions */}
+                            <div className="pt-4 flex gap-3 border-t">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCreateBookingModalOpen(false)}
+                                    className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 text-sm font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Save size={18} />
+                                    Create Booking
                                 </button>
                             </div>
                         </form>

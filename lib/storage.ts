@@ -26,16 +26,25 @@ export interface CustomerData {
 export interface BookingData {
   date: string;
   notes: string;
-  location_link?: string;
+  location_link: string;
+}
+
+export interface BookingAddon {
+  addon_id: string;
+  addon_name: string;
+  quantity: number;
+  price_at_booking: number;
 }
 
 export interface Booking {
   id: string;
   created_at: string;
-  status: 'Active' | 'Canceled' | 'Rescheduled';
+  status: 'Active' | 'Canceled' | 'Rescheduled' | 'Completed' | 'Cancelled';
   customer: CustomerData;
   booking: BookingData;
   finance: FinanceData;
+  photographer_id?: string;
+  addons?: BookingAddon[];
 }
 
 // Ensure DB exists
