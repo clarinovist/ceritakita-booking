@@ -49,6 +49,12 @@ export const paymentSchema = z.object({
 export const financeSchema = z.object({
   total_price: z.number().min(0, 'Total price must be positive'),
   payments: z.array(paymentSchema).default([]),
+  // Price breakdown fields (optional for backward compatibility)
+  service_base_price: z.number().min(0).optional(),
+  base_discount: z.number().min(0).optional(),
+  addons_total: z.number().min(0).optional(),
+  coupon_discount: z.number().min(0).optional(),
+  coupon_code: z.string().optional(),
 });
 
 // Booking addon validation schema
