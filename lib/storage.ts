@@ -15,6 +15,12 @@ export interface Payment {
 export interface FinanceData {
   total_price: number;
   payments: Payment[];
+  // Price breakdown (optional for backward compatibility)
+  service_base_price?: number;     // Service base price before discount
+  base_discount?: number;           // Service discount value
+  addons_total?: number;            // Total from all add-ons
+  coupon_discount?: number;         // Coupon discount applied
+  coupon_code?: string;             // Coupon code used (if any)
 }
 
 export interface CustomerData {

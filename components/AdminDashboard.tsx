@@ -45,7 +45,7 @@ export default function AdminDashboard() {
     const [addons, setAddons] = useState<Addon[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [viewMode, setViewMode] = useState<'dashboard' | 'calendar' | 'table' | 'services' | 'photographers' | 'addons' | 'coupons'>('dashboard');
-    const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Canceled' | 'Rescheduled'>('Active');
+    const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Canceled'>('Active');
 
     // Date Range State
     const [dateRange, setDateRange] = useState({
@@ -703,6 +703,10 @@ export default function AdminDashboard() {
 
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
+            // Combine Active and Rescheduled when "Active" filter is selected
+            if (filterStatus === 'Active') {
+                return b.status === 'Active' || b.status === 'Rescheduled';
+            }
             const isMatchStatus = filterStatus === 'All' || b.status === filterStatus;
             return isMatchStatus;
         });
@@ -849,7 +853,7 @@ export default function AdminDashboard() {
                             <div className="flex gap-4 items-center">
                                 <h3 className="font-bold text-gray-700 flex items-center gap-2"><List size={18} /> All Bookings</h3>
                                 <div className="flex bg-white border rounded-lg overflow-hidden text-sm">
-                                    {(['All', 'Active', 'Rescheduled', 'Canceled'] as const).map(s => (
+                                    {(['All', 'Active', 'Canceled'] as const).map(s => (
                                         <button
                                             key={s}
                                             onClick={() => setFilterStatus(s)}
@@ -889,10 +893,19 @@ export default function AdminDashboard() {
                                     {[...filteredBookings].reverse().map(b => {
                                         const { balance, isPaidOff } = calculateFinance(b);
                                         return (
-                                            <tr key={b.id} className="hover:bg-gray-50">
+                                            <tr key={b.id} className={`hover:bg-gray-50 ${b.status === 'Rescheduled' ? 'bg-orange-50/30' : ''}`}>
                                                 <td className="px-4 py-3">{new Date(b.booking.date).toLocaleDateString()}</td>
                                                 <td className="px-4 py-3 text-gray-600">{new Date(b.booking.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                                <td className="px-4 py-3 font-medium">{b.customer.name}</td>
+                                                <td className="px-4 py-3 font-medium">
+                                                    <div className="flex items-center gap-2">
+                                                        {b.customer.name}
+                                                        {b.status === 'Rescheduled' && (
+                                                            <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border border-orange-200">
+                                                                Reschedule
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 <td className="px-4 py-3">{b.customer.whatsapp}</td>
                                                 <td className="px-4 py-3">{b.customer.category}</td>
                                                 <td className="px-4 py-3">
@@ -1715,20 +1728,69 @@ export default function AdminDashboard() {
                                     <Euro size={16} /> Financials
                                 </h3>
 
-                                {/* Total Price Display (Read-only) */}
-                                <div className="flex gap-4 items-end">
-                                    <div className="flex-1">
-                                        <label className="text-sm text-gray-500">Total Package Price</label>
-                                        <div className="w-full border rounded p-2 bg-gray-50 font-bold text-lg">
-                                            Rp {selectedBooking.finance.total_price.toLocaleString('id-ID')}
+                                {/* Price Breakdown Display */}
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-100">
+                                    <h4 className="font-bold text-sm mb-3 text-gray-700">Price Breakdown</h4>
+
+                                    {selectedBooking.finance.service_base_price !== undefined ? (
+                                        // New format with detailed breakdown
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between">
+                                                <span className="text-gray-600">Service Base Price:</span>
+                                                <span className="font-semibold">Rp {selectedBooking.finance.service_base_price.toLocaleString('id-ID')}</span>
+                                            </div>
+
+                                            {selectedBooking.finance.addons_total !== undefined && selectedBooking.finance.addons_total > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Add-ons Total:</span>
+                                                    <span className="font-semibold text-green-600">+ Rp {selectedBooking.finance.addons_total.toLocaleString('id-ID')}</span>
+                                                </div>
+                                            )}
+
+                                            {selectedBooking.finance.base_discount !== undefined && selectedBooking.finance.base_discount > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">Base Discount:</span>
+                                                    <span className="font-semibold text-red-600">- Rp {selectedBooking.finance.base_discount.toLocaleString('id-ID')}</span>
+                                                </div>
+                                            )}
+
+                                            {selectedBooking.finance.coupon_discount !== undefined && selectedBooking.finance.coupon_discount > 0 && (
+                                                <div className="flex justify-between">
+                                                    <span className="text-gray-600">
+                                                        Coupon Discount
+                                                        {selectedBooking.finance.coupon_code && (
+                                                            <span className="ml-1 text-xs font-mono bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
+                                                                {selectedBooking.finance.coupon_code}
+                                                            </span>
+                                                        )}:
+                                                    </span>
+                                                    <span className="font-semibold text-red-600">- Rp {selectedBooking.finance.coupon_discount.toLocaleString('id-ID')}</span>
+                                                </div>
+                                            )}
+
+                                            <div className="border-t-2 border-blue-200 pt-2 mt-2 flex justify-between items-center">
+                                                <span className="font-bold text-base text-gray-900">Grand Total:</span>
+                                                <span className="font-bold text-xl text-blue-600">Rp {selectedBooking.finance.total_price.toLocaleString('id-ID')}</span>
+                                            </div>
                                         </div>
-                                        <p className="text-xs text-gray-400 mt-1">Calculated from service + add-ons at booking time</p>
-                                    </div>
-                                    <div className="flex-1 text-right">
-                                        <div className="text-sm text-gray-500">Status</div>
-                                        <div className={`font-bold text-xl ${calculateFinance(selectedBooking).isPaidOff ? 'text-green-600' : 'text-red-600'}`}>
-                                            {calculateFinance(selectedBooking).isPaidOff ? 'LUNAS' : 'BELUM LUNAS'}
+                                    ) : (
+                                        // Legacy format (for old bookings without breakdown)
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">Total Package Price:</span>
+                                                <span className="font-bold text-lg text-blue-600">
+                                                    Rp {selectedBooking.finance.total_price.toLocaleString('id-ID')}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-400">Legacy booking (detailed breakdown not available)</p>
                                         </div>
+                                    )}
+
+                                    <div className="mt-3 pt-3 border-t border-blue-200 flex justify-between items-center">
+                                        <span className="text-sm text-gray-600">Payment Status:</span>
+                                        <span className={`font-bold text-base ${calculateFinance(selectedBooking).isPaidOff ? 'text-green-600' : 'text-red-600'}`}>
+                                            {calculateFinance(selectedBooking).isPaidOff ? 'LUNAS ✓' : 'BELUM LUNAS'}
+                                        </span>
                                     </div>
                                 </div>
 

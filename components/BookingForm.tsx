@@ -112,7 +112,7 @@ export default function BookingForm() {
 
     // Fetch coupon suggestions when subtotal changes
     useEffect(() => {
-        const subtotal = calculateSubtotal();
+        const subtotal = calculateSubtotalForCoupon();
         if (subtotal > 0 && !appliedCoupon) {
             fetch('/api/coupons/suggestions', {
                 method: 'POST',
@@ -166,24 +166,45 @@ export default function BookingForm() {
         }
     };
 
-    const calculateSubtotal = () => {
+    // Calculation functions following formula: Grand Total = (Service Base + Add-ons) - Base Discount - Coupon Discount
+
+    const calculateServiceBasePrice = () => {
         if (!selectedService) return 0;
-        const basePrice = selectedService.basePrice - selectedService.discountValue;
-        const addonsTotal = Array.from(selectedAddons.entries()).reduce((total, [addonId, quantity]) => {
+        return selectedService.basePrice;
+    };
+
+    const calculateAddonsTotal = () => {
+        return Array.from(selectedAddons.entries()).reduce((total, [addonId, quantity]) => {
             const addon = availableAddons.find(a => a.id === addonId);
             return total + (addon ? addon.price * quantity : 0);
         }, 0);
-        return basePrice + addonsTotal;
     };
 
-    const calculateDiscount = () => {
+    const calculateBaseDiscount = () => {
+        if (!selectedService) return 0;
+        return selectedService.discountValue;
+    };
+
+    const calculateCouponDiscount = () => {
         return appliedCoupon?.discount_amount || 0;
     };
 
+    // For coupon validation, we need subtotal after base discount
+    const calculateSubtotalForCoupon = () => {
+        return calculateServiceBasePrice() + calculateAddonsTotal() - calculateBaseDiscount();
+    };
+
     const calculateTotal = () => {
-        const subtotal = calculateSubtotal();
-        const discount = calculateDiscount();
-        return Math.max(0, subtotal - discount);
+        const serviceBase = calculateServiceBasePrice();
+        const addonsTotal = calculateAddonsTotal();
+        const baseDiscount = calculateBaseDiscount();
+        const couponDiscount = calculateCouponDiscount();
+
+        // Grand Total = (Service Base + Add-ons) - Base Discount - Coupon Discount
+        const total = serviceBase + addonsTotal - baseDiscount - couponDiscount;
+
+        // Prevent negative totals
+        return Math.max(0, total);
     };
 
     const handleApplyCoupon = async () => {
@@ -192,7 +213,7 @@ export default function BookingForm() {
             return;
         }
 
-        const subtotal = calculateSubtotal();
+        const subtotal = calculateSubtotalForCoupon();
         if (subtotal === 0) {
             setCouponError('Pilih layanan terlebih dahulu');
             return;
@@ -304,7 +325,13 @@ export default function BookingForm() {
                             note: 'DP Awal'
                             // proof_filename will be set by server after file upload
                         }
-                    ]
+                    ],
+                    // Include breakdown for backend validation and storage
+                    service_base_price: calculateServiceBasePrice(),
+                    base_discount: calculateBaseDiscount(),
+                    addons_total: calculateAddonsTotal(),
+                    coupon_discount: calculateCouponDiscount(),
+                    coupon_code: appliedCoupon?.coupon?.code
                 },
                 addons: addonsData.length > 0 ? addonsData : undefined
             };
@@ -479,8 +506,26 @@ export default function BookingForm() {
                                 <div className="space-y-1">
                                     <label className="text-xs text-gray-500 font-medium">Jam (interval 30 menit)</label>
                                     <div className="relative">
-                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                        <input required type="time" step="1800" name="time" value={formData.time} onChange={handleChange} className="w-full pl-10 pr-3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                                        <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" size={16} />
+                                        <select
+                                            required
+                                            name="time"
+                                            value={formData.time}
+                                            onChange={handleChange}
+                                            className="w-full pl-10 pr-3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                                        >
+                                            <option value="">Pilih waktu</option>
+                                            {Array.from({ length: 48 }, (_, i) => {
+                                                const hour = Math.floor(i / 2);
+                                                const minute = i % 2 === 0 ? '00' : '30';
+                                                const timeValue = `${hour.toString().padStart(2, '0')}:${minute}`;
+                                                return (
+                                                    <option key={timeValue} value={timeValue}>
+                                                        {timeValue}
+                                                    </option>
+                                                );
+                                            })}
+                                        </select>
                                     </div>
                                     <p className="text-xs text-gray-400">Contoh: 09:00, 09:30, 10:00</p>
                                 </div>
@@ -541,7 +586,7 @@ export default function BookingForm() {
                             {/* Selected Service */}
                             <div className="space-y-3 mb-4">
                                 <div className="bg-white p-4 rounded-xl border border-blue-100">
-                                    <div className="flex justify-between items-start mb-2">
+                                    <div className="flex justify-between items-start">
                                         <div className="flex-1">
                                             <p className="font-bold text-gray-800">{selectedService.name}</p>
                                             {selectedService.badgeText && (
@@ -549,16 +594,13 @@ export default function BookingForm() {
                                                     {selectedService.badgeText}
                                                 </span>
                                             )}
+                                            {selectedService.discountValue > 0 && (
+                                                <div className="mt-2 inline-flex items-center gap-1 bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full border border-green-200">
+                                                    <span>💰 Hemat Rp {selectedService.discountValue.toLocaleString('id-ID')}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                        <p className="font-bold text-gray-800">
-                                            Rp {(selectedService.basePrice - selectedService.discountValue).toLocaleString('id-ID')}
-                                        </p>
                                     </div>
-                                    {selectedService.discountValue > 0 && (
-                                        <p className="text-xs text-green-600 font-medium">
-                                            Hemat Rp {selectedService.discountValue.toLocaleString('id-ID')}
-                                        </p>
-                                    )}
                                 </div>
 
                                 {/* Add-ons */}
@@ -687,24 +729,47 @@ export default function BookingForm() {
                                 )}
                             </div>
 
-                            {/* Price Summary */}
+                            {/* Price Summary - Detailed Breakdown */}
                             <div className="border-t-2 border-blue-200 pt-4 space-y-2">
+                                {/* Service Base Price */}
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">Subtotal:</span>
-                                    <span className="font-bold text-gray-800">
-                                        Rp {calculateSubtotal().toLocaleString('id-ID')}
+                                    <span className="text-gray-600">Harga Layanan:</span>
+                                    <span className="font-semibold text-gray-800">
+                                        Rp {calculateServiceBasePrice().toLocaleString('id-ID')}
                                     </span>
                                 </div>
 
-                                {appliedCoupon && (
+                                {/* Add-ons Total */}
+                                {calculateAddonsTotal() > 0 && (
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-green-600">Diskon Kupon:</span>
-                                        <span className="font-bold text-green-600">
-                                            - Rp {calculateDiscount().toLocaleString('id-ID')}
+                                        <span className="text-gray-600">Total Tambahan:</span>
+                                        <span className="font-semibold text-green-600">
+                                            + Rp {calculateAddonsTotal().toLocaleString('id-ID')}
                                         </span>
                                     </div>
                                 )}
 
+                                {/* Base Discount */}
+                                {calculateBaseDiscount() > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Diskon Paket:</span>
+                                        <span className="font-semibold text-red-600">
+                                            - Rp {calculateBaseDiscount().toLocaleString('id-ID')}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Coupon Discount */}
+                                {calculateCouponDiscount() > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-gray-600">Diskon Kupon:</span>
+                                        <span className="font-semibold text-red-600">
+                                            - Rp {calculateCouponDiscount().toLocaleString('id-ID')}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* Grand Total */}
                                 <div className="flex justify-between items-center pt-2 border-t-2 border-blue-200">
                                     <span className="font-black text-lg text-gray-900">TOTAL:</span>
                                     <span className="font-black text-2xl text-blue-600">

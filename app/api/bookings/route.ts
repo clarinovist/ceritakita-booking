@@ -82,21 +82,37 @@ export async function POST(req: NextRequest) {
 
         const { customer, booking, finance, photographer_id, addons } = validationResult.data;
 
-        // Backend Price Validation
+        // Backend Price Validation and Breakdown Calculation
         const services = readServices();
         const service = services.find(s => s.id === customer.serviceId);
 
         let validatedTotalPrice = 0;
-        if (service && service.isActive) {
-            validatedTotalPrice = service.basePrice - service.discountValue;
+        let serviceBasePrice = 0;
+        let baseDiscount = 0;
+        let addonsTotal = 0;
+        let couponDiscount = 0;
+        let couponCode: string | undefined;
 
-            // Add add-ons to total price
+        if (service && service.isActive) {
+            serviceBasePrice = service.basePrice;
+            baseDiscount = service.discountValue;
+
+            // Calculate add-ons total
             if (addons && addons.length > 0) {
-                const addonsTotal = addons.reduce((total, addon) => {
+                addonsTotal = addons.reduce((total, addon) => {
                     return total + (addon.price_at_booking * addon.quantity);
                 }, 0);
-                validatedTotalPrice += addonsTotal;
             }
+
+            // Get coupon discount if provided in finance data
+            if (finance && typeof finance === 'object' && 'coupon_discount' in finance) {
+                const financeWithCoupon = finance as { coupon_discount?: number; coupon_code?: string };
+                couponDiscount = financeWithCoupon.coupon_discount || 0;
+                couponCode = financeWithCoupon.coupon_code;
+            }
+
+            // Formula: Grand Total = (Service Base + Add-ons) - Base Discount - Coupon Discount
+            validatedTotalPrice = Math.max(0, serviceBasePrice + addonsTotal - baseDiscount - couponDiscount);
         } else if (service && !service.isActive) {
             return NextResponse.json(
                 { error: 'Selected service is not available' },
@@ -169,7 +185,13 @@ export async function POST(req: NextRequest) {
             },
             finance: {
                 total_price: validatedTotalPrice,
-                payments
+                payments,
+                // Store price breakdown for transparency
+                service_base_price: serviceBasePrice,
+                base_discount: baseDiscount,
+                addons_total: addonsTotal,
+                coupon_discount: couponDiscount,
+                coupon_code: couponCode
             },
             photographer_id,
             addons

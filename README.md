@@ -7,20 +7,34 @@ A comprehensive booking management system for photography services with admin da
 ### Admin Dashboard
 - **Real-time Metrics**: View total bookings, active sessions, and revenue statistics
 - **Calendar View**: Visual timeline of all bookings using FullCalendar
-- **Status Management**: Track bookings through different stages (Active, Completed, Cancelled)
+- **Status Management**: Track bookings through different stages (Active, Completed, Cancelled, Rescheduled)
+- **Unified Active View**: Active and Rescheduled bookings displayed together with visual indicators
 - **Search & Filter**: Quickly find bookings by customer name, WhatsApp, or booking ID
+- **Detailed Price Breakdown**: View complete pricing breakdown including service base price, add-ons, discounts, and coupons
 
 ### Booking Management
 - **Customer Information**: Store customer details including name, WhatsApp contact, and service category
 - **Event Details**: Track booking dates, locations, and special notes
+- **Smart Time Picker**: 24-hour format with 30-minute increments (dropdown selection)
 - **Service Categories**: Indoor, Outdoor, Wedding, Birthday, and more
+- **Add-ons System**: Select and configure additional services with quantity management
+- **Coupon System**: Apply discount coupons with flash sale support and automatic suggestions
 - **Multi-payment Tracking**: Record multiple payments per booking with proof uploads
+- **Photographer Assignment**: Assign photographers to bookings with specialty tracking
+- **Reschedule Management**: Track reschedule history with reasons and timestamps
 
 ### Payment Tracking
 - **Payment History**: Track all payments with dates, amounts, and notes
 - **Payment Proofs**: Upload and store payment proof images (JPEG, PNG, GIF, WebP)
+- **Detailed Price Breakdown**: Complete transparency with itemized pricing
+  - Service base price (before discount)
+  - Add-ons total
+  - Base discount (service package discount)
+  - Coupon discount (with coupon code tracking)
+  - Grand total with negative prevention
 - **Financial Overview**: Automatic calculation of total paid vs. total price
 - **Remaining Balance**: Real-time balance calculations
+- **Excel Export**: Export bookings and financial reports to Excel format
 
 ### Security Features
 - **Authentication**: NextAuth.js integration with secure session management
@@ -96,25 +110,57 @@ npm start
 │   │   ├── auth/          # NextAuth routes
 │   │   ├── bookings/      # Booking CRUD operations
 │   │   ├── services/      # Service category endpoints
+│   │   ├── photographers/ # Photographer management
+│   │   ├── addons/        # Add-ons management
+│   │   ├── coupons/       # Coupon management & validation
+│   │   ├── export/        # Excel export endpoints
 │   │   └── uploads/       # File serving endpoint
 │   ├── login/             # Login page
-│   └── page.tsx           # Landing page
+│   └── page.tsx           # Landing page with booking form
 ├── components/
-│   ├── AdminDashboard.tsx     # Main dashboard with calendar
-│   ├── BookingForm.tsx        # Booking creation/edit form
-│   ├── DashboardMetrics.tsx   # Statistics cards
+│   ├── AdminDashboard.tsx     # Main dashboard with calendar & tables
+│   ├── BookingForm.tsx        # Customer booking form with price breakdown
+│   ├── DashboardMetrics.tsx   # Statistics cards with charts
+│   ├── CouponManagement.tsx   # Coupon CRUD interface
 │   └── Providers.tsx          # NextAuth provider wrapper
 ├── lib/
 │   ├── auth.ts           # Authentication utilities
 │   ├── file-storage.ts   # File upload/storage handling
 │   ├── storage.ts        # Database operations (file-based)
-│   └── validation.ts     # Zod schemas
+│   ├── storage-sqlite.ts # SQLite database operations
+│   ├── validation.ts     # Zod schemas
+│   ├── photographers.ts  # Photographer management
+│   ├── addons.ts         # Add-ons management
+│   ├── coupons.ts        # Coupon management & validation
+│   └── export.ts         # Excel export utilities
 ├── data/
-│   ├── db.txt           # Booking database (JSON)
-│   └── services.json    # Service categories
+│   ├── bookings.db      # SQLite database
+│   ├── services.json    # Service categories
+│   └── db.txt          # Legacy JSON database (deprecated)
 └── uploads/
     └── payment-proofs/  # Uploaded payment proof images
 ```
+
+## Price Calculation Formula
+
+The system uses a transparent pricing model with detailed breakdown:
+
+```
+Grand Total = (Service Base Price + Add-ons Total) - Base Discount - Coupon Discount
+```
+
+**Components:**
+- **Service Base Price**: Original service price before any discounts
+- **Add-ons Total**: Sum of all selected add-ons × quantities
+- **Base Discount**: Service package discount (e.g., promotional pricing)
+- **Coupon Discount**: Applied coupon discount (percentage or fixed amount)
+- **Negative Prevention**: Total cannot go below zero (`Math.max(0, total)`)
+
+**Price Validation:**
+- Frontend calculates breakdown and sends to backend
+- Backend validates by recalculating using same formula
+- All components stored in database for audit trail
+- Admin dashboard displays complete breakdown for transparency
 
 ## Database
 
@@ -134,7 +180,7 @@ For detailed schema and migration information, see [MIGRATION-GUIDE.md](./MIGRAT
 {
   id: string;              // UUID
   created_at: string;      // ISO timestamp
-  status: "Active" | "Completed" | "Cancelled";
+  status: "Active" | "Completed" | "Cancelled" | "Rescheduled";
   customer: {
     name: string;
     whatsapp: string;
@@ -153,17 +199,59 @@ For detailed schema and migration information, see [MIGRATION-GUIDE.md](./MIGRAT
       note: string;
       proof_filename?: string;  // Relative path to uploaded image
     }>;
+    // Price breakdown (for transparency and audit)
+    service_base_price?: number;  // Service price before discount
+    base_discount?: number;       // Service discount value
+    addons_total?: number;        // Total from all add-ons
+    coupon_discount?: number;     // Coupon discount applied
+    coupon_code?: string;         // Coupon code used
   };
+  photographer_id?: string;       // Assigned photographer
+  addons?: Array<{               // Selected add-ons
+    addon_id: string;
+    addon_name: string;
+    quantity: number;
+    price_at_booking: number;
+  }>;
+  reschedule_history?: Array<{   // Reschedule tracking
+    old_date: string;
+    new_date: string;
+    rescheduled_at: string;
+    reason?: string;
+  }>;
 }
 ```
 
 ## API Endpoints
 
-- `POST /api/bookings` - Create new booking
+### Bookings
+- `POST /api/bookings` - Create new booking with price validation
 - `GET /api/bookings` - List all bookings
-- `POST /api/bookings/update` - Update existing booking
+- `PUT /api/bookings/update` - Update existing booking
+- `POST /api/bookings/reschedule` - Reschedule booking with history tracking
+
+### Configuration
 - `GET /api/services` - Get service categories
+- `POST /api/services` - Update service categories
+- `GET /api/photographers` - Get photographers list
+- `POST /api/photographers` - Create photographer
+- `PUT /api/photographers` - Update photographer
+- `DELETE /api/photographers` - Delete photographer
+- `GET /api/addons` - Get add-ons list (with category filtering)
+- `POST /api/addons` - Create add-on
+- `PUT /api/addons` - Update add-on
+- `DELETE /api/addons` - Delete add-on
+- `GET /api/coupons` - Get coupons list
+- `POST /api/coupons` - Create coupon
+- `PUT /api/coupons` - Update coupon
+- `DELETE /api/coupons` - Delete coupon
+- `POST /api/coupons/validate` - Validate coupon code
+- `POST /api/coupons/suggestions` - Get coupon suggestions based on total
+
+### Files & Export
 - `GET /api/uploads/[...path]` - Serve uploaded files (authenticated)
+- `GET /api/export/bookings` - Export bookings to Excel
+- `GET /api/export/financial` - Export financial report to Excel
 
 ## Security Considerations
 
