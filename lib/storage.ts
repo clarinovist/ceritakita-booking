@@ -36,6 +36,14 @@ export interface BookingAddon {
   price_at_booking: number;
 }
 
+export interface RescheduleHistory {
+  id?: number;
+  old_date: string;
+  new_date: string;
+  rescheduled_at: string;
+  reason?: string;
+}
+
 export interface Booking {
   id: string;
   created_at: string;
@@ -45,6 +53,7 @@ export interface Booking {
   finance: FinanceData;
   photographer_id?: string;
   addons?: BookingAddon[];
+  reschedule_history?: RescheduleHistory[];
 }
 
 // Ensure DB exists

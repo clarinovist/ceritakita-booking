@@ -6,8 +6,9 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Booking, Payment, Service, FinanceData } from '@/lib/storage';
-import { Euro, XCircle, LayoutGrid, List, Tag, Save, Plus, Edit, Trash2, LogOut, User, Calendar, Download, Camera, ShoppingBag } from 'lucide-react';
+import { Euro, XCircle, LayoutGrid, List, Tag, Save, Plus, Edit, Trash2, LogOut, User, Calendar, Download, Camera, ShoppingBag, Ticket } from 'lucide-react';
 import { useSession, signOut } from "next-auth/react";
+import CouponManagement from './CouponManagement';
 import DashboardMetrics from './DashboardMetrics';
 
 type BookingUpdate = {
@@ -43,7 +44,7 @@ export default function AdminDashboard() {
     const [photographers, setPhotographers] = useState<Photographer[]>([]);
     const [addons, setAddons] = useState<Addon[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-    const [viewMode, setViewMode] = useState<'dashboard' | 'calendar' | 'table' | 'services' | 'photographers' | 'addons'>('dashboard');
+    const [viewMode, setViewMode] = useState<'dashboard' | 'calendar' | 'table' | 'services' | 'photographers' | 'addons' | 'coupons'>('dashboard');
     const [filterStatus, setFilterStatus] = useState<'All' | 'Active' | 'Canceled' | 'Rescheduled'>('Active');
 
     // Date Range State
@@ -99,6 +100,15 @@ export default function AdminDashboard() {
     });
     const [selectedBookingAddons, setSelectedBookingAddons] = useState<Map<string, number>>(new Map());
     const [availableBookingAddons, setAvailableBookingAddons] = useState<Addon[]>([]);
+
+    // Reschedule state
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+    const [rescheduleBookingId, setRescheduleBookingId] = useState<string | null>(null);
+    const [rescheduleFormData, setRescheduleFormData] = useState({
+        newDate: '',
+        newTime: '',
+        reason: ''
+    });
 
     // Helper Finance
     const calculateFinance = (b: Booking) => {
@@ -572,6 +582,64 @@ export default function AdminDashboard() {
         }
     };
 
+    // Reschedule Handlers
+    const handleOpenRescheduleModal = (bookingId: string, currentDate: string) => {
+        // Parse current date to prefill the form
+        const dateTimeParts = currentDate.split('T');
+        const datePart = dateTimeParts[0] || '';
+        const timePart = dateTimeParts[1]?.substring(0, 5) || '';
+
+        setRescheduleBookingId(bookingId);
+        setRescheduleFormData({
+            newDate: datePart,
+            newTime: timePart,
+            reason: ''
+        });
+        setIsRescheduleModalOpen(true);
+    };
+
+    const handleReschedule = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!rescheduleBookingId) return;
+
+        try {
+            const newDateTime = `${rescheduleFormData.newDate}T${rescheduleFormData.newTime}`;
+
+            const res = await fetch('/api/bookings/reschedule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    bookingId: rescheduleBookingId,
+                    newDate: newDateTime,
+                    reason: rescheduleFormData.reason || undefined
+                })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || data.message || 'Failed to reschedule');
+            }
+
+            // Update local state
+            setBookings(prev => prev.map(b =>
+                b.id === rescheduleBookingId ? data.booking : b
+            ));
+
+            // Update selected booking if it's the one being rescheduled
+            if (selectedBooking?.id === rescheduleBookingId) {
+                setSelectedBooking(data.booking);
+            }
+
+            setIsRescheduleModalOpen(false);
+            alert('Booking rescheduled successfully!');
+        } catch (error) {
+            console.error('Error rescheduling booking:', error);
+            alert(`Failed to reschedule: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
+
     // Export Handlers
     const handleExportBookings = async () => {
         try {
@@ -635,12 +703,10 @@ export default function AdminDashboard() {
 
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
-            const bDate = b.booking.date.split('T')[0] ?? '';
-            const isInRange = bDate >= dateRange.start && bDate <= dateRange.end;
             const isMatchStatus = filterStatus === 'All' || b.status === filterStatus;
-            return isInRange && isMatchStatus;
+            return isMatchStatus;
         });
-    }, [bookings, dateRange, filterStatus]);
+    }, [bookings, filterStatus]);
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -649,13 +715,13 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-6">
                     <h1 className="text-2xl font-bold text-blue-900">Admin Panel</h1>
                     <div className="flex bg-gray-100 p-1 rounded-lg overflow-x-auto">
-                        {(['dashboard', 'calendar', 'table', 'services', 'photographers', 'addons'] as const).map((mode) => (
+                        {(['dashboard', 'calendar', 'table', 'services', 'photographers', 'addons', 'coupons'] as const).map((mode) => (
                             <button
                                 key={mode}
                                 onClick={() => setViewMode(mode)}
                                 className={`px-4 py-2 rounded-md capitalize transition font-semibold text-sm whitespace-nowrap ${viewMode === mode ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                {mode === 'addons' ? 'Add-ons' : mode}
+                                {mode === 'addons' ? 'Add-ons' : mode === 'table' ? 'Booking' : mode}
                             </button>
                         ))}
                     </div>
@@ -807,6 +873,7 @@ export default function AdminDashboard() {
                                 <thead className="bg-gray-50 text-gray-500">
                                     <tr>
                                         <th className="px-4 py-3">Date</th>
+                                        <th className="px-4 py-3">Time</th>
                                         <th className="px-4 py-3">Customer</th>
                                         <th className="px-4 py-3">Phone</th>
                                         <th className="px-4 py-3">Category</th>
@@ -817,13 +884,14 @@ export default function AdminDashboard() {
                                 </thead>
                                 <tbody className="divide-y">
                                     {filteredBookings.length === 0 && (
-                                        <tr><td colSpan={7} className="text-center p-8 text-gray-400">No bookings found.</td></tr>
+                                        <tr><td colSpan={8} className="text-center p-8 text-gray-400">No bookings found.</td></tr>
                                     )}
                                     {[...filteredBookings].reverse().map(b => {
                                         const { balance, isPaidOff } = calculateFinance(b);
                                         return (
                                             <tr key={b.id} className="hover:bg-gray-50">
-                                                <td className="px-4 py-3">{new Date(b.booking.date).toLocaleDateString()} <span className="text-gray-400 text-xs">{new Date(b.booking.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></td>
+                                                <td className="px-4 py-3">{new Date(b.booking.date).toLocaleDateString()}</td>
+                                                <td className="px-4 py-3 text-gray-600">{new Date(b.booking.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                                 <td className="px-4 py-3 font-medium">{b.customer.name}</td>
                                                 <td className="px-4 py-3">{b.customer.whatsapp}</td>
                                                 <td className="px-4 py-3">{b.customer.category}</td>
@@ -1064,6 +1132,13 @@ export default function AdminDashboard() {
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                )}
+
+                {/* Coupon Management View */}
+                {viewMode === 'coupons' && (
+                    <div className="animate-in fade-in">
+                        <CouponManagement />
                     </div>
                 )}
             </div>
@@ -1418,14 +1493,16 @@ export default function AdminDashboard() {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1">Session Time *</label>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Session Time * (30-min intervals)</label>
                                         <input
                                             required
                                             type="time"
+                                            step="1800"
                                             value={bookingFormData.booking_time}
                                             onChange={e => setBookingFormData({ ...bookingFormData, booking_time: e.target.value })}
                                             className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
                                         />
+                                        <p className="text-xs text-gray-400 mt-1">e.g., 09:00, 09:30, 10:00</p>
                                     </div>
                                     <div className="md:col-span-2">
                                         <label className="block text-sm font-bold text-gray-700 mb-1">Location Link</label>
@@ -1574,7 +1651,39 @@ export default function AdminDashboard() {
                                         <option value="Rescheduled">Rescheduled</option>
                                         <option value="Canceled">Canceled</option>
                                     </select>
+                                    <button
+                                        onClick={() => handleOpenRescheduleModal(selectedBooking.id, selectedBooking.booking.date)}
+                                        className="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2"
+                                    >
+                                        <Calendar size={14} />
+                                        Reschedule Date/Time
+                                    </button>
                                 </div>
+
+                                {selectedBooking.reschedule_history && selectedBooking.reschedule_history.length > 0 && (
+                                    <div className="bg-yellow-50 p-4 rounded border border-yellow-100">
+                                        <h4 className="font-bold text-yellow-800 text-sm mb-2">Reschedule History</h4>
+                                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                                            {selectedBooking.reschedule_history.map((history, idx) => (
+                                                <div key={idx} className="bg-white p-2 rounded border text-xs">
+                                                    <div className="flex justify-between mb-1">
+                                                        <span className="font-medium text-gray-600">Changed on: {new Date(history.rescheduled_at).toLocaleString()}</span>
+                                                    </div>
+                                                    <div className="text-gray-600">
+                                                        <span className="line-through text-red-600">{new Date(history.old_date).toLocaleString()}</span>
+                                                        {' → '}
+                                                        <span className="text-green-600 font-medium">{new Date(history.new_date).toLocaleString()}</span>
+                                                    </div>
+                                                    {history.reason && (
+                                                        <div className="mt-1 text-gray-500">
+                                                            Reason: {history.reason}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="bg-purple-50 p-4 rounded border border-purple-100">
                                     <h4 className="font-bold text-purple-800 text-sm mb-2 flex items-center gap-2">
@@ -1715,6 +1824,82 @@ export default function AdminDashboard() {
 
                             </div>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Reschedule Modal */}
+            {isRescheduleModalOpen && (
+                <div className="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+                            <h2 className="text-xl font-bold">Reschedule Booking</h2>
+                            <button onClick={() => setIsRescheduleModalOpen(false)} className="text-gray-400 hover:text-red-500">
+                                <XCircle size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleReschedule} className="p-6 space-y-4">
+                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm text-blue-800">
+                                <p className="font-bold mb-1">Important:</p>
+                                <ul className="list-disc list-inside space-y-1 text-xs">
+                                    <li>The system will check for slot availability</li>
+                                    <li>Previous schedule will be saved in history</li>
+                                    <li>Booking status will be set to "Rescheduled"</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">New Date *</label>
+                                <input
+                                    required
+                                    type="date"
+                                    value={rescheduleFormData.newDate}
+                                    onChange={e => setRescheduleFormData({ ...rescheduleFormData, newDate: e.target.value })}
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">New Time * (30-minute intervals)</label>
+                                <input
+                                    required
+                                    type="time"
+                                    step="1800"
+                                    value={rescheduleFormData.newTime}
+                                    onChange={e => setRescheduleFormData({ ...rescheduleFormData, newTime: e.target.value })}
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Only 00:00, 00:30 minutes allowed (e.g., 09:00, 09:30, 10:00)</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">Reason (Optional)</label>
+                                <textarea
+                                    value={rescheduleFormData.reason}
+                                    onChange={e => setRescheduleFormData({ ...rescheduleFormData, reason: e.target.value })}
+                                    placeholder="e.g., Customer request, Weather conditions, etc."
+                                    rows={3}
+                                    className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                                />
+                            </div>
+
+                            <div className="pt-4 flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsRescheduleModalOpen(false)}
+                                    className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Save size={18} />
+                                    Confirm Reschedule
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

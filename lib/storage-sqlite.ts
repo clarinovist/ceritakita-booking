@@ -14,6 +14,14 @@ export interface Payment {
   proof_filename?: string;
 }
 
+export interface RescheduleHistory {
+  id?: number;
+  old_date: string;
+  new_date: string;
+  rescheduled_at: string;
+  reason?: string;
+}
+
 export interface Booking {
   id: string;
   created_at: string;
@@ -34,12 +42,13 @@ export interface Booking {
   };
   photographer_id?: string;
   addons?: BookingAddon[];
+  reschedule_history?: RescheduleHistory[];
 }
 
 /**
  * Convert database row to Booking object
  */
-function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[]): Booking {
+function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[], rescheduleHistory?: RescheduleHistory[]): Booking {
   return {
     id: row.id,
     created_at: row.created_at,
@@ -60,6 +69,7 @@ function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[]): B
     },
     photographer_id: row.photographer_id || undefined,
     addons: addons && addons.length > 0 ? addons : undefined,
+    reschedule_history: rescheduleHistory && rescheduleHistory.length > 0 ? rescheduleHistory : undefined,
   };
 }
 
@@ -85,6 +95,46 @@ function getPaymentsForBooking(bookingId: string): Payment[] {
 }
 
 /**
+ * Get reschedule history for a booking
+ */
+function getRescheduleHistory(bookingId: string): RescheduleHistory[] {
+  const db = getDb();
+  const stmt = db.prepare(`
+    SELECT id, old_date, new_date, rescheduled_at, reason
+    FROM reschedule_history
+    WHERE booking_id = ?
+    ORDER BY rescheduled_at ASC
+  `);
+
+  const rows = stmt.all(bookingId) as any[];
+  return rows.map(row => ({
+    id: row.id,
+    old_date: row.old_date,
+    new_date: row.new_date,
+    rescheduled_at: row.rescheduled_at,
+    ...(row.reason && { reason: row.reason }),
+  }));
+}
+
+/**
+ * Add reschedule history entry
+ */
+export function addRescheduleHistory(
+  bookingId: string,
+  oldDate: string,
+  newDate: string,
+  reason?: string
+): void {
+  const db = getDb();
+  const stmt = db.prepare(`
+    INSERT INTO reschedule_history (booking_id, old_date, new_date, reason)
+    VALUES (?, ?, ?, ?)
+  `);
+
+  stmt.run(bookingId, oldDate, newDate, reason || null);
+}
+
+/**
  * Read all bookings
  */
 export function readData(): Booking[] {
@@ -95,7 +145,8 @@ export function readData(): Booking[] {
   return rows.map(row => {
     const payments = getPaymentsForBooking(row.id);
     const addons = getBookingAddons(row.id);
-    return rowToBooking(row, payments, addons);
+    const rescheduleHistory = getRescheduleHistory(row.id);
+    return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
 
@@ -111,7 +162,8 @@ export function readBooking(id: string): Booking | null {
 
   const payments = getPaymentsForBooking(id);
   const addons = getBookingAddons(id);
-  return rowToBooking(row, payments, addons);
+  const rescheduleHistory = getRescheduleHistory(id);
+  return rowToBooking(row, payments, addons, rescheduleHistory);
 }
 
 /**
@@ -330,7 +382,8 @@ export function getBookingsByStatus(status: 'Active' | 'Completed' | 'Cancelled'
   return rows.map(row => {
     const payments = getPaymentsForBooking(row.id);
     const addons = getBookingAddons(row.id);
-    return rowToBooking(row, payments, addons);
+    const rescheduleHistory = getRescheduleHistory(row.id);
+    return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
 
@@ -352,6 +405,30 @@ export function searchBookings(query: string): Booking[] {
   return rows.map(row => {
     const payments = getPaymentsForBooking(row.id);
     const addons = getBookingAddons(row.id);
-    return rowToBooking(row, payments, addons);
+    const rescheduleHistory = getRescheduleHistory(row.id);
+    return rowToBooking(row, payments, addons, rescheduleHistory);
   });
+}
+
+/**
+ * Check if a time slot is available (no double booking)
+ * Excludes the given booking ID from the check (for rescheduling)
+ */
+export function checkSlotAvailability(
+  date: string,
+  excludeBookingId?: string
+): boolean {
+  const db = getDb();
+
+  // Check if there are any active or rescheduled bookings at this time
+  const stmt = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM bookings
+    WHERE booking_date = ?
+      AND status IN ('Active', 'Rescheduled')
+      AND id != ?
+  `);
+
+  const result = stmt.get(date, excludeBookingId || '') as any;
+  return result.count === 0;
 }

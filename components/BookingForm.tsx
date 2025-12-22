@@ -2,7 +2,54 @@
 
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import Image from 'next/image';
-import { Upload, Calendar, MapPin, User, MessageSquare, Tag, CheckCircle2, Clock, ShoppingBag } from 'lucide-react';
+import { Upload, Calendar, MapPin, User, MessageSquare, Tag, CheckCircle2, Clock, ShoppingBag, Zap } from 'lucide-react';
+
+// Countdown Timer Component
+function CountdownTimer({ targetDate }: { targetDate: string }) {
+    const [timeLeft, setTimeLeft] = useState('');
+    const [isUrgent, setIsUrgent] = useState(false);
+
+    useEffect(() => {
+        const calculateTimeLeft = () => {
+            const now = new Date().getTime();
+            const target = new Date(targetDate).getTime();
+            const difference = target - now;
+
+            if (difference <= 0) {
+                setTimeLeft('Berakhir');
+                return;
+            }
+
+            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+            // Mark as urgent if less than 24 hours
+            setIsUrgent(difference < 24 * 60 * 60 * 1000);
+
+            if (days > 0) {
+                setTimeLeft(`${days}h ${hours}j lagi`);
+            } else if (hours > 0) {
+                setTimeLeft(`${hours}j ${minutes}m lagi`);
+            } else {
+                setTimeLeft(`${minutes}m ${seconds}d`);
+            }
+        };
+
+        calculateTimeLeft();
+        const interval = setInterval(calculateTimeLeft, 1000);
+
+        return () => clearInterval(interval);
+    }, [targetDate]);
+
+    return (
+        <span className={`text-[10px] font-bold ${isUrgent ? 'text-red-600 animate-pulse' : 'text-orange-600'}`}>
+            {isUrgent && <Zap size={10} className="inline mr-0.5" />}
+            {timeLeft}
+        </span>
+    );
+}
 
 interface Service {
     id: string;
@@ -30,6 +77,13 @@ export default function BookingForm() {
     const [availableAddons, setAvailableAddons] = useState<Addon[]>([]);
     const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
 
+    // Coupon state
+    const [couponCode, setCouponCode] = useState('');
+    const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+    const [couponError, setCouponError] = useState('');
+    const [couponLoading, setCouponLoading] = useState(false);
+    const [suggestedCoupons, setSuggestedCoupons] = useState<any[]>([]);
+
     const [formData, setFormData] = useState({
         name: '',
         whatsapp: '',
@@ -55,6 +109,21 @@ export default function BookingForm() {
             })
             .catch(err => console.error("Failed to fetch services", err));
     }, []);
+
+    // Fetch coupon suggestions when subtotal changes
+    useEffect(() => {
+        const subtotal = calculateSubtotal();
+        if (subtotal > 0 && !appliedCoupon) {
+            fetch('/api/coupons/suggestions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ totalAmount: subtotal })
+            })
+                .then(res => res.json())
+                .then(data => setSuggestedCoupons(data))
+                .catch(err => console.error("Failed to fetch suggestions", err));
+        }
+    }, [selectedService, selectedAddons, appliedCoupon]);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -97,7 +166,7 @@ export default function BookingForm() {
         }
     };
 
-    const calculateTotal = () => {
+    const calculateSubtotal = () => {
         if (!selectedService) return 0;
         const basePrice = selectedService.basePrice - selectedService.discountValue;
         const addonsTotal = Array.from(selectedAddons.entries()).reduce((total, [addonId, quantity]) => {
@@ -105,6 +174,65 @@ export default function BookingForm() {
             return total + (addon ? addon.price * quantity : 0);
         }, 0);
         return basePrice + addonsTotal;
+    };
+
+    const calculateDiscount = () => {
+        return appliedCoupon?.discount_amount || 0;
+    };
+
+    const calculateTotal = () => {
+        const subtotal = calculateSubtotal();
+        const discount = calculateDiscount();
+        return Math.max(0, subtotal - discount);
+    };
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) {
+            setCouponError('Masukkan kode kupon');
+            return;
+        }
+
+        const subtotal = calculateSubtotal();
+        if (subtotal === 0) {
+            setCouponError('Pilih layanan terlebih dahulu');
+            return;
+        }
+
+        setCouponLoading(true);
+        setCouponError('');
+
+        try {
+            const res = await fetch('/api/coupons/validate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    code: couponCode,
+                    totalAmount: subtotal
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.valid) {
+                setAppliedCoupon(data);
+                setCouponError('');
+            } else {
+                setCouponError(data.error || 'Kupon tidak valid');
+                setAppliedCoupon(null);
+            }
+        } catch (error) {
+            console.error('Error validating coupon:', error);
+            setCouponError('Terjadi kesalahan saat memvalidasi kupon');
+            setAppliedCoupon(null);
+        } finally {
+            setCouponLoading(false);
+        }
+    };
+
+    const handleRemoveCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode('');
+        setCouponError('');
     };
 
     const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
@@ -349,11 +477,12 @@ export default function BookingForm() {
                                     <input required type="date" name="date" value={formData.date} onChange={handleChange} className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-xs text-gray-500 font-medium">Jam</label>
+                                    <label className="text-xs text-gray-500 font-medium">Jam (interval 30 menit)</label>
                                     <div className="relative">
                                         <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                                        <input required type="time" name="time" value={formData.time} onChange={handleChange} className="w-full pl-10 pr-3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
+                                        <input required type="time" step="1800" name="time" value={formData.time} onChange={handleChange} className="w-full pl-10 pr-3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500" />
                                     </div>
+                                    <p className="text-xs text-gray-400">Contoh: 09:00, 09:30, 10:00</p>
                                 </div>
                             </div>
                         </div>
@@ -402,8 +531,192 @@ export default function BookingForm() {
                                 )}
                             </div>
                         </div>
+                    </div>
 
-                        {/* Submit */}
+                    {/* ORDER SUMMARY */}
+                    {selectedService && (
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl shadow-sm border-2 border-blue-100">
+                            <h3 className="font-black text-lg text-gray-800 mb-4">Ringkasan Pesanan</h3>
+
+                            {/* Selected Service */}
+                            <div className="space-y-3 mb-4">
+                                <div className="bg-white p-4 rounded-xl border border-blue-100">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div className="flex-1">
+                                            <p className="font-bold text-gray-800">{selectedService.name}</p>
+                                            {selectedService.badgeText && (
+                                                <span className="inline-block mt-1 bg-blue-100 text-blue-600 text-[9px] uppercase font-black px-2 py-0.5 rounded">
+                                                    {selectedService.badgeText}
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="font-bold text-gray-800">
+                                            Rp {(selectedService.basePrice - selectedService.discountValue).toLocaleString('id-ID')}
+                                        </p>
+                                    </div>
+                                    {selectedService.discountValue > 0 && (
+                                        <p className="text-xs text-green-600 font-medium">
+                                            Hemat Rp {selectedService.discountValue.toLocaleString('id-ID')}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Add-ons */}
+                                {selectedAddons.size > 0 && (
+                                    <div className="bg-white p-4 rounded-xl border border-blue-100">
+                                        <p className="font-bold text-gray-700 text-sm mb-2">Tambahan:</p>
+                                        <div className="space-y-2">
+                                            {Array.from(selectedAddons.entries()).map(([addonId, quantity]) => {
+                                                const addon = availableAddons.find(a => a.id === addonId);
+                                                if (!addon) return null;
+                                                return (
+                                                    <div key={addonId} className="flex justify-between text-sm">
+                                                        <span className="text-gray-600">
+                                                            {addon.name} x{quantity}
+                                                        </span>
+                                                        <span className="font-semibold text-gray-800">
+                                                            Rp {(addon.price * quantity).toLocaleString('id-ID')}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Coupon Section */}
+                            <div className="mb-4">
+                                {!appliedCoupon ? (
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold text-gray-700">Punya Kode Kupon?</label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                value={couponCode}
+                                                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                                                placeholder="Masukkan kode"
+                                                className="flex-1 p-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase font-mono"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleApplyCoupon}
+                                                disabled={couponLoading}
+                                                className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 transition-all"
+                                            >
+                                                {couponLoading ? '...' : 'Terapkan'}
+                                            </button>
+                                        </div>
+                                        {couponError && (
+                                            <p className="text-xs text-red-600 font-medium">{couponError}</p>
+                                        )}
+
+                                        {/* Suggested Coupons */}
+                                        {suggestedCoupons.length > 0 && (
+                                            <div className="space-y-2">
+                                                <p className="text-xs font-bold text-gray-600">💡 Kupon yang Tersedia:</p>
+                                                <div className="space-y-1.5">
+                                                    {suggestedCoupons.map((coupon) => (
+                                                        <button
+                                                            key={coupon.id}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setCouponCode(coupon.code);
+                                                                handleApplyCoupon();
+                                                            }}
+                                                            className="w-full text-left p-2.5 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded-lg transition-all group"
+                                                        >
+                                                            <div className="flex justify-between items-start">
+                                                                <div className="flex-1">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <p className="font-black text-xs text-yellow-800 font-mono">{coupon.code}</p>
+                                                                        {coupon.valid_until && (
+                                                                            <span className="bg-red-100 text-red-600 text-[9px] px-1.5 py-0.5 rounded font-bold">
+                                                                                🔥 FLASH SALE
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                    {coupon.description && (
+                                                                        <p className="text-[10px] text-gray-600 mt-0.5">{coupon.description}</p>
+                                                                    )}
+                                                                    <p className="text-xs text-green-600 font-bold mt-1">
+                                                                        {coupon.discount_type === 'percentage'
+                                                                            ? `Diskon ${coupon.discount_value}%`
+                                                                            : `Potongan Rp ${coupon.discount_value.toLocaleString('id-ID')}`
+                                                                        }
+                                                                        {coupon.max_discount && coupon.discount_type === 'percentage' && (
+                                                                            ` (maks. Rp ${coupon.max_discount.toLocaleString('id-ID')})`
+                                                                        )}
+                                                                    </p>
+                                                                    {coupon.valid_until && (
+                                                                        <div className="mt-1">
+                                                                            <CountdownTimer targetDate={coupon.valid_until} />
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-[10px] text-yellow-700 font-bold group-hover:underline">Gunakan</span>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="bg-green-50 border-2 border-green-200 rounded-xl p-3">
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex-1">
+                                                <p className="text-xs text-green-600 font-medium">Kupon Terapkan:</p>
+                                                <p className="font-black text-green-700 font-mono">{appliedCoupon.coupon.code}</p>
+                                                <p className="text-xs text-green-600 mt-1">
+                                                    {appliedCoupon.coupon.discount_type === 'percentage'
+                                                        ? `Diskon ${appliedCoupon.coupon.discount_value}%`
+                                                        : `Diskon Rp ${appliedCoupon.coupon.discount_value.toLocaleString('id-ID')}`
+                                                    }
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleRemoveCoupon}
+                                                className="text-red-600 hover:text-red-700 text-xs font-bold"
+                                            >
+                                                Hapus
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Price Summary */}
+                            <div className="border-t-2 border-blue-200 pt-4 space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span className="text-gray-600">Subtotal:</span>
+                                    <span className="font-bold text-gray-800">
+                                        Rp {calculateSubtotal().toLocaleString('id-ID')}
+                                    </span>
+                                </div>
+
+                                {appliedCoupon && (
+                                    <div className="flex justify-between text-sm">
+                                        <span className="text-green-600">Diskon Kupon:</span>
+                                        <span className="font-bold text-green-600">
+                                            - Rp {calculateDiscount().toLocaleString('id-ID')}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div className="flex justify-between items-center pt-2 border-t-2 border-blue-200">
+                                    <span className="font-black text-lg text-gray-900">TOTAL:</span>
+                                    <span className="font-black text-2xl text-blue-600">
+                                        Rp {calculateTotal().toLocaleString('id-ID')}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Submit Button */}
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                         <button
                             type="submit"
                             disabled={loading}
@@ -418,7 +731,7 @@ export default function BookingForm() {
                                 'Konfirmasi & Kirim Pesanan'
                             )}
                         </button>
-                        <p className="text-center text-[10px] text-gray-400">Dengan menekan tombol di atas, Anda menyetujui jadwal yang telah dipilih.</p>
+                        <p className="text-center text-[10px] text-gray-400 mt-2">Dengan menekan tombol di atas, Anda menyetujui jadwal yang telah dipilih.</p>
                     </div>
                 </div>
             </form>
