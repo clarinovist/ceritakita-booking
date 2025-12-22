@@ -776,6 +776,24 @@ export default function BookingForm() {
                                         Rp {calculateTotal().toLocaleString('id-ID')}
                                     </span>
                                 </div>
+
+                                {/* Down Payment & Remaining Balance */}
+                                {formData.dp_amount && Number(formData.dp_amount) > 0 && (
+                                    <div className="mt-4 pt-4 border-t-2 border-blue-200 space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600">Down Payment (DP):</span>
+                                            <span className="font-semibold text-green-600">
+                                                Rp {Number(formData.dp_amount).toLocaleString('id-ID')}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="font-bold text-gray-800">Sisa Pembayaran:</span>
+                                            <span className="font-bold text-lg text-orange-600">
+                                                Rp {(calculateTotal() - Number(formData.dp_amount)).toLocaleString('id-ID')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}

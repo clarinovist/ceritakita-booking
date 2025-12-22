@@ -10,7 +10,9 @@ A comprehensive booking management system for photography services with admin da
 - **Status Management**: Track bookings through different stages (Active, Completed, Cancelled, Rescheduled)
 - **Unified Active View**: Active and Rescheduled bookings displayed together with visual indicators
 - **Search & Filter**: Quickly find bookings by customer name, WhatsApp, or booking ID
+- **Smart Booking Order**: Bookings sorted by session date proximity to today (nearest sessions first)
 - **Detailed Price Breakdown**: View complete pricing breakdown including service base price, add-ons, discounts, and coupons
+- **Payment Progress Tracking**: Visual payment progress with down payment, total paid, remaining balance, and progress bar
 
 ### Booking Management
 - **Customer Information**: Store customer details including name, WhatsApp contact, and service category
@@ -26,14 +28,16 @@ A comprehensive booking management system for photography services with admin da
 ### Payment Tracking
 - **Payment History**: Track all payments with dates, amounts, and notes
 - **Payment Proofs**: Upload and store payment proof images (JPEG, PNG, GIF, WebP)
+- **Down Payment Display**: Clear visibility of down payment (DP) in both booking form and admin dashboard
+- **Remaining Balance**: Real-time balance calculations displayed prominently in order summary and admin dashboard
+- **Payment Progress Visualization**: Progress bar showing payment completion percentage
 - **Detailed Price Breakdown**: Complete transparency with itemized pricing
   - Service base price (before discount)
-  - Add-ons total
+  - Add-ons total (individual prices hidden in admin view for cleaner display)
   - Base discount (service package discount)
   - Coupon discount (with coupon code tracking)
   - Grand total with negative prevention
 - **Financial Overview**: Automatic calculation of total paid vs. total price
-- **Remaining Balance**: Real-time balance calculations
 - **Excel Export**: Export bookings and financial reports to Excel format
 
 ### Security Features
@@ -171,6 +175,14 @@ Uses **SQLite** for reliable, ACID-compliant data storage with proper transactio
 The application uses two main tables:
 - **bookings**: Stores booking information (customer, dates, status, pricing)
 - **payments**: Stores payment records (linked to bookings via foreign key)
+
+### Booking Sort Order
+
+Bookings are retrieved from the database sorted by session date proximity to today:
+```sql
+ORDER BY ABS(julianday(booking_date) - julianday("now")) ASC
+```
+This ensures bookings with sessions nearest to the current date (whether upcoming or recent past) appear first in all views.
 
 For detailed schema and migration information, see [MIGRATION-GUIDE.md](./MIGRATION-GUIDE.md).
 

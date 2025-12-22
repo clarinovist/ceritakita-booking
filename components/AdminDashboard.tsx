@@ -851,7 +851,7 @@ export default function AdminDashboard() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
-                                    {[...filteredBookings].reverse().slice(0, 5).map(b => (
+                                    {filteredBookings.slice(0, 5).map(b => (
                                         <tr key={b.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedBooking(b)}>
                                             <td className="px-4 py-3 font-medium">{b.customer.name}</td>
                                             <td className="px-4 py-3">{b.customer.category}</td>
@@ -931,7 +931,7 @@ export default function AdminDashboard() {
                                     {filteredBookings.length === 0 && (
                                         <tr><td colSpan={8} className="text-center p-8 text-gray-400">No bookings found.</td></tr>
                                     )}
-                                    {[...filteredBookings].reverse().map(b => {
+                                    {filteredBookings.map(b => {
                                         const { balance, isPaidOff } = calculateFinance(b);
                                         return (
                                             <tr key={b.id} className={`hover:bg-gray-50 ${b.status === 'Rescheduled' ? 'bg-orange-50/30' : ''}`}>
@@ -1765,8 +1765,8 @@ export default function AdminDashboard() {
 
                             {/* Right: Finance */}
                             <div className="space-y-6">
-                                <h3 className="font-semibold text-gray-500 text-sm uppercase mb-2 flex items-center gap-2">
-                                    <Euro size={16} /> Financials
+                                <h3 className="font-semibold text-gray-500 text-sm uppercase mb-2">
+                                    Financials
                                 </h3>
 
                                 {/* Price Breakdown Display */}
@@ -1825,6 +1825,59 @@ export default function AdminDashboard() {
                                         );
                                     })()}
 
+                                    {/* Payment Progress Section */}
+                                    <div className="mt-4 pt-4 border-t-2 border-blue-300 space-y-3">
+                                        {(() => {
+                                            const finance = calculateFinance(selectedBooking);
+                                            const firstPayment = selectedBooking.finance.payments[0];
+
+                                            return (
+                                                <>
+                                                    {/* Down Payment */}
+                                                    {firstPayment && (
+                                                        <div className="flex justify-between items-center text-sm">
+                                                            <span className="text-gray-600">Down Payment (DP):</span>
+                                                            <span className="font-semibold text-green-600">
+                                                                Rp {firstPayment.amount.toLocaleString('id-ID')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Total Paid */}
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="font-bold text-gray-700">Total Dibayar:</span>
+                                                        <span className="font-bold text-lg text-green-600">
+                                                            Rp {finance.paid.toLocaleString('id-ID')}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Outstanding Balance */}
+                                                    {finance.balance > 0 && (
+                                                        <div className="flex justify-between items-center">
+                                                            <span className="font-bold text-gray-700">Sisa Pembayaran:</span>
+                                                            <span className="font-bold text-lg text-orange-600">
+                                                                Rp {finance.balance.toLocaleString('id-ID')}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Payment Progress Bar */}
+                                                    <div className="mt-2">
+                                                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all"
+                                                                style={{ width: `${(finance.paid / finance.total) * 100}%` }}
+                                                            />
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 mt-1 text-center">
+                                                            {((finance.paid / finance.total) * 100).toFixed(0)}% terbayar
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            );
+                                        })()}
+                                    </div>
+
                                     <div className="mt-3 pt-3 border-t border-blue-200 flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Payment Status:</span>
                                         <span className={`font-bold text-base ${calculateFinance(selectedBooking).isPaidOff ? 'text-green-600' : 'text-red-600'}`}>
@@ -1842,13 +1895,10 @@ export default function AdminDashboard() {
                                         </h4>
                                         <div className="space-y-2">
                                             {selectedBooking.addons.map((addon, idx) => (
-                                                <div key={idx} className="flex justify-between text-sm">
+                                                <div key={idx} className="text-sm">
                                                     <span>
                                                         {addon.addon_name}
                                                         {addon.quantity > 1 && <span className="text-gray-500"> x{addon.quantity}</span>}
-                                                    </span>
-                                                    <span className="font-bold text-green-600">
-                                                        Rp {(addon.price_at_booking * addon.quantity).toLocaleString()}
                                                     </span>
                                                 </div>
                                             ))}
