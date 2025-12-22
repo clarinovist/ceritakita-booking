@@ -48,6 +48,7 @@ function initializeSchema() {
       customer_name TEXT NOT NULL,
       customer_whatsapp TEXT NOT NULL,
       customer_category TEXT NOT NULL,
+      customer_service_id TEXT,
 
       -- Booking details
       booking_date TEXT NOT NULL,
@@ -56,6 +57,13 @@ function initializeSchema() {
 
       -- Finance
       total_price INTEGER NOT NULL DEFAULT 0,
+
+      -- Price breakdown (for transparency)
+      service_base_price INTEGER,
+      base_discount INTEGER,
+      addons_total INTEGER,
+      coupon_discount INTEGER,
+      coupon_code TEXT,
 
       -- Photographer assignment
       photographer_id TEXT,
@@ -66,6 +74,43 @@ function initializeSchema() {
       FOREIGN KEY (photographer_id) REFERENCES photographers(id)
     )
   `);
+
+  // Add new columns to existing tables (migration)
+  try {
+    db.exec(`ALTER TABLE bookings ADD COLUMN customer_service_id TEXT`);
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    db.exec(`ALTER TABLE bookings ADD COLUMN service_base_price INTEGER`);
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    db.exec(`ALTER TABLE bookings ADD COLUMN base_discount INTEGER`);
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    db.exec(`ALTER TABLE bookings ADD COLUMN addons_total INTEGER`);
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    db.exec(`ALTER TABLE bookings ADD COLUMN coupon_discount INTEGER`);
+  } catch (e) {
+    // Column already exists
+  }
+
+  try {
+    db.exec(`ALTER TABLE bookings ADD COLUMN coupon_code TEXT`);
+  } catch (e) {
+    // Column already exists
+  }
 
   // Create payments table
   db.exec(`

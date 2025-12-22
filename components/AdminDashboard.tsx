@@ -118,6 +118,47 @@ export default function AdminDashboard() {
         return { total, paid, balance, isPaidOff: balance <= 0 && total > 0 };
     };
 
+    // Helper to reconstruct price breakdown for legacy bookings
+    const getOrReconstructBreakdown = (booking: Booking) => {
+        // If breakdown already exists, return it
+        if (booking.finance.service_base_price !== undefined) {
+            return {
+                service_base_price: booking.finance.service_base_price,
+                base_discount: booking.finance.base_discount || 0,
+                addons_total: booking.finance.addons_total || 0,
+                coupon_discount: booking.finance.coupon_discount || 0,
+                coupon_code: booking.finance.coupon_code,
+                isReconstructed: false
+            };
+        }
+
+        // For legacy bookings, reconstruct breakdown
+        // Try to find service by serviceId first, then fallback to category match
+        let matchingService: Service | undefined;
+
+        if (booking.customer.serviceId) {
+            matchingService = services.find(s => s.id === booking.customer.serviceId);
+        }
+
+        if (!matchingService) {
+            // Fallback: try to match by category name (for very old bookings)
+            matchingService = services.find(s => s.name === booking.customer.category);
+        }
+
+        const service_base_price = matchingService?.basePrice || 0;
+        const base_discount = matchingService?.discountValue || 0;
+        const addons_total = booking.addons?.reduce((sum, addon) => sum + (addon.price_at_booking * addon.quantity), 0) || 0;
+
+        return {
+            service_base_price,
+            base_discount,
+            addons_total,
+            coupon_discount: 0,
+            coupon_code: undefined,
+            isReconstructed: true
+        };
+    };
+
     const fetchData = async () => {
         try {
             const [resBookings, resServices, resPhotographers, resAddons] = await Promise.all([
@@ -1732,59 +1773,57 @@ export default function AdminDashboard() {
                                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-100">
                                     <h4 className="font-bold text-sm mb-3 text-gray-700">Price Breakdown</h4>
 
-                                    {selectedBooking.finance.service_base_price !== undefined ? (
-                                        // New format with detailed breakdown
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600">Service Base Price:</span>
-                                                <span className="font-semibold">Rp {selectedBooking.finance.service_base_price.toLocaleString('id-ID')}</span>
-                                            </div>
+                                    {(() => {
+                                        const breakdown = getOrReconstructBreakdown(selectedBooking);
 
-                                            {selectedBooking.finance.addons_total !== undefined && selectedBooking.finance.addons_total > 0 && (
+                                        return (
+                                            <div className="space-y-2 text-sm">
                                                 <div className="flex justify-between">
-                                                    <span className="text-gray-600">Add-ons Total:</span>
-                                                    <span className="font-semibold text-green-600">+ Rp {selectedBooking.finance.addons_total.toLocaleString('id-ID')}</span>
+                                                    <span className="text-gray-600">Service Base Price:</span>
+                                                    <span className="font-semibold">Rp {breakdown.service_base_price.toLocaleString('id-ID')}</span>
                                                 </div>
-                                            )}
 
-                                            {selectedBooking.finance.base_discount !== undefined && selectedBooking.finance.base_discount > 0 && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600">Base Discount:</span>
-                                                    <span className="font-semibold text-red-600">- Rp {selectedBooking.finance.base_discount.toLocaleString('id-ID')}</span>
+                                                {breakdown.addons_total > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">Add-ons Total:</span>
+                                                        <span className="font-semibold text-green-600">+ Rp {breakdown.addons_total.toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                )}
+
+                                                {breakdown.base_discount > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">Base Discount:</span>
+                                                        <span className="font-semibold text-red-600">- Rp {breakdown.base_discount.toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                )}
+
+                                                {breakdown.coupon_discount > 0 && (
+                                                    <div className="flex justify-between">
+                                                        <span className="text-gray-600">
+                                                            Coupon Discount
+                                                            {breakdown.coupon_code && (
+                                                                <span className="ml-1 text-xs font-mono bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
+                                                                    {breakdown.coupon_code}
+                                                                </span>
+                                                            )}:
+                                                        </span>
+                                                        <span className="font-semibold text-red-600">- Rp {breakdown.coupon_discount.toLocaleString('id-ID')}</span>
+                                                    </div>
+                                                )}
+
+                                                <div className="border-t-2 border-blue-200 pt-2 mt-2 flex justify-between items-center">
+                                                    <span className="font-bold text-base text-gray-900">Grand Total:</span>
+                                                    <span className="font-bold text-xl text-blue-600">Rp {selectedBooking.finance.total_price.toLocaleString('id-ID')}</span>
                                                 </div>
-                                            )}
 
-                                            {selectedBooking.finance.coupon_discount !== undefined && selectedBooking.finance.coupon_discount > 0 && (
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600">
-                                                        Coupon Discount
-                                                        {selectedBooking.finance.coupon_code && (
-                                                            <span className="ml-1 text-xs font-mono bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded">
-                                                                {selectedBooking.finance.coupon_code}
-                                                            </span>
-                                                        )}:
-                                                    </span>
-                                                    <span className="font-semibold text-red-600">- Rp {selectedBooking.finance.coupon_discount.toLocaleString('id-ID')}</span>
-                                                </div>
-                                            )}
-
-                                            <div className="border-t-2 border-blue-200 pt-2 mt-2 flex justify-between items-center">
-                                                <span className="font-bold text-base text-gray-900">Grand Total:</span>
-                                                <span className="font-bold text-xl text-blue-600">Rp {selectedBooking.finance.total_price.toLocaleString('id-ID')}</span>
+                                                {breakdown.isReconstructed && (
+                                                    <p className="text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded mt-2">
+                                                        ℹ️ Breakdown reconstructed from booking data
+                                                    </p>
+                                                )}
                                             </div>
-                                        </div>
-                                    ) : (
-                                        // Legacy format (for old bookings without breakdown)
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center">
-                                                <span className="text-sm text-gray-600">Total Package Price:</span>
-                                                <span className="font-bold text-lg text-blue-600">
-                                                    Rp {selectedBooking.finance.total_price.toLocaleString('id-ID')}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-gray-400">Legacy booking (detailed breakdown not available)</p>
-                                        </div>
-                                    )}
+                                        );
+                                    })()}
 
                                     <div className="mt-3 pt-3 border-t border-blue-200 flex justify-between items-center">
                                         <span className="text-sm text-gray-600">Payment Status:</span>

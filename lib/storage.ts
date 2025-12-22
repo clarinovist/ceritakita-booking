@@ -27,6 +27,7 @@ export interface CustomerData {
   name: string;
   whatsapp: string;
   category: 'Indoor' | 'Outdoor' | 'Wedding' | 'Prewedding Bronze' | 'Prewedding Gold' | 'Prewedding Silver' | 'Wisuda' | 'Family' | 'Birthday' | 'Pas Foto' | 'Self Photo';
+  serviceId?: string;
 }
 
 export interface BookingData {

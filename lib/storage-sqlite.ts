@@ -30,6 +30,7 @@ export interface Booking {
     name: string;
     whatsapp: string;
     category: string;
+    serviceId?: string;
   };
   booking: {
     date: string;
@@ -39,6 +40,11 @@ export interface Booking {
   finance: {
     total_price: number;
     payments: Payment[];
+    service_base_price?: number;
+    base_discount?: number;
+    addons_total?: number;
+    coupon_discount?: number;
+    coupon_code?: string;
   };
   photographer_id?: string;
   addons?: BookingAddon[];
@@ -57,6 +63,7 @@ function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[], re
       name: row.customer_name,
       whatsapp: row.customer_whatsapp,
       category: row.customer_category,
+      serviceId: row.customer_service_id || undefined,
     },
     booking: {
       date: row.booking_date,
@@ -66,6 +73,11 @@ function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[], re
     finance: {
       total_price: row.total_price,
       payments,
+      service_base_price: row.service_base_price !== null ? row.service_base_price : undefined,
+      base_discount: row.base_discount !== null ? row.base_discount : undefined,
+      addons_total: row.addons_total !== null ? row.addons_total : undefined,
+      coupon_discount: row.coupon_discount !== null ? row.coupon_discount : undefined,
+      coupon_code: row.coupon_code || undefined,
     },
     photographer_id: row.photographer_id || undefined,
     addons: addons && addons.length > 0 ? addons : undefined,
@@ -183,10 +195,11 @@ export function writeData(bookings: Booking[]): void {
     const insertBooking = db.prepare(`
       INSERT INTO bookings (
         id, created_at, status,
-        customer_name, customer_whatsapp, customer_category,
+        customer_name, customer_whatsapp, customer_category, customer_service_id,
         booking_date, booking_notes, booking_location_link,
-        total_price, photographer_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        total_price, service_base_price, base_discount, addons_total, coupon_discount, coupon_code,
+        photographer_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     const insertPayment = db.prepare(`
@@ -203,10 +216,16 @@ export function writeData(bookings: Booking[]): void {
         booking.customer.name,
         booking.customer.whatsapp,
         booking.customer.category,
+        booking.customer.serviceId || null,
         booking.booking.date,
         booking.booking.notes || null,
         booking.booking.location_link || null,
         booking.finance.total_price,
+        booking.finance.service_base_price ?? null,
+        booking.finance.base_discount ?? null,
+        booking.finance.addons_total ?? null,
+        booking.finance.coupon_discount ?? null,
+        booking.finance.coupon_code || null,
         booking.photographer_id || null
       );
 
@@ -237,10 +256,11 @@ export function createBooking(booking: Booking): void {
     const stmt = db.prepare(`
       INSERT INTO bookings (
         id, created_at, status,
-        customer_name, customer_whatsapp, customer_category,
+        customer_name, customer_whatsapp, customer_category, customer_service_id,
         booking_date, booking_notes, booking_location_link,
-        total_price, photographer_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        total_price, service_base_price, base_discount, addons_total, coupon_discount, coupon_code,
+        photographer_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     stmt.run(
@@ -250,10 +270,16 @@ export function createBooking(booking: Booking): void {
       booking.customer.name,
       booking.customer.whatsapp,
       booking.customer.category,
+      booking.customer.serviceId || null,
       booking.booking.date,
       booking.booking.notes || null,
       booking.booking.location_link || null,
       booking.finance.total_price,
+      booking.finance.service_base_price ?? null,
+      booking.finance.base_discount ?? null,
+      booking.finance.addons_total ?? null,
+      booking.finance.coupon_discount ?? null,
+      booking.finance.coupon_code || null,
       booking.photographer_id || null
     );
 
@@ -302,10 +328,16 @@ export function updateBooking(booking: Booking): void {
         customer_name = ?,
         customer_whatsapp = ?,
         customer_category = ?,
+        customer_service_id = ?,
         booking_date = ?,
         booking_notes = ?,
         booking_location_link = ?,
         total_price = ?,
+        service_base_price = ?,
+        base_discount = ?,
+        addons_total = ?,
+        coupon_discount = ?,
+        coupon_code = ?,
         photographer_id = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
@@ -316,10 +348,16 @@ export function updateBooking(booking: Booking): void {
       booking.customer.name,
       booking.customer.whatsapp,
       booking.customer.category,
+      booking.customer.serviceId || null,
       booking.booking.date,
       booking.booking.notes || null,
       booking.booking.location_link || null,
       booking.finance.total_price,
+      booking.finance.service_base_price ?? null,
+      booking.finance.base_discount ?? null,
+      booking.finance.addons_total ?? null,
+      booking.finance.coupon_discount ?? null,
+      booking.finance.coupon_code || null,
       booking.photographer_id || null,
       booking.id
     );
