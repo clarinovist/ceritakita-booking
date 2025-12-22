@@ -847,7 +847,7 @@ export default function AdminDashboard() {
                                         <th className="px-4 py-3">Category</th>
                                         <th className="px-4 py-3">Date</th>
                                         <th className="px-4 py-3">Status</th>
-                                        <th className="px-4 py-3 text-right">Price</th>
+                                        <th className="px-4 py-3 text-right">Balance</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -863,7 +863,7 @@ export default function AdminDashboard() {
                                                     {b.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-right">Rp {b.finance.total_price.toLocaleString()}</td>
+                                            <td className="px-4 py-3 text-right">Rp {(b.finance.total_price - b.finance.payments.reduce((sum, p) => sum + p.amount, 0)).toLocaleString()}</td>
                                         </tr>
                                     ))}
                                 </tbody>
