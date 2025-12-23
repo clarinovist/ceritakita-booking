@@ -849,7 +849,7 @@ export default function AdminDashboard() {
                                         <th className="px-4 py-3">Category</th>
                                         <th className="px-4 py-3">Date</th>
                                         <th className="px-4 py-3">Status</th>
-                                        <th className="px-4 py-3 text-right">Price</th>
+                                        <th className="px-4 py-3 text-right">Balance</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y">
@@ -865,7 +865,7 @@ export default function AdminDashboard() {
                                                     {b.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-right">Rp {b.finance.total_price.toLocaleString()}</td>
+                                            <td className="px-4 py-3 text-right">Rp {(b.finance.total_price - b.finance.payments.reduce((sum, p) => sum + p.amount, 0)).toLocaleString()}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -1904,12 +1904,6 @@ export default function AdminDashboard() {
                                                     </span>
                                                 </div>
                                             ))}
-                                            <div className="border-t pt-2 mt-2 flex justify-between font-bold">
-                                                <span>Add-ons Subtotal:</span>
-                                                <span className="text-blue-600">
-                                                    Rp {selectedBooking.addons.reduce((sum, a) => sum + (a.price_at_booking * a.quantity), 0).toLocaleString()}
-                                                </span>
-                                            </div>
                                         </div>
                                     </div>
                                 )}

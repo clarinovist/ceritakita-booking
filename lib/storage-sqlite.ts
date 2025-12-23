@@ -151,7 +151,7 @@ export function addRescheduleHistory(
  */
 export function readData(): Booking[] {
   const db = getDb();
-  const stmt = db.prepare('SELECT * FROM bookings ORDER BY ABS(julianday(booking_date) - julianday("now")) ASC');
+  const stmt = db.prepare("SELECT * FROM bookings ORDER BY ABS(julianday(booking_date) - julianday('now')) ASC");
   const rows = stmt.all() as any[];
 
   return rows.map(row => {

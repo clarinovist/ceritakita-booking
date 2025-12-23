@@ -2,7 +2,7 @@
 # Stage 1: Dependencies
 # Install all dependencies and compile native modules
 # ============================================
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS deps
 
 # Install build dependencies for better-sqlite3 native compilation
 RUN apk add --no-cache \
@@ -25,7 +25,7 @@ RUN npm ci
 # Stage 2: Builder
 # Build the Next.js application
 # ============================================
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -50,7 +50,7 @@ RUN npm run build
 # Stage 3: Production Runner
 # Minimal production runtime with only necessary files
 # ============================================
-FROM node:18-alpine AS runner
+FROM node:20-alpine AS runner
 
 WORKDIR /app
 

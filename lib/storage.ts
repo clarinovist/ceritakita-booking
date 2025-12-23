@@ -26,7 +26,7 @@ export interface FinanceData {
 export interface CustomerData {
   name: string;
   whatsapp: string;
-  category: 'Indoor' | 'Outdoor' | 'Wedding' | 'Prewedding Bronze' | 'Prewedding Gold' | 'Prewedding Silver' | 'Wisuda' | 'Family' | 'Birthday' | 'Pas Foto' | 'Self Photo';
+  category: 'Indoor' | 'Indoor Studio' | 'Outdoor' | 'Outdoor / On Location' | 'Wedding' | 'Prewedding Bronze' | 'Prewedding Gold' | 'Prewedding Silver' | 'Wisuda' | 'Family' | 'Birthday' | 'Pas Foto' | 'Self Photo';
   serviceId?: string;
 }
 

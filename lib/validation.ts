@@ -9,7 +9,9 @@ export const customerSchema = z.object({
     .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format'),
   category: z.enum([
     'Indoor',
+    'Indoor Studio',
     'Outdoor',
+    'Outdoor / On Location',
     'Wedding',
     'Prewedding Bronze',
     'Prewedding Gold',

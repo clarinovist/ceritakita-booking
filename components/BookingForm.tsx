@@ -110,19 +110,31 @@ export default function BookingForm() {
             .catch(err => console.error("Failed to fetch services", err));
     }, []);
 
-    // Fetch coupon suggestions when subtotal changes
+    // Fetch coupon suggestions when subtotal changes or periodically
     useEffect(() => {
-        const subtotal = calculateSubtotalForCoupon();
-        if (subtotal > 0 && !appliedCoupon) {
-            fetch('/api/coupons/suggestions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ totalAmount: subtotal })
-            })
-                .then(res => res.json())
-                .then(data => setSuggestedCoupons(data))
-                .catch(err => console.error("Failed to fetch suggestions", err));
-        }
+        const fetchSuggestions = () => {
+            const subtotal = calculateSubtotalForCoupon();
+            if (subtotal > 0 && !appliedCoupon) {
+                fetch('/api/coupons/suggestions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ totalAmount: subtotal })
+                })
+                    .then(res => res.json())
+                    .then(data => setSuggestedCoupons(data))
+                    .catch(err => console.error("Failed to fetch suggestions", err));
+            } else if (subtotal === 0 || appliedCoupon) {
+                setSuggestedCoupons([]);
+            }
+        };
+
+        // Fetch immediately
+        fetchSuggestions();
+
+        // Refresh suggestions every 30 seconds to catch newly added coupons
+        const interval = setInterval(fetchSuggestions, 30000);
+
+        return () => clearInterval(interval);
     }, [selectedService, selectedAddons, appliedCoupon]);
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
