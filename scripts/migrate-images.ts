@@ -99,13 +99,14 @@ async function migrateImages(): Promise<MigrationResult> {
 
       // Update booking with new payments
       if (bookingModified) {
-        updatedBookings.push({
+        const updatedBooking: BookingType = {
           ...booking,
           finance: {
             ...booking.finance,
             payments: updatedPayments
           }
-        });
+        };
+        updatedBookings.push(updatedBooking);
       } else {
         updatedBookings.push(booking);
       }
