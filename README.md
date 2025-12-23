@@ -13,6 +13,7 @@ A comprehensive booking management system for photography services with admin da
 - **Smart Booking Order**: Bookings sorted by session date proximity to today (nearest sessions first)
 - **Detailed Price Breakdown**: View complete pricing breakdown including service base price, add-ons, discounts, and coupons
 - **Payment Progress Tracking**: Visual payment progress with down payment, total paid, remaining balance, and progress bar
+- **Secure Logout**: Proper session termination with automatic redirect to login page
 
 ### Booking Management
 - **Customer Information**: Store customer details including name, WhatsApp contact, and service category
