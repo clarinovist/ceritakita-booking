@@ -54,7 +54,7 @@ export interface RescheduleHistory {
 export interface Booking {
   id: string;
   created_at: string;
-  status: 'Active' | 'Canceled' | 'Rescheduled' | 'Completed' | 'Cancelled';
+  status: 'Active' | 'Cancelled' | 'Rescheduled' | 'Completed';
   customer: CustomerData;
   booking: BookingData;
   finance: FinanceData;
@@ -71,7 +71,7 @@ function ensureDB() {
   }
 }
 
-type RawBooking = Omit<Booking, 'status'> & { status?: Booking['status'] };
+type RawBooking = Omit<Booking, 'status'> & { status?: string };
 
 export function readData(): Booking[] {
   ensureDB();
@@ -82,11 +82,24 @@ export function readData(): Booking[] {
     const fileContent = fs.readFileSync(DB_PATH, 'utf-8');
     const data = JSON.parse(fileContent) as RawBooking[];
 
-    // Backward compatibility: Ensure status exists
-    return data.map((b): Booking => ({
-      ...b,
-      status: b.status || 'Active'
-    }));
+    // Backward compatibility: Ensure status exists and normalize to consistent format
+    return data.map((b): Booking => {
+      let status: 'Active' | 'Cancelled' | 'Rescheduled' | 'Completed';
+      const rawStatus = b.status;
+      
+      if (rawStatus === 'Canceled') {
+        status = 'Cancelled';
+      } else if (rawStatus === 'Active' || rawStatus === 'Rescheduled' || rawStatus === 'Completed' || rawStatus === 'Cancelled') {
+        status = rawStatus;
+      } else {
+        status = 'Active';
+      }
+      
+      return {
+        ...b,
+        status: status
+      };
+    });
   } catch (error) {
     console.error("Error parsing DB file:", error);
     return [];

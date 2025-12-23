@@ -8,6 +8,7 @@
  */
 
 import { readData, writeData, Booking } from '../lib/storage';
+import type { Booking as BookingType } from '../lib/storage';
 import { saveBase64Image } from '../lib/file-storage';
 import fs from 'fs';
 import path from 'path';

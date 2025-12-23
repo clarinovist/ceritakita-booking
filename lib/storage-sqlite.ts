@@ -25,7 +25,7 @@ export interface RescheduleHistory {
 export interface Booking {
   id: string;
   created_at: string;
-  status: 'Active' | 'Canceled' | 'Rescheduled' | 'Completed' | 'Cancelled';
+  status: 'Active' | 'Cancelled' | 'Rescheduled' | 'Completed';
   customer: {
     name: string;
     whatsapp: string;
@@ -55,10 +55,23 @@ export interface Booking {
  * Convert database row to Booking object
  */
 function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[], rescheduleHistory?: RescheduleHistory[]): Booking {
+  // Normalize status to ensure consistency
+  let status: 'Active' | 'Cancelled' | 'Rescheduled' | 'Completed';
+  const rowStatus = row.status;
+  
+  if (rowStatus === 'Canceled') {
+    status = 'Cancelled';
+  } else if (rowStatus === 'Active' || rowStatus === 'Rescheduled' || rowStatus === 'Completed' || rowStatus === 'Cancelled') {
+    status = rowStatus;
+  } else {
+    // Default to Active for unknown status
+    status = 'Active';
+  }
+
   return {
     id: row.id,
     created_at: row.created_at,
-    status: row.status,
+    status: status,
     customer: {
       name: row.customer_name,
       whatsapp: row.customer_whatsapp,
