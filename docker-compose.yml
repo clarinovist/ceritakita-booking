@@ -7,7 +7,7 @@ services:
       target: runner
     container_name: ceritakita-booking
     ports:
-      - "3000:3000"
+      - "3001:3000"
     volumes:
       # Named volumes for persistent data
       - booking-data:/app/data
@@ -46,10 +46,8 @@ services:
     container_name: ceritakita-nginx
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       app:
         condition: service_healthy
