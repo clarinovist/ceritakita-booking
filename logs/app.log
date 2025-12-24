@@ -1,0 +1,4 @@
+[2025-12-24T07:01:42.768Z] [WARN] Rate limit exceeded for auth endpoint | Context: {"ip":"::1"}
+[2025-12-24T07:01:42.795Z] [WARN] Rate limit exceeded for auth endpoint | Context: {"ip":"::1"}
+[2025-12-24T07:01:42.817Z] [WARN] Rate limit exceeded for auth endpoint | Context: {"ip":"::1"}
+[2025-12-24T07:01:45.227Z] [WARN] Rate limit exceeded for auth endpoint | Context: {"ip":"::1"}

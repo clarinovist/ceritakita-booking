@@ -135,7 +135,7 @@ export const rateLimiters = {
   strict: (req: NextRequest) => {
     return rateLimitMiddleware({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      maxRequests: 5,
+      maxRequests: 20,
       key: 'rl:strict:login'
     })(req);
   },

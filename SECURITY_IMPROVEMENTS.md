@@ -6,6 +6,7 @@ This document outlines all the security hardening, type safety improvements, and
 
 ### 1. Database Schema Inconsistency ✅
 **Problem**: `lib/db.ts:45` allowed both "Cancelled" and "Canceled" spellings
+9. `components/AdminDashboard.tsx` - Delete booking functionality
 **Solution**: Standardized to "Cancelled" across all code
 - Updated database schema constraint
 - Updated validation schemas
@@ -21,7 +22,7 @@ This document outlines all the security hardening, type safety improvements, and
   - Custom keys for different endpoints
   - Automatic cleanup of expired entries
 - **Applied to**:
-  - Authentication endpoints (strict: 5 requests per 15 minutes)
+  - Authentication endpoints (strict: 20 requests per 15 minutes)
   - Booking operations (moderate: 100 requests per 15 minutes)
   - File uploads (restrictive: 10 requests per hour)
 
@@ -142,7 +143,7 @@ This document outlines all the security hardening, type safety improvements, and
 ## 🔒 Security Features Summary
 
 ### Authentication Security
-- ✅ Rate limiting on login (5 attempts per 15 minutes)
+- ✅ Rate limiting on login (20 attempts per 15 minutes)
 - ✅ Audit logging for login attempts
 - ✅ Session tracking with user IDs
 

@@ -14,6 +14,7 @@ A comprehensive booking management system for photography services with admin da
 - **Detailed Price Breakdown**: View complete pricing breakdown including service base price, add-ons, discounts, and coupons
 - **Payment Progress Tracking**: Visual payment progress with down payment, total paid, remaining balance, and progress bar
 - **Secure Logout**: Proper session termination with automatic redirect to login page
+- **Delete Bookings**: Remove bookings from table and detail views with confirmation dialog
 
 ### Booking Management
 - **Customer Information**: Store customer details including name, WhatsApp contact, and service category
@@ -45,12 +46,12 @@ A comprehensive booking management system for photography services with admin da
 
 #### Authentication & Session Management
 - **NextAuth.js Integration**: Secure session management with JWT strategy
-- **Rate Limiting**: Strict limits on authentication endpoints (5 requests per 15 minutes)
+- **Rate Limiting**: Strict limits on authentication endpoints (20 requests per 15 minutes)
 - **Audit Logging**: All login attempts tracked with timestamps and user context
 
 #### API Security
 - **Rate Limiting**: Configurable limits per endpoint type
-  - Authentication: 5 requests/15 minutes
+  - Authentication: 20 requests/15 minutes
   - Booking operations: 100 requests/15 minutes
   - File uploads: 10 requests/hour
 - **CSRF Protection**: Token-based protection for state-changing operations
@@ -276,6 +277,7 @@ For detailed schema and migration information, see [MIGRATION-GUIDE.md](./MIGRAT
 - `GET /api/bookings` - List all bookings
 - `PUT /api/bookings/update` - Update existing booking
 - `POST /api/bookings/reschedule` - Reschedule booking with history tracking
+- `DELETE /api/bookings` - Delete booking by ID
 
 ### Configuration
 - `GET /api/services` - Get service categories
