@@ -1,5 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { logger, AppError } from './logger';
+import { withLock } from './file-lock';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'payment-proofs');
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -103,7 +105,7 @@ export async function getUploadPath(filename: string): Promise<string> {
 }
 
 /**
- * Save uploaded file to filesystem
+ * Save uploaded file to filesystem with file locking
  */
 export async function saveUploadedFile(
   fileBuffer: Buffer,
@@ -112,32 +114,60 @@ export async function saveUploadedFile(
   originalName: string,
   mimeType: string
 ): Promise<UploadedFile> {
+  const lockResource = `upload:${bookingId}:${paymentIndex}`;
+  
   try {
-    // Generate filename
-    const filename = generateFilename(bookingId, paymentIndex, originalName);
-    const yearMonth = getYearMonthDir();
-    const subdirPath = path.join(UPLOADS_DIR, yearMonth);
+    const result = await withLock(
+      lockResource,
+      async () => {
+        // Generate filename
+        const filename = generateFilename(bookingId, paymentIndex, originalName);
+        const yearMonth = getYearMonthDir();
+        const subdirPath = path.join(UPLOADS_DIR, yearMonth);
 
-    // Ensure subdirectory exists
-    await fs.mkdir(subdirPath, { recursive: true });
+        // Ensure subdirectory exists
+        await fs.mkdir(subdirPath, { recursive: true });
 
-    // Full path
-    const fullPath = path.join(subdirPath, filename);
+        // Full path
+        const fullPath = path.join(subdirPath, filename);
 
-    // Write file
-    await fs.writeFile(fullPath, fileBuffer);
+        // Write file
+        await fs.writeFile(fullPath, fileBuffer);
 
-    // Set permissions (readable by all, writable by owner)
-    await fs.chmod(fullPath, 0o644);
+        // Set permissions (readable by all, writable by owner)
+        await fs.chmod(fullPath, 0o644);
 
-    return {
-      filename,
-      originalName,
-      mimeType,
-      size: fileBuffer.length,
-      relativePath: `${yearMonth}/${filename}`
-    };
+        logger.info('File uploaded successfully', {
+          bookingId,
+          paymentIndex,
+          filename,
+          size: fileBuffer.length,
+          mimeType
+        });
+
+        return {
+          filename,
+          originalName,
+          mimeType,
+          size: fileBuffer.length,
+          relativePath: `${yearMonth}/${filename}`
+        };
+      },
+      60000 // 1 minute timeout for file uploads
+    );
+
+    return result;
   } catch (error) {
+    logger.error('Failed to save uploaded file', {
+      bookingId,
+      paymentIndex,
+      originalName
+    }, error as Error);
+
+    if (error instanceof FileStorageError) {
+      throw error;
+    }
+
     throw new FileStorageError(
       'Failed to save uploaded file',
       'WRITE_FAILED',

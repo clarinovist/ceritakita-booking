@@ -79,7 +79,7 @@ export const createBookingSchema = z.object({
 // Booking update schema (only allow specific fields to be updated)
 export const updateBookingSchema = z.object({
   id: z.string().uuid('Invalid booking ID'),
-  status: z.enum(['Active', 'Canceled', 'Rescheduled', 'Completed', 'Cancelled']).optional(),
+  status: z.enum(['Active', 'Cancelled', 'Rescheduled', 'Completed']).optional(),
   booking: bookingSchema.partial().optional(),
   finance: financeSchema.optional(),
   customer: customerSchema.partial().optional(),

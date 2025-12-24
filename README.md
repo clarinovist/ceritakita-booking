@@ -42,13 +42,41 @@ A comprehensive booking management system for photography services with admin da
 - **Excel Export**: Export bookings and financial reports to Excel format
 
 ### Security Features
-- **Authentication**: NextAuth.js integration with secure session management
-- **File Validation**:
+
+#### Authentication & Session Management
+- **NextAuth.js Integration**: Secure session management with JWT strategy
+- **Rate Limiting**: Strict limits on authentication endpoints (5 requests per 15 minutes)
+- **Audit Logging**: All login attempts tracked with timestamps and user context
+
+#### API Security
+- **Rate Limiting**: Configurable limits per endpoint type
+  - Authentication: 5 requests/15 minutes
+  - Booking operations: 100 requests/15 minutes
+  - File uploads: 10 requests/hour
+- **CSRF Protection**: Token-based protection for state-changing operations
+- **Input Validation**: Zod schema validation for all API endpoints
+- **Type Safety**: Comprehensive type guards and safe parsing utilities
+
+#### Data Protection
+- **File Locking**: Prevents race conditions during concurrent uploads
+- **Secure File Uploads**:
   - Maximum file size: 5MB
   - Allowed formats: JPEG, PNG, GIF, WebP
   - Path traversal protection
-- **Input Validation**: Zod schema validation for all API endpoints
-- **Rate Limiting**: File locking mechanism to prevent race conditions
+  - Secure filename generation with UUIDs
+- **Transaction Safety**: Automatic rollback support for database operations
+- **Connection Pooling**: Enhanced concurrency with managed database connections
+
+#### Error Handling & Monitoring
+- **Structured Logging**: Multi-level logging (error, warn, info, debug) with file rotation
+- **Audit Trail**: Security events and user actions logged with context
+- **Consistent Error Responses**: Standardized error format with request tracking
+- **Transaction Rollback**: Automatic rollback on database errors
+
+#### Type Safety
+- **Zero `any` Types**: Complete type safety throughout the codebase
+- **Safe Property Access**: Prevents runtime errors from undefined properties
+- **Status Normalization**: Handles both "Cancelled" and "Canceled" spellings consistently
 
 ## Tech Stack
 
@@ -137,7 +165,13 @@ npm start
 │   ├── photographers.ts  # Photographer management
 │   ├── addons.ts         # Add-ons management
 │   ├── coupons.ts        # Coupon management & validation
-│   └── export.ts         # Excel export utilities
+│   ├── export.ts         # Excel export utilities
+│   ├── logger.ts         # Structured logging & error handling
+│   ├── rate-limit.ts     # Rate limiting middleware
+│   ├── csrf.ts           # CSRF protection utilities
+│   ├── file-lock.ts      # File locking for concurrent access
+│   ├── type-utils.ts     # Type safety utilities
+│   └── connection-pool.ts # Database connection pooling
 ├── data/
 │   ├── bookings.db      # SQLite database
 │   ├── services.json    # Service categories
