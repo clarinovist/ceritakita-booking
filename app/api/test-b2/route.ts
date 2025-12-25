@@ -46,7 +46,12 @@ export async function GET(request: NextRequest) {
       message: 'Backblaze B2 connection successful!',
       bucket: process.env.B2_BUCKET_NAME,
       endpoint: process.env.B2_ENDPOINT,
-      environment: envVars,
+      environment: {
+        B2_APPLICATION_KEY_ID: process.env.B2_APPLICATION_KEY_ID,
+        B2_APPLICATION_KEY: process.env.B2_APPLICATION_KEY ? '***' : undefined,
+        B2_ENDPOINT: process.env.B2_ENDPOINT,
+        B2_BUCKET_NAME: process.env.B2_BUCKET_NAME,
+      },
       connection: {
         status: 'connected',
         canListObjects: true,
