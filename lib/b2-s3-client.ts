@@ -45,7 +45,9 @@ export async function uploadToB2(file: Buffer, key: string, contentType: string)
     Key: key,
     Body: file,
     ContentType: contentType,
-    ACL: 'public-read',
+    // Note: Backblaze B2 doesn't support ACLs like AWS S3
+    // Files are public by default when bucket is public
+    // Remove ACL for B2 compatibility
   });
 
   // Upload file
