@@ -14,6 +14,18 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // Allow images from Backblaze B2
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'ceritakita-images.s3.eu-central-003.backblazeb2.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

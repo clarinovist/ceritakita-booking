@@ -14,9 +14,12 @@ interface Addon {
 }
 
 export function StepAddons() {
-  const { formData, updateFormData, isMobile, portfolioImages, openLightbox } = useMultiStepForm();
+  const { formData, updateFormData, isMobile, openLightbox } = useMultiStepForm();
   const [availableAddons, setAvailableAddons] = useState<Addon[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Get portfolio images from formData
+  const portfolioImages = formData.portfolioImages || [];
 
   useEffect(() => {
     if (!formData.serviceId) {
@@ -195,7 +198,7 @@ export function StepAddons() {
 
                 {/* Quantity Controls */}
                 {isSelected && (
-                  <div className="flex items-center gap- gap-2 bg-white rounded-lg p-1 border border-gray-200">
+                  <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
                     <button
                       type="button"
                       onClick={() => updateAddonQuantity(addon.id, quantity - 1)}

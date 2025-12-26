@@ -94,17 +94,39 @@ NEXTAUTH_SECRET=your-secret-key
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=password
 
-# Optional (Backblaze B2)
+# Optional (Backblaze B2 - for portfolio images)
 B2_APPLICATION_KEY_ID=your_key
 B2_APPLICATION_KEY=your_secret
 B2_BUCKET_ID=your_bucket
 B2_BUCKET_NAME=your_bucket_name
 ```
 
+**Note**: Portfolio images are stored in Backblaze B2. The B2 bucket domain is configured in `next.config.mjs` under `images.remotePatterns` to enable Next.js Image Optimization.
+
 ### Generate Secret
 ```bash
 openssl rand -base64 32
 ```
+
+### Portfolio Images Configuration
+
+Portfolio images are served from Backblaze B2 and optimized through Next.js Image Optimization.
+
+**Required Configuration in `next.config.mjs`:**
+```javascript
+images: {
+  remotePatterns: [
+    {
+      protocol: 'https',
+      hostname: 'ceritakita-images.s3.eu-central-003.backblazeb2.com',
+      port: '',
+      pathname: '/**',
+    },
+  ],
+}
+```
+
+If you change your B2 bucket or use a different image host, update the `hostname` accordingly.
 
 ## 📊 Database
 
@@ -146,6 +168,7 @@ cp data/bookings.db /backup/bookings.db.$(date +%Y%m%d)
 ### Booking System
 - Multi-step booking form with validation
 - Service selection with categories
+- Portfolio image gallery for each service (Backblaze B2 integration)
 - Add-ons system with quantity management
 - Coupon system with validation and suggestions
 - Smart time picker (24h format, 30min increments)
@@ -247,7 +270,8 @@ pm2 status
 
 - **User Manual**: `USER_MANUAL.md` - Non-technical guide for studio staff
 - **Deployment Guide**: `DEPLOYMENT_GUIDE.md` - Technical deployment and maintenance
-- **Logo Guide**: `LOGO_CHANGE_GUIDE.md` - Customizing the logo
+- **Changelog**: `CHANGELOG.md` - Version history and recent changes
+- **Logo Guide**: `LOGO_CHANGE_GUIDE.md` - Customizing the logo (if exists)
 
 ## 🔄 Migration
 
