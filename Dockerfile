@@ -68,8 +68,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Create directories for persistent data (will be mounted as volumes)
-RUN mkdir -p data uploads/payment-proofs && \
-    chown -R nextjs:nodejs data uploads
+RUN mkdir -p data uploads/payment-proofs logs && \
+    chown -R nextjs:nodejs data uploads logs
 
 # Switch to non-root user
 USER nextjs

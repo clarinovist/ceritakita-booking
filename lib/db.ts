@@ -213,8 +213,7 @@ function initializeSchema() {
       service_id TEXT NOT NULL,
       image_url TEXT NOT NULL,
       display_order INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
