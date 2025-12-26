@@ -735,12 +735,24 @@ export default function AdminDashboard() {
                                                         <span className="text-xs text-gray-500">{p.date}</span>
                                                     </div>
                                                     <div className="text-xs text-gray-500">{p.note}</div>
-                                                    {(p.proof_filename || p.proof_base64) && (
-                                                        <img
-                                                            src={p.proof_filename ? `/api/uploads/payment-proofs/${p.proof_filename}` : p.proof_base64 ?? ''}
-                                                            alt="Proof"
-                                                            className="h-20 object-contain self-start border rounded"
-                                                        />
+                                                    {(p.proof_url || p.proof_filename || p.proof_base64) && (
+                                                        <div className="flex flex-col gap-2">
+                                                            <img
+                                                                src={p.proof_url || (p.proof_filename ? `/api/uploads/payment-proofs/${p.proof_filename}` : p.proof_base64 ?? '')}
+                                                                alt="Payment Proof"
+                                                                className="h-32 object-contain self-start border rounded bg-white"
+                                                            />
+                                                            {p.proof_url && (
+                                                                <a
+                                                                    href={p.proof_url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                                                                >
+                                                                    <span>📎</span> View full size
+                                                                </a>
+                                                            )}
+                                                        </div>
                                                     )}
                                                 </div>
                                             ))}
