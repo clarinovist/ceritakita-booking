@@ -173,6 +173,16 @@ export function MultiStepFormProvider({
     localStorage.setItem('bookingFormProgress', JSON.stringify(safeData));
   }, [formData]);
 
+  // Auto-recalculate total price when components change
+  useEffect(() => {
+    const calculatedTotal = formData.serviceBasePrice - formData.baseDiscount + formData.addonsTotal - formData.couponDiscount;
+
+    // Only update if the calculated total is different from current totalPrice
+    if (calculatedTotal !== formData.totalPrice && !isNaN(calculatedTotal)) {
+      setFormData(prev => ({ ...prev, totalPrice: Math.max(0, calculatedTotal) }));
+    }
+  }, [formData.serviceBasePrice, formData.baseDiscount, formData.addonsTotal, formData.couponDiscount]);
+
   const updateFormData = (data: Partial<FormData>) => {
     setFormData(prev => ({ ...prev, ...data }));
   };

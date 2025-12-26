@@ -676,26 +676,6 @@ export function StepPayment() {
             </div>
           </FieldValidationWrapper>
         </div>
-
-        {/* Visual Separation & Summary */}
-        <div className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 p-4 rounded-xl border border-blue-100 space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="font-bold text-gray-700">Total Pesanan:</span>
-            <span className="font-bold text-gray-900">Rp {formData.totalPrice.toLocaleString('id-ID')}</span>
-          </div>
-          {formData.dp_amount && Number(formData.dp_amount) > 0 && (
-            <div className="flex justify-between items-center text-sm">
-              <span className="font-bold text-success-700">DP yang dibayarkan:</span>
-              <span className="font-bold text-success-700">Rp {Number(formData.dp_amount).toLocaleString('id-ID')}</span>
-            </div>
-          )}
-          {formData.dp_amount && Number(formData.dp_amount) > 0 && (
-            <div className="flex justify-between items-center pt-2 border-t border-blue-200">
-              <span className="font-black text-gray-800">Sisa Pembayaran:</span>
-              <span className="font-black text-lg text-orange-600">Rp {(formData.totalPrice - Number(formData.dp_amount)).toLocaleString('id-ID')}</span>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Validation Summary */}
