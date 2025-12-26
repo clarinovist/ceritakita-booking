@@ -64,6 +64,16 @@ export function StepPayment() {
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string>('');
 
+  // Sync appliedCoupon state with formData when couponCode is cleared
+  // This handles the case where user goes back and changes service
+  useEffect(() => {
+    if (!formData.couponCode && appliedCoupon) {
+      setAppliedCoupon(null);
+      setCouponCode('');
+      setCouponError('');
+    }
+  }, [formData.couponCode]);
+
   // Fetch payment methods
   useEffect(() => {
     const fetchPaymentMethods = async () => {
@@ -202,15 +212,14 @@ export function StepPayment() {
       if (data.valid) {
         setAppliedCoupon(data);
         setCouponError('');
-        
+
         // Update form data
         const couponDiscount = data.discount_amount || 0;
-        const newTotal = subtotal - couponDiscount;
-        
+
         updateFormData({
           couponDiscount,
           couponCode: data.coupon.code,
-          totalPrice: Math.max(0, newTotal)
+          // totalPrice will be auto-calculated by useEffect in MultiStepForm
         });
       } else {
         setCouponError(data.error || 'Kupon tidak valid');
@@ -226,16 +235,14 @@ export function StepPayment() {
   };
 
   const handleRemoveCoupon = () => {
-    const subtotal = formData.serviceBasePrice + formData.addonsTotal - formData.baseDiscount;
-    
     setAppliedCoupon(null);
     setCouponCode('');
     setCouponError('');
-    
+
     updateFormData({
       couponDiscount: 0,
       couponCode: '',
-      totalPrice: subtotal
+      // totalPrice will be auto-calculated by useEffect in MultiStepForm
     });
   };
 

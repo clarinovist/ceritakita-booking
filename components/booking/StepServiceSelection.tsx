@@ -35,7 +35,7 @@ export function StepServiceSelection() {
               serviceName: firstService.name,
               serviceBasePrice: firstService.basePrice,
               baseDiscount: firstService.discountValue,
-              totalPrice: firstService.basePrice - firstService.discountValue,
+              // totalPrice will be auto-calculated by useEffect in MultiStepForm
             });
           }
         }
@@ -56,10 +56,12 @@ export function StepServiceSelection() {
       // Reset addons when changing service
       addons: [],
       addonsTotal: 0,
-      // Recalculate total
-      totalPrice: service.basePrice - service.discountValue - formData.couponDiscount,
+      // Reset coupon/discount state when switching services
+      couponDiscount: 0,
+      couponCode: '',
+      // totalPrice will be auto-calculated by useEffect in MultiStepForm
     });
-    
+
     clearFieldError('serviceId');
   };
 

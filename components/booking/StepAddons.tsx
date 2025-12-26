@@ -73,16 +73,17 @@ export function StepAddons() {
   };
 
   const updateAddons = (addons: typeof formData.addons) => {
-    const addonsTotal = addons.reduce((sum, addon) => 
+    const addonsTotal = addons.reduce((sum, addon) =>
       sum + (addon.priceAtBooking * addon.quantity), 0
     );
-    
-    const totalPrice = formData.serviceBasePrice - formData.baseDiscount + addonsTotal - formData.couponDiscount;
 
     updateFormData({
       addons,
       addonsTotal,
-      totalPrice,
+      // Clear coupon when addons change - user must re-apply at payment step
+      couponDiscount: 0,
+      couponCode: '',
+      // totalPrice will be auto-calculated by useEffect in MultiStepForm
     });
   };
 

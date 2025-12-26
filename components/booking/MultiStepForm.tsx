@@ -160,7 +160,16 @@ export function MultiStepFormProvider({
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setFormData(prev => ({ ...prev, ...parsed }));
+        // Exclude all calculated/financial fields from restored data
+        // These will be recalculated fresh based on service selection
+        const {
+          totalPrice,
+          couponDiscount,
+          couponCode,
+          addonsTotal,
+          ...safeRestoreData
+        } = parsed;
+        setFormData(prev => ({ ...prev, ...safeRestoreData }));
       } catch (e) {
         console.error('Failed to load saved form data');
       }
