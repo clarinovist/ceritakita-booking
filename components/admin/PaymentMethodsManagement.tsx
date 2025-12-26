@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, CreditCard, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Edit, Trash2, CreditCard, Image as ImageIcon, ToggleLeft, ToggleRight, ArrowUp, ArrowDown, Loader2, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 
 interface PaymentMethod {
@@ -40,6 +40,7 @@ export default function PaymentMethodsManagement() {
     display_order: 0
   });
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [qrFile, setQrFile] = useState<File | null>(null);
   const [qrPreview, setQrPreview] = useState<string>('');
@@ -129,18 +130,20 @@ export default function PaymentMethodsManagement() {
   const uploadQrImage = async (): Promise<string | undefined> => {
     if (!qrFile) return undefined;
 
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', qrFile);
-    uploadFormData.append('folder', 'qris');
-
+    setUploading(true);
     try {
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', qrFile);
+      uploadFormData.append('folder', 'qris');
+
       const res = await fetch('/api/uploads', {
         method: 'POST',
         body: uploadFormData
       });
 
       if (!res.ok) {
-        throw new Error('Failed to upload image');
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to upload image');
       }
 
       const data = await res.json();
@@ -148,6 +151,8 @@ export default function PaymentMethodsManagement() {
     } catch (err) {
       console.error('Upload error:', err);
       throw err;
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -375,6 +380,14 @@ export default function PaymentMethodsManagement() {
                             fill
                             className="object-cover rounded border border-gray-200"
                             sizes="48px"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '<span class="text-red-500 text-xs">Error</span>';
+                              }
+                            }}
                           />
                         </div>
                       ) : (
@@ -570,14 +583,32 @@ export default function PaymentMethodsManagement() {
                       fill
                       className="object-contain rounded border border-gray-300 bg-white"
                       sizes="96px"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        const parent = target.parentElement;
+                        if (parent) {
+                          parent.innerHTML = '<div class="flex items-center justify-center h-full text-red-500 text-xs p-2 text-center">Image failed to load</div>';
+                        }
+                      }}
                     />
                   </div>
                 </div>
               )}
 
+              {/* Upload Status */}
+              {uploading && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 flex items-center gap-2">
+                  <Loader2 size={16} className="animate-spin" />
+                  Uploading QRIS image...
+                </div>
+              )}
+
+              {/* Error Messages */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-sm">
-                  {error}
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800 flex items-start gap-2">
+                  <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">{error}</div>
                 </div>
               )}
 
@@ -591,7 +622,7 @@ export default function PaymentMethodsManagement() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || uploading}
                   className="flex-1 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
                 >
                   {loading ? 'Saving...' : (editingMethod ? 'Update Method' : 'Create Method')}

@@ -60,15 +60,16 @@ export async function POST(req: NextRequest) {
 
     // Save to database
     const db = getDb();
-    const result = db.prepare(`
+    const newId = randomUUID();
+    db.prepare(`
       INSERT INTO portfolio_images (id, service_id, image_url, display_order)
       VALUES (?, ?, ?, COALESCE((SELECT MAX(display_order) + 1 FROM portfolio_images WHERE service_id = ?), 0))
-    `).run(randomUUID(), serviceId, imageUrl, serviceId);
+    `).run(newId, serviceId, imageUrl, serviceId);
 
-    return NextResponse.json({ 
-      id: result.lastInsertRowid, 
-      service_id: serviceId, 
-      image_url: imageUrl 
+    return NextResponse.json({
+      id: newId,
+      service_id: serviceId,
+      image_url: imageUrl
     }, { status: 201 });
   } catch (error) {
     console.error('Error uploading portfolio image:', error);
