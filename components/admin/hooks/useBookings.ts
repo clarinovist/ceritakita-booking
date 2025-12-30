@@ -143,6 +143,15 @@ export const useBookings = () => {
         };
     };
 
+    // Filter bookings by date range only (for dashboard metrics)
+    const bookingsByDateRange = useMemo(() => {
+        return bookings.filter(b => {
+            const bookingDate = new Date(b.booking.date).toISOString().split('T')[0];
+            return bookingDate >= dateRange.start && bookingDate <= dateRange.end;
+        });
+    }, [bookings, dateRange]);
+
+    // Filter bookings by both status and date range (for table view)
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
             // Filter by status
@@ -190,6 +199,7 @@ export const useBookings = () => {
         dateRange,
         setDateRange,
         filteredBookings,
+        bookingsByDateRange,
         events,
         calculateFinance,
         getOrReconstructBreakdown,

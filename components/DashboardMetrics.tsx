@@ -114,14 +114,14 @@ export default function DashboardMetrics({ bookings, dateRange }: Props) {
 
     // 1. Calculate Summary
     const totalBookings = bookings.length;
-    const activeBookings = bookings.filter(b => b.status !== 'Cancelled');
-    const totalRevenue = activeBookings.reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
+    const totalRevenue = bookings.reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
+    const revenueFromActive = bookings.filter(b => b.status !== 'Cancelled').reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
     const canceledOrRescheduled = bookings.filter(b => b.status === 'Cancelled' || b.status === 'Rescheduled').length;
     const completedBookings = bookings.filter(b => b.status === 'Completed').length;
 
     // 2. Calculate ROI Metrics
     const adsSpend = adsData.spend;
-    const adsRevenue = totalRevenue; // Revenue from bookings
+    const adsRevenue = revenueFromActive; // Revenue from bookings (excluding cancelled)
     const roi = adsSpend > 0 ? ((adsRevenue - adsSpend) / adsSpend) * 100 : 0;
     const roas = adsSpend > 0 ? (adsRevenue / adsSpend) : 0;
 
@@ -168,7 +168,8 @@ export default function DashboardMetrics({ bookings, dateRange }: Props) {
                     </div>
                     <div>
                         <p className="text-sm text-gray-500">Est. Revenue</p>
-                        <p className="text-2xl font-bold">Rp {totalRevenue.toLocaleString()}</p>
+                        <p className="text-2xl font-bold">Rp {revenueFromActive.toLocaleString()}</p>
+                        <p className="text-xs text-gray-400">Excludes cancelled</p>
                     </div>
                 </div>
 
