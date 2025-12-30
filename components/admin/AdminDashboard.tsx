@@ -409,7 +409,10 @@ export default function AdminDashboard() {
                     {/* DASHBOARD VIEW */}
                     {viewMode === 'dashboard' && (
                         <div className="space-y-8 animate-in fade-in">
-                            <DashboardMetrics bookings={bookingsHook.filteredBookings} />
+                            <DashboardMetrics
+                                bookings={bookingsHook.filteredBookings}
+                                dateRange={bookingsHook.dateRange}
+                            />
 
                             <div className="bg-white rounded-xl shadow overflow-hidden">
                                 <div className="p-4 border-b flex justify-between items-center bg-gray-50">

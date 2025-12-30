@@ -8,6 +8,7 @@ import { useState, useEffect } from 'react';
 
 interface Props {
     bookings: Booking[];
+    dateRange?: { start: string; end: string };
 }
 
 interface AdsData {
@@ -19,7 +20,7 @@ interface AdsData {
     error: string | null;
 }
 
-export default function DashboardMetrics({ bookings }: Props) {
+export default function DashboardMetrics({ bookings, dateRange }: Props) {
     const [adsData, setAdsData] = useState<AdsData>({
         spend: 0,
         impressions: 0,
@@ -29,11 +30,21 @@ export default function DashboardMetrics({ bookings }: Props) {
         error: null
     });
 
-    // Fetch ads data on mount
+    // Fetch ads data on mount and when dateRange changes
     useEffect(() => {
         const fetchAdsData = async () => {
             try {
-                const response = await fetch('/api/meta/insights');
+                // Build URL with date range params if provided
+                let url = '/api/meta/insights';
+                if (dateRange?.start && dateRange?.end) {
+                    const params = new URLSearchParams({
+                        since: dateRange.start,
+                        until: dateRange.end,
+                    });
+                    url = `${url}?${params.toString()}`;
+                }
+
+                const response = await fetch(url);
                 const result = await response.json();
 
                 if (result.success && result.data) {
@@ -60,7 +71,7 @@ export default function DashboardMetrics({ bookings }: Props) {
         };
 
         fetchAdsData();
-    }, []);
+    }, [dateRange]);
 
     // 1. Calculate Summary
     const totalBookings = bookings.length;

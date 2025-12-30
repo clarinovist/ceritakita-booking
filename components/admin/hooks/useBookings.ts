@@ -144,24 +144,38 @@ export const useBookings = () => {
 
     const filteredBookings = useMemo(() => {
         return bookings.filter(b => {
+            // Filter by status
+            let statusMatch = false;
             if (filterStatus === 'Active') {
-                return b.status === 'Active' || b.status === 'Rescheduled';
+                statusMatch = b.status === 'Active' || b.status === 'Rescheduled';
+            } else if (filterStatus === 'Canceled') {
+                statusMatch = b.status === 'Cancelled';
+            } else {
+                statusMatch = true; // 'All' status
             }
-            // Handle 'Canceled' filter status (maps to 'Cancelled' in Booking type)
-            if (filterStatus === 'Canceled') {
-                return b.status === 'Cancelled';
-            }
-            return filterStatus === 'All';
-        });
-    }, [bookings, filterStatus]);
 
-    const events = bookings.filter(b => b.status === 'Active' || b.status === 'Rescheduled').map(b => ({
-        id: b.id,
-        title: `${b.customer.name} (${b.customer.category})`,
-        start: b.booking.date,
-        backgroundColor: b.customer.category.includes('Outdoor') ? '#10B981' : '#3B82F6',
-        extendedProps: { booking: b }
-    }));
+            // Filter by date range
+            const bookingDate = new Date(b.booking.date).toISOString().split('T')[0];
+            const dateMatch = bookingDate >= dateRange.start && bookingDate <= dateRange.end;
+
+            return statusMatch && dateMatch;
+        });
+    }, [bookings, filterStatus, dateRange]);
+
+    const events = bookings
+        .filter(b => {
+            const isActive = b.status === 'Active' || b.status === 'Rescheduled';
+            const bookingDate = new Date(b.booking.date).toISOString().split('T')[0];
+            const inDateRange = bookingDate >= dateRange.start && bookingDate <= dateRange.end;
+            return isActive && inDateRange;
+        })
+        .map(b => ({
+            id: b.id,
+            title: `${b.customer.name} (${b.customer.category})`,
+            start: b.booking.date,
+            backgroundColor: b.customer.category.includes('Outdoor') ? '#10B981' : '#3B82F6',
+            extendedProps: { booking: b }
+        }));
 
     return {
         bookings,
