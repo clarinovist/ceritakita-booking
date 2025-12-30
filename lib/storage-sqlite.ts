@@ -590,31 +590,9 @@ interface AdsLogRow {
 }
 
 /**
- * Check if a date range represents a full month
- */
-function isFullMonthQuery(startDate: string, endDate: string): boolean {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-
-  // Check if start is first day of month
-  if (start.getDate() !== 1) {
-    return false;
-  }
-
-  // Check if both dates are in the same month
-  if (start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()) {
-    return false;
-  }
-
-  // Check if end is last day of that month
-  const lastDayOfMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
-  return end.getDate() === lastDayOfMonth;
-}
-
-/**
- * Save Meta Ads performance data to database
- * Uses INSERT OR REPLACE to update existing records for the same month
- * Only saves data if it represents a full month to prevent partial data overwrite
+ * Save Meta Ads performance data to database with DAILY granularity
+ * Uses INSERT OR REPLACE to upsert daily records
+ * Each dashboard load will update today's data
  */
 export function saveAdsLog(data: AdsData): void {
   const db = getDb();
@@ -630,37 +608,19 @@ export function saveAdsLog(data: AdsData): void {
     return;
   }
 
-  // Skip saving if no activity data
-  if (data.impressions === 0 && data.spend === 0 && data.inlineLinkClicks === 0) {
-    logger.debug('Skipping save - no activity data', {
-      date_start: data.date_start,
-      date_end: data.date_end
-    });
-    return;
-  }
+  // Allow saving even if zero data for daily tracking continuity
+  // This helps maintain a complete daily timeline
 
-  // Only save if we have a full month of data to prevent partial data overwrite
-  if (data.date_start && data.date_end) {
-    if (!isFullMonthQuery(data.date_start, data.date_end)) {
-      logger.debug('Skipping save - not a full month query', {
-        date_start: data.date_start,
-        date_end: data.date_end,
-        reason: 'Only full month data is saved to maintain consistency'
-      });
-      return;
-    }
-  }
-
-  // Extract month from date_start or use current month
+  // Use date_start as the record date (YYYY-MM-DD format)
+  // If not provided, use today's date
   let dateRecord: string;
   if (data.date_start) {
-    // Use the first day of the month from date_start
-    const date = new Date(data.date_start);
-    dateRecord = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+    // Use the actual date from the API response
+    dateRecord = data.date_start;
   } else {
-    // Use current month's first day
+    // Fallback to today's date
     const now = new Date();
-    dateRecord = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    dateRecord = now.toISOString().split('T')[0];
   }
 
   try {
@@ -678,7 +638,7 @@ export function saveAdsLog(data: AdsData): void {
       data.reach
     );
 
-    logger.info('Saved ads performance log', {
+    logger.info('Saved daily ads performance log', {
       date_record: dateRecord,
       spend: data.spend,
       impressions: data.impressions,
@@ -696,18 +656,117 @@ export function saveAdsLog(data: AdsData): void {
 }
 
 /**
- * Get ads performance data for a specific month or date range
- * @param dateRecord - Specific month to retrieve (YYYY-MM-01 format)
- * @param startDate - Start date for range query
- * @param endDate - End date for range query
- * @param limit - Maximum number of records to return (default: 12 months)
+ * Backfill historical ads data for the last N days
+ * This is a one-time operation to populate historical daily data
+ * @param accessToken - Meta access token
+ * @param adAccountId - Meta ad account ID
+ * @param days - Number of days to backfill (default: 30)
+ * @param apiVersion - Meta API version (default: v19.0)
+ * @returns Object with success status and number of days backfilled
+ */
+export async function backfillAdsHistory(
+  accessToken: string,
+  adAccountId: string,
+  days: number = 30,
+  apiVersion: string = 'v19.0'
+): Promise<{ success: boolean; daysBackfilled: number; errors: string[] }> {
+  const errors: string[] = [];
+  let daysBackfilled = 0;
+
+  logger.info('Starting ads history backfill', { days });
+
+  try {
+    const today = new Date();
+    const url = `https://graph.facebook.com/${apiVersion}/${adAccountId}/insights`;
+
+    // Fetch data for each day in the past N days
+    for (let i = days - 1; i >= 0; i--) {
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() - i);
+      const dateStr = targetDate.toISOString().split('T')[0];
+
+      try {
+        const params = new URLSearchParams({
+          access_token: accessToken,
+          fields: 'spend,impressions,inline_link_clicks,reach',
+          time_range: JSON.stringify({ since: dateStr, until: dateStr }),
+          level: 'account',
+        });
+
+        const apiUrl = `${url}?${params.toString()}`;
+        const response = await fetch(apiUrl);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          errors.push(`${dateStr}: ${errorData?.error?.message || 'API error'}`);
+          logger.warn('Backfill API error for date', { date: dateStr, error: errorData });
+          continue;
+        }
+
+        const data = await response.json();
+
+        // Extract data or use zeros if no data
+        const insights = data.data?.[0];
+        const adsData: AdsData = {
+          spend: parseFloat(insights?.spend || '0'),
+          impressions: parseInt(insights?.impressions || '0'),
+          inlineLinkClicks: parseInt(insights?.inline_link_clicks || '0'),
+          reach: parseInt(insights?.reach || '0'),
+          date_start: dateStr,
+          date_end: dateStr,
+        };
+
+        // Save to database
+        saveAdsLog(adsData);
+        daysBackfilled++;
+
+        // Small delay to avoid rate limiting (100ms between requests)
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+      } catch (dayError) {
+        const errMsg = dayError instanceof Error ? dayError.message : String(dayError);
+        errors.push(`${dateStr}: ${errMsg}`);
+        logger.error('Backfill error for specific day', { date: dateStr, error: errMsg });
+      }
+    }
+
+    logger.info('Completed ads history backfill', {
+      daysBackfilled,
+      totalDays: days,
+      errors: errors.length
+    });
+
+    return {
+      success: errors.length < days, // Success if at least some days were backfilled
+      daysBackfilled,
+      errors
+    };
+
+  } catch (error) {
+    logger.error('Backfill operation failed', {
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return {
+      success: false,
+      daysBackfilled,
+      errors: [error instanceof Error ? error.message : String(error)]
+    };
+  }
+}
+
+/**
+ * Get ads performance data for a specific day or date range
+ * @param dateRecord - Specific day to retrieve (YYYY-MM-DD format)
+ * @param startDate - Start date for range query (YYYY-MM-DD)
+ * @param endDate - End date for range query (YYYY-MM-DD)
+ * @param limit - Maximum number of records to return (default: 30 days)
  * @returns Array of ads performance data
  */
 export function getAdsLog(
   dateRecord?: string,
   startDate?: string,
   endDate?: string,
-  limit: number = 12
+  limit: number = 30
 ): AdsData[] {
   try {
     const db = getDb();

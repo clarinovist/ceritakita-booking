@@ -49,11 +49,12 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       level: 'account',
     };
 
-    // Use custom date range if provided, otherwise use this_month
+    // Use custom date range if provided, otherwise use today (for daily logging)
     if (since && until) {
       params.time_range = JSON.stringify({ since, until });
     } else {
-      params.date_preset = 'this_month';
+      // Default to today's data for daily granularity
+      params.date_preset = 'today';
     }
 
     const urlParams = new URLSearchParams(params);
@@ -72,7 +73,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('Meta API Error:', errorData);
-      
+
       // Handle specific error codes
       if (errorData?.error?.code === 190) {
         return NextResponse.json(
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
           { status: 401 }
         );
       }
-      
+
       if (errorData?.error?.code === 100) {
         return NextResponse.json(
           {
@@ -107,9 +108,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
 
     // Check if data exists
     if (!data.data || data.data.length === 0) {
-      const now = new Date();
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-      const today = new Date();
+      const today = new Date().toISOString().split('T')[0]!;
 
       return NextResponse.json(
         {
@@ -119,8 +118,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
             impressions: 0,
             inlineLinkClicks: 0,
             reach: 0,
-            date_start: firstDay.toISOString().split('T')[0]!,
-            date_end: today.toISOString().split('T')[0]!,
+            date_start: today,
+            date_end: today,
           },
         },
         { status: 200 }
