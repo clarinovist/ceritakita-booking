@@ -6,9 +6,10 @@ export const useBookings = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>('Active');
+    // Default date range: First day of current month to last day of NEXT month (to include future bookings)
     const [dateRange, setDateRange] = useState<DateRange>({
         start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] ?? '',
-        end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0] ?? ''
+        end: new Date(new Date().getFullYear(), new Date().getMonth() + 2, 0).toISOString().split('T')[0] ?? '' // Changed +1 to +2 to include next month
     });
 
     // Reschedule state
