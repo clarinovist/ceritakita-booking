@@ -291,6 +291,19 @@ function initializeSchema() {
     // Table doesn't exist
   }
 
+  // Create ads_performance_log table for Meta Ads tracking
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ads_performance_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date_record TEXT NOT NULL UNIQUE,
+      spend REAL NOT NULL DEFAULT 0,
+      impressions INTEGER NOT NULL DEFAULT 0,
+      clicks INTEGER NOT NULL DEFAULT 0,
+      reach INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Create indexes for better query performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
@@ -308,6 +321,7 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_coupon_usage_coupon_id ON coupon_usage(coupon_id);
     CREATE INDEX IF NOT EXISTS idx_coupon_usage_booking_id ON coupon_usage(booking_id);
     CREATE INDEX IF NOT EXISTS idx_portfolio_service_id ON portfolio_images(service_id);
+    CREATE INDEX IF NOT EXISTS idx_ads_performance_log_date ON ads_performance_log(date_record);
   `);
 }
 

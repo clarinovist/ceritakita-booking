@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { saveAdsLog, AdsData } from '@/lib/storage-sqlite';
 
 export interface MetaInsightsData {
   spend: number;
@@ -137,6 +138,23 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       date_end: insights.date_stop || '',
     };
 
+    // Save to local database for historical tracking
+    // This is done after the API fetch to ensure we always return fresh data
+    // Errors are logged but don't block the response
+    try {
+      const adsData: AdsData = {
+        spend: result.spend,
+        impressions: result.impressions,
+        inlineLinkClicks: result.inlineLinkClicks,
+        reach: result.reach,
+        date_start: result.date_start,
+        date_end: result.date_end,
+      };
+      saveAdsLog(adsData);
+    } catch (dbError) {
+      // Log the error but don't fail the request
+      console.error('Database save failed (non-critical):', dbError);
+    }
     return NextResponse.json(
       {
         success: true,

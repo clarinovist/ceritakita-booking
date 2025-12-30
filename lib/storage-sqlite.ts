@@ -564,3 +564,205 @@ export function checkSlotAvailability(
   const result = stmt.get(date, excludeBookingId || '') as any;
   return result.count === 0;
 }
+
+/**
+ * Ads Data Interface for Meta Ads metrics
+ */
+export interface AdsData {
+  spend: number;
+  impressions: number;
+  inlineLinkClicks: number;
+  reach: number;
+  date_start?: string;
+  date_end?: string;
+}
+
+/**
+ * Database row interface for ads_performance_log table
+ */
+interface AdsLogRow {
+  spend: number;
+  impressions: number;
+  clicks: number;
+  reach: number;
+  date_record: string;
+  updated_at: string;
+}
+
+/**
+ * Check if a date range represents a full month
+ */
+function isFullMonthQuery(startDate: string, endDate: string): boolean {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  // Check if start is first day of month
+  if (start.getDate() !== 1) {
+    return false;
+  }
+
+  // Check if both dates are in the same month
+  if (start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()) {
+    return false;
+  }
+
+  // Check if end is last day of that month
+  const lastDayOfMonth = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+  return end.getDate() === lastDayOfMonth;
+}
+
+/**
+ * Save Meta Ads performance data to database
+ * Uses INSERT OR REPLACE to update existing records for the same month
+ * Only saves data if it represents a full month to prevent partial data overwrite
+ */
+export function saveAdsLog(data: AdsData): void {
+  const db = getDb();
+
+  // Validate data - check for negative values
+  if (data.spend < 0 || data.impressions < 0 || data.inlineLinkClicks < 0 || data.reach < 0) {
+    logger.warn('Invalid ads data - negative values detected, skipping save', {
+      spend: data.spend,
+      impressions: data.impressions,
+      clicks: data.inlineLinkClicks,
+      reach: data.reach
+    });
+    return;
+  }
+
+  // Skip saving if no activity data
+  if (data.impressions === 0 && data.spend === 0 && data.inlineLinkClicks === 0) {
+    logger.debug('Skipping save - no activity data', {
+      date_start: data.date_start,
+      date_end: data.date_end
+    });
+    return;
+  }
+
+  // Only save if we have a full month of data to prevent partial data overwrite
+  if (data.date_start && data.date_end) {
+    if (!isFullMonthQuery(data.date_start, data.date_end)) {
+      logger.debug('Skipping save - not a full month query', {
+        date_start: data.date_start,
+        date_end: data.date_end,
+        reason: 'Only full month data is saved to maintain consistency'
+      });
+      return;
+    }
+  }
+
+  // Extract month from date_start or use current month
+  let dateRecord: string;
+  if (data.date_start) {
+    // Use the first day of the month from date_start
+    const date = new Date(data.date_start);
+    dateRecord = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-01`;
+  } else {
+    // Use current month's first day
+    const now = new Date();
+    dateRecord = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  }
+
+  try {
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO ads_performance_log (
+        date_record, spend, impressions, clicks, reach, updated_at
+      ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    stmt.run(
+      dateRecord,
+      data.spend,
+      data.impressions,
+      data.inlineLinkClicks,
+      data.reach
+    );
+
+    logger.info('Saved ads performance log', {
+      date_record: dateRecord,
+      spend: data.spend,
+      impressions: data.impressions,
+      clicks: data.inlineLinkClicks,
+      reach: data.reach
+    });
+  } catch (error) {
+    logger.error('Failed to save ads performance log', {
+      error: error instanceof Error ? error.message : String(error),
+      date_record: dateRecord,
+      data
+    });
+    throw error;
+  }
+}
+
+/**
+ * Get ads performance data for a specific month or date range
+ * @param dateRecord - Specific month to retrieve (YYYY-MM-01 format)
+ * @param startDate - Start date for range query
+ * @param endDate - End date for range query
+ * @param limit - Maximum number of records to return (default: 12 months)
+ * @returns Array of ads performance data
+ */
+export function getAdsLog(
+  dateRecord?: string,
+  startDate?: string,
+  endDate?: string,
+  limit: number = 12
+): AdsData[] {
+  try {
+    const db = getDb();
+
+    // Helper function to map database row to AdsData
+    const mapRowToAdsData = (row: AdsLogRow): AdsData => ({
+      spend: row.spend,
+      impressions: row.impressions,
+      inlineLinkClicks: row.clicks,
+      reach: row.reach,
+      date_start: row.date_record,
+      date_end: row.date_record
+    });
+
+    if (dateRecord) {
+      // Get specific month
+      const stmt = db.prepare(`
+        SELECT spend, impressions, clicks, reach, date_record, updated_at
+        FROM ads_performance_log
+        WHERE date_record = ?
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `);
+      const rows = stmt.all(dateRecord) as AdsLogRow[];
+      return rows.map(mapRowToAdsData);
+    } else if (startDate && endDate) {
+      // Get date range
+      const stmt = db.prepare(`
+        SELECT spend, impressions, clicks, reach, date_record, updated_at
+        FROM ads_performance_log
+        WHERE date_record >= ? AND date_record <= ?
+        ORDER BY date_record ASC
+      `);
+      const rows = stmt.all(startDate, endDate) as AdsLogRow[];
+      return rows.map(mapRowToAdsData);
+    } else {
+      // Get recent records with LIMIT to prevent unbounded results
+      const stmt = db.prepare(`
+        SELECT spend, impressions, clicks, reach, date_record, updated_at
+        FROM ads_performance_log
+        ORDER BY date_record DESC
+        LIMIT ?
+      `);
+      const rows = stmt.all(limit) as AdsLogRow[];
+      return rows.map(mapRowToAdsData);
+    }
+  } catch (error) {
+    logger.error('Failed to retrieve ads performance log', {
+      error: error instanceof Error ? error.message : String(error),
+      dateRecord,
+      startDate,
+      endDate,
+      limit
+    });
+    // Return empty array instead of throwing to prevent UI breakage
+    return [];
+  }
+}
