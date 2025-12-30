@@ -1,6 +1,7 @@
 import { Booking } from '@/lib/storage';
 import { FilterStatus } from '../types/admin';
 import { useExport } from '../hooks/useExport';
+import { formatDate, formatTime } from '@/utils/dateFormatter';
 
 interface BookingsTableProps {
     bookings: Booking[];
@@ -104,8 +105,8 @@ export const BookingsTable = ({
                             const { balance, isPaidOff } = calculateFinance(b);
                             return (
                                 <tr key={b.id} className={`hover:bg-gray-50 ${b.status === 'Rescheduled' ? 'bg-orange-50/30' : ''}`}>
-                                    <td className="px-4 py-3">{new Date(b.booking.date).toLocaleDateString()}</td>
-                                    <td className="px-4 py-3 text-gray-600">{new Date(b.booking.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                    <td className="px-4 py-3">{formatDate(b.booking.date)}</td>
+                                    <td className="px-4 py-3 text-gray-600">{formatTime(b.booking.date)}</td>
                                     <td className="px-4 py-3 font-medium">
                                         <div className="flex items-center gap-2">
                                             {b.customer.name}

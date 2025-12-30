@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Plus, Edit, Trash2, Shield, Users, ToggleLeft, ToggleRight, Key } from 'lucide-react';
+import { formatDate } from '@/utils/dateFormatter';
 
 interface User {
   id: string;
@@ -264,7 +265,7 @@ export default function UserManagement() {
                       </button>
                     </td>
                     <td className="px-6 py-4 text-gray-600">
-                      {new Date(user.created_at).toLocaleDateString()}
+                      {formatDate(user.created_at)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2">

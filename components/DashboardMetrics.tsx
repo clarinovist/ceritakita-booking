@@ -5,9 +5,11 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { DollarSign, Users, CalendarX, Target, TrendingUp, ArrowUpRight, ArrowDownRight, Megaphone, MousePointerClick, CheckCircle, CheckCircle2, History } from 'lucide-react';
 import { MetaInsightsData } from "@/app/api/meta/insights/route";
 import { useState, useEffect } from 'react';
+import { formatDateShort } from '@/utils/dateFormatter';
 
 interface Props {
-    bookings: Booking[];
+    sessionBookings: Booking[];      // Bookings filtered by session date (booking.date)
+    createdBookings: Booking[];      // Bookings filtered by created date (created_at)
     dateRange?: { start: string; end: string };
 }
 
@@ -20,7 +22,7 @@ interface AdsData {
     error: string | null;
 }
 
-export default function DashboardMetrics({ bookings, dateRange }: Props) {
+export default function DashboardMetrics({ sessionBookings, createdBookings, dateRange }: Props) {
     const [adsData, setAdsData] = useState<AdsData>({
         spend: 0,
         impressions: 0,
@@ -112,30 +114,46 @@ export default function DashboardMetrics({ bookings, dateRange }: Props) {
         fetchHistoryData();
     };
 
-    // 1. Calculate Summary
-    const totalBookings = bookings.length;
-    const totalRevenue = bookings.reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
-    const revenueFromActive = bookings.filter(b => b.status !== 'Cancelled').reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
-    const canceledOrRescheduled = bookings.filter(b => b.status === 'Cancelled' || b.status === 'Rescheduled').length;
-    const completedBookings = bookings.filter(b => b.status === 'Completed').length;
+    // ===== SALES PIPELINE METRICS (Based on Booking Created Date) =====
+    const pipelineTotalBookings = createdBookings.length;
+    const pipelineRevenue = createdBookings.filter(b => b.status !== 'Cancelled').reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
+    const pipelineCancelled = createdBookings.filter(b => b.status === 'Cancelled').length;
 
-    // 2. Calculate ROI Metrics
+    // ===== REVENUE REALIZATION METRICS (Based on Session Date - COMPLETED ONLY) =====
+    const completedSessions = sessionBookings.filter(b => b.status === 'Completed');
+    const sessionsCompleted = completedSessions.length;
+    const sessionsTotal = sessionBookings.length;
+    const sessionsCancelled = sessionBookings.filter(b => b.status === 'Cancelled' || b.status === 'Rescheduled').length;
+
+    // Realized Revenue (Accrual Basis) - Total booking value from completed sessions
+    const realizedRevenue = completedSessions.reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
+
+    // Actual Cash Received (Cash Basis) - Real money collected from completed sessions
+    const actualCashReceived = completedSessions.reduce((sum, b) => {
+        const totalPaid = b.finance.payments.reduce((paidSum, payment) => paidSum + payment.amount, 0);
+        return sum + totalPaid;
+    }, 0);
+
+    // Outstanding Balance (Piutang) - Realized Revenue minus Cash Received
+    const outstandingBalance = realizedRevenue - actualCashReceived;
+
+    // 2. Calculate ROI Metrics (Based on ACTUAL CASH RECEIVED - Cash Basis)
     const adsSpend = adsData.spend;
-    const adsRevenue = revenueFromActive; // Revenue from bookings (excluding cancelled)
+    const adsRevenue = actualCashReceived; // REAL cash collected from completed sessions
     const roi = adsSpend > 0 ? ((adsRevenue - adsSpend) / adsSpend) * 100 : 0;
     const roas = adsSpend > 0 ? (adsRevenue / adsSpend) : 0;
 
-    // Marketing Funnel Metrics
+    // Marketing Funnel Metrics (Based on bookings CREATED)
     const impressions = adsData.impressions;
     const clicks = adsData.inlineLinkClicks;
-    const conversions = totalBookings;
+    const conversions = pipelineTotalBookings; // Use pipeline bookings for funnel
 
     // Calculate conversion rates
     const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0; // Click-Through Rate
     const conversionRate = clicks > 0 ? (conversions / clicks) * 100 : 0; // Conversion Rate
     const overallConversionRate = impressions > 0 ? (conversions / impressions) * 100 : 0;
 
-    // 3. Prepare Chart Data
+    // 3. Prepare Chart Data (Based on sessions for operational view)
     const categories = [
         'Wedding', 'Prewedding Bronze', 'Prewedding Gold', 'Prewedding Silver',
         'Wisuda', 'Family', 'Birthday', 'Pas Foto', 'Self Photo', 'Indoor', 'Outdoor'
@@ -143,53 +161,119 @@ export default function DashboardMetrics({ bookings, dateRange }: Props) {
 
     const chartData = categories.map(cat => ({
         name: cat,
-        count: bookings.filter(b => b.customer.category === cat).length
+        count: sessionBookings.filter(b => b.customer.category === cat).length
     })).filter(d => d.count > 0);
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#FF6699'];
 
     return (
-        <div className="space-y-6">
-            {/* Booking Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
-                        <Users size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Total Bookings</p>
-                        <p className="text-2xl font-bold">{totalBookings}</p>
-                    </div>
+        <div className="space-y-8">
+            {/* ========== SALES PIPELINE SECTION ========== */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <div className="h-8 w-1 bg-gradient-to-b from-purple-500 to-purple-600 rounded-full"></div>
+                    <h2 className="text-xl font-bold text-gray-800">Sales Pipeline</h2>
+                    <span className="text-sm text-gray-500 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
+                        Bookings created in date range
+                    </span>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                    <div className="p-3 bg-green-100 text-green-600 rounded-full">
-                        <DollarSign size={24} />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
+                        <div className="p-3 bg-purple-100 text-purple-600 rounded-full">
+                            <Users size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">New Bookings</p>
+                            <p className="text-2xl font-bold">{pipelineTotalBookings}</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Est. Revenue</p>
-                        <p className="text-2xl font-bold">Rp {revenueFromActive.toLocaleString()}</p>
-                        <p className="text-xs text-gray-400">Excludes cancelled</p>
+
+                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
+                        <div className="p-3 bg-green-100 text-green-600 rounded-full">
+                            <DollarSign size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Pipeline Revenue</p>
+                            <p className="text-2xl font-bold">Rp {pipelineRevenue.toLocaleString()}</p>
+                            <p className="text-xs text-gray-400">Future revenue potential</p>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
+                        <div className="p-3 bg-red-100 text-red-600 rounded-full">
+                            <CalendarX size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Cancelled</p>
+                            <p className="text-2xl font-bold">{pipelineCancelled}</p>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
-                        <CheckCircle size={24} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Completed</p>
-                        <p className="text-2xl font-bold">{completedBookings}</p>
-                    </div>
+            {/* ========== REVENUE REALIZATION SECTION ========== */}
+            <div className="space-y-4">
+                <div className="flex items-center gap-3">
+                    <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-blue-600 rounded-full"></div>
+                    <h2 className="text-xl font-bold text-gray-800">Revenue Realization</h2>
+                    <span className="text-sm text-gray-500 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                        Completed sessions in date range
+                    </span>
                 </div>
 
-                <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                    <div className="p-3 bg-red-100 text-red-600 rounded-full">
-                        <CalendarX size={24} />
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {/* Card 1: Completed Sessions */}
+                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
+                        <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
+                            <CheckCircle size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Completed</p>
+                            <p className="text-2xl font-bold">{sessionsCompleted}</p>
+                            <p className="text-xs text-gray-400">of {sessionsTotal} sessions</p>
+                        </div>
                     </div>
-                    <div>
-                        <p className="text-sm text-gray-500">Canceled / Rescheduled</p>
-                        <p className="text-2xl font-bold">{canceledOrRescheduled}</p>
+
+                    {/* Card 2: Cash Received - HIGHLIGHTED as main metric */}
+                    <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-xl shadow-lg border-2 border-teal-300 flex items-center gap-4">
+                        <div className="p-3 bg-teal-600 text-white rounded-full shadow-md">
+                            <DollarSign size={24} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm text-teal-900 font-bold">Cash Received</p>
+                                <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded-full">ROI Metric</span>
+                            </div>
+                            <p className="text-2xl font-black text-teal-700">Rp {actualCashReceived.toLocaleString()}</p>
+                            <p className="text-xs text-teal-600 font-semibold">Real money in</p>
+                        </div>
+                    </div>
+
+                    {/* Card 3: Outstanding Balance - Only show if > 0 */}
+                    {outstandingBalance > 0 && (
+                        <div className="bg-white p-6 rounded-xl shadow border border-orange-200 flex items-center gap-4">
+                            <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
+                                <DollarSign size={24} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-orange-700 font-semibold">Outstanding</p>
+                                <p className="text-2xl font-bold text-orange-600">Rp {outstandingBalance.toLocaleString()}</p>
+                                <p className="text-xs text-orange-500">Receivables / Piutang</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Card 4: Pending Sessions */}
+                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
+                        <div className="p-3 bg-gray-100 text-gray-600 rounded-full">
+                            <Users size={24} />
+                        </div>
+                        <div>
+                            <p className="text-sm text-gray-500">Pending</p>
+                            <p className="text-2xl font-bold">{sessionsTotal - sessionsCompleted - sessionsCancelled}</p>
+                            <p className="text-xs text-gray-400">Active/Rescheduled</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -267,14 +351,21 @@ export default function DashboardMetrics({ bookings, dateRange }: Props) {
                     <h3 className="text-lg font-bold mb-4 text-gray-700 flex items-center gap-2">
                         <DollarSign size={20} /> ROI & Performance Summary
                     </h3>
+                    <div className="bg-teal-50 border border-teal-200 rounded-lg p-3 mb-4">
+                        <p className="text-xs text-teal-700 font-semibold">
+                            ROI/ROAS calculated using <span className="underline">Actual Cash Received</span> from completed sessions (cash basis accounting)
+                        </p>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <p className="text-sm text-gray-500 mb-1">Total Spend</p>
+                            <p className="text-sm text-gray-500 mb-1">Total Ads Spend</p>
                             <p className="text-xl font-bold text-purple-700">Rp {adsSpend.toLocaleString()}</p>
+                            <p className="text-xs text-gray-400 mt-1">Money out</p>
                         </div>
-                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                            <p className="text-sm text-gray-500 mb-1">Revenue Generated</p>
-                            <p className="text-xl font-bold text-green-700">Rp {adsRevenue.toLocaleString()}</p>
+                        <div className="bg-teal-50 p-4 rounded-lg border border-teal-200">
+                            <p className="text-sm text-teal-700 font-semibold mb-1">Cash Received</p>
+                            <p className="text-xl font-bold text-teal-700">Rp {adsRevenue.toLocaleString()}</p>
+                            <p className="text-xs text-teal-600 mt-1">Real money in</p>
                         </div>
                         <div className={`p-4 rounded-lg border ${roi >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                             <p className="text-sm text-gray-500 mb-1">Net Profit / ROI</p>
@@ -288,7 +379,7 @@ export default function DashboardMetrics({ bookings, dateRange }: Props) {
                         </div>
                     </div>
                     <p className="text-xs text-gray-500 mt-3">
-                        * ROI calculated as: ((Revenue - Spend) / Spend) × 100
+                        * ROI = ((Cash Received - Ads Spend) / Ads Spend) × 100 | Only counts completed sessions
                     </p>
                 </div>
             )}
@@ -496,7 +587,7 @@ export default function DashboardMetrics({ bookings, dateRange }: Props) {
                                                 {record.reach.toLocaleString()}
                                             </div>
                                             <div className="text-right text-xs text-gray-400">
-                                                {new Date(record.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                {formatDateShort(record.updated_at)}
                                             </div>
                                         </div>
                                     ))}

@@ -6,6 +6,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useSession } from "next-auth/react";
 import { Calendar, User, LayoutGrid } from 'lucide-react';
+import { formatDateTime } from '@/utils/dateFormatter';
 
 // Components
 import AdminSidebar from '../AdminSidebar';
@@ -386,7 +387,8 @@ export default function AdminDashboard() {
                     {viewMode === 'dashboard' && (
                         <div className="space-y-8 animate-in fade-in">
                             <DashboardMetrics
-                                bookings={bookingsHook.bookingsByDateRange}
+                                sessionBookings={bookingsHook.bookingsByDateRange}
+                                createdBookings={bookingsHook.bookingsByCreatedDate}
                                 dateRange={bookingsHook.dateRange}
                             />
                         </div>
@@ -558,7 +560,7 @@ export default function AdminDashboard() {
                             <div>
                                 <h3 className="font-semibold text-gray-500 text-sm uppercase mb-2">Session</h3>
                                 <div className="p-4 bg-gray-50 rounded-lg">
-                                    <p className="font-bold">{new Date(bookingsHook.selectedBooking.booking.date).toLocaleString()}</p>
+                                    <p className="font-bold">{formatDateTime(bookingsHook.selectedBooking.booking.date)}</p>
                                     <p className="mt-2 text-sm text-gray-600">Notes: {bookingsHook.selectedBooking.booking.notes || '-'}</p>
                                     {bookingsHook.selectedBooking.booking.location_link && (
                                         <a href={bookingsHook.selectedBooking.booking.location_link} target="_blank" className="text-blue-600 hover:underline block mt-2">
@@ -625,12 +627,12 @@ export default function AdminDashboard() {
                                         {bookingsHook.selectedBooking.reschedule_history.map((history, idx) => (
                                             <div key={idx} className="bg-white p-2 rounded border text-xs">
                                                 <div className="flex justify-between mb-1">
-                                                    <span className="font-medium text-gray-600">Changed on: {new Date(history.rescheduled_at).toLocaleString()}</span>
+                                                    <span className="font-medium text-gray-600">Changed on: {formatDateTime(history.rescheduled_at)}</span>
                                                 </div>
                                                 <div className="text-gray-600">
-                                                    <span className="line-through text-red-600">{new Date(history.old_date).toLocaleString()}</span>
+                                                    <span className="line-through text-red-600">{formatDateTime(history.old_date)}</span>
                                                     {' → '}
-                                                    <span className="text-green-600 font-medium">{new Date(history.new_date).toLocaleString()}</span>
+                                                    <span className="text-green-600 font-medium">{formatDateTime(history.new_date)}</span>
                                                 </div>
                                                 {history.reason && (
                                                     <div className="mt-1 text-gray-500">

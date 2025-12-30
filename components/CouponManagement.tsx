@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Tag, Plus, Edit2, Trash2, TrendingUp, Users } from 'lucide-react';
+import { formatDate } from '@/utils/dateFormatter';
 
 interface Coupon {
     id: string;
@@ -284,8 +285,8 @@ export default function CouponManagement() {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="text-xs text-gray-600">
-                                                {coupon.valid_from && <p>Dari: {new Date(coupon.valid_from).toLocaleDateString('id-ID')}</p>}
-                                                {coupon.valid_until && <p>Sampai: {new Date(coupon.valid_until).toLocaleDateString('id-ID')}</p>}
+                                                {coupon.valid_from && <p>Dari: {formatDate(coupon.valid_from)}</p>}
+                                                {coupon.valid_until && <p>Sampai: {formatDate(coupon.valid_until)}</p>}
                                                 {!coupon.valid_from && !coupon.valid_until && <p>Tanpa batas waktu</p>}
                                             </div>
                                         </td>

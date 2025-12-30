@@ -143,11 +143,19 @@ export const useBookings = () => {
         };
     };
 
-    // Filter bookings by date range only (for dashboard metrics)
+    // Filter bookings by SESSION date range (for revenue realization metrics)
     const bookingsByDateRange = useMemo(() => {
         return bookings.filter(b => {
-            const bookingDate = new Date(b.booking.date).toISOString().split('T')[0];
-            return bookingDate >= dateRange.start && bookingDate <= dateRange.end;
+            const sessionDate = new Date(b.booking.date).toISOString().split('T')[0];
+            return sessionDate >= dateRange.start && sessionDate <= dateRange.end;
+        });
+    }, [bookings, dateRange]);
+
+    // Filter bookings by CREATED date range (for sales pipeline metrics)
+    const bookingsByCreatedDate = useMemo(() => {
+        return bookings.filter(b => {
+            const createdDate = new Date(b.created_at).toISOString().split('T')[0];
+            return createdDate >= dateRange.start && createdDate <= dateRange.end;
         });
     }, [bookings, dateRange]);
 
@@ -200,6 +208,7 @@ export const useBookings = () => {
         setDateRange,
         filteredBookings,
         bookingsByDateRange,
+        bookingsByCreatedDate,
         events,
         calculateFinance,
         getOrReconstructBreakdown,
