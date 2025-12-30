@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { 
-  getAllUsers, 
-  createUser, 
-  updateUser, 
-  deleteUser, 
-  getUserById,
-  seedDefaultAdmin 
-} from '@/lib/user-management';
 import { logger, createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
+import {
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  sanitizeUsers,
+  sanitizeUser,
+  seedDefaultAdmin
+} from '@/lib/auth-server';
 
 // Initialize default admin on first request
 seedDefaultAdmin();
@@ -30,12 +32,13 @@ export async function GET(req: NextRequest) {
     if (authCheck) return authCheck;
 
     const users = getAllUsers();
-    
+    const sanitizedUsers = sanitizeUsers(users);
+
     logger.info('Users retrieved successfully', {
-      count: users.length
+      count: sanitizedUsers.length
     });
 
-    return NextResponse.json(users);
+    return NextResponse.json(sanitizedUsers);
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
@@ -58,42 +61,15 @@ export async function POST(req: NextRequest) {
     if (authCheck) return authCheck;
 
     const body = await req.json();
-    const { username, password, role } = body;
-
-    // Validation
-    if (!username || !password) {
-      return NextResponse.json(
-        { error: 'Username and password are required', code: 'VALIDATION_ERROR' },
-        { status: 400 }
-      );
-    }
-
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters', code: 'VALIDATION_ERROR' },
-        { status: 400 }
-      );
-    }
-
-    if (role && !['admin', 'staff'].includes(role)) {
-      return NextResponse.json(
-        { error: 'Role must be admin or staff', code: 'VALIDATION_ERROR' },
-        { status: 400 }
-      );
-    }
-
-    const newUser = createUser({
-      username,
-      password,
-      role: role || 'staff'
-    });
+    const newUser = createUser(body);
 
     logger.info('User created successfully', {
       username: newUser.username,
       role: newUser.role
     });
 
-    return NextResponse.json(newUser, { status: 201 });
+    const sanitizedUser = sanitizeUser(newUser);
+    return NextResponse.json(sanitizedUser, { status: 201 });
   } catch (error: any) {
     if (error.message === 'Username already exists') {
       return NextResponse.json(
@@ -123,9 +99,8 @@ export async function PUT(req: NextRequest) {
     if (authCheck) return authCheck;
 
     const body = await req.json();
-    const { id, username, password, is_active } = body;
+    const { id, ...updateData } = body;
 
-    // Validation
     if (!id) {
       return NextResponse.json(
         { error: 'User ID is required', code: 'VALIDATION_ERROR' },
@@ -133,25 +108,15 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    if (password && password.length < 6) {
-      return NextResponse.json(
-        { error: 'Password must be at least 6 characters', code: 'VALIDATION_ERROR' },
-        { status: 400 }
-      );
-    }
-
-    const updatedUser = updateUser(id, {
-      username,
-      password,
-      is_active: is_active !== undefined ? (is_active ? 1 : 0) : undefined
-    });
+    const updatedUser = updateUser(id, updateData);
 
     logger.info('User updated successfully', {
       userId: id,
       username: updatedUser.username
     });
 
-    return NextResponse.json(updatedUser);
+    const sanitizedUser = sanitizeUser(updatedUser);
+    return NextResponse.json(sanitizedUser);
   } catch (error: any) {
     if (error.message === 'User not found') {
       return NextResponse.json(
@@ -196,39 +161,25 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Prevent deleting the last admin user
-    const user = getUserById(id);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found', code: 'NOT_FOUND' },
-        { status: 404 }
-      );
-    }
-
-    if (user.role === 'admin') {
-      const allUsers = getAllUsers();
-      const adminCount = allUsers.filter(u => u.role === 'admin' && u.is_active === 1).length;
-      if (adminCount <= 1) {
-        return NextResponse.json(
-          { error: 'Cannot delete the last active admin user', code: 'LAST_ADMIN' },
-          { status: 400 }
-        );
-      }
-    }
-
+    // deleteUser already validates last admin protection
     deleteUser(id);
 
     logger.info('User deleted successfully', {
-      userId: id,
-      username: user.username
+      userId: id
     });
 
-    return NextResponse.json({ success: true, userId: id });
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     if (error.message === 'User not found') {
       return NextResponse.json(
         { error: 'User not found', code: 'NOT_FOUND' },
         { status: 404 }
+      );
+    }
+    if (error.message === 'Cannot delete the last active admin user') {
+      return NextResponse.json(
+        { error: 'Cannot delete the last active admin user', code: 'LAST_ADMIN' },
+        { status: 400 }
       );
     }
 

@@ -5,7 +5,8 @@ import {
   LayoutDashboard, Calendar, List, Tag, Camera, ShoppingBag,
   Users, Image as ImageIcon, CreditCard, LogOut, Menu, X, Target, Settings
 } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
+import { getFilteredMenuItems } from '@/lib/permissions';
 
 interface AdminSidebarProps {
   viewMode: string;
@@ -15,6 +16,7 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const { data: session } = useSession();
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -23,20 +25,28 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'ads', icon: Target, label: 'Ads Performance' },
-    { id: 'calendar', icon: Calendar, label: 'Calendar' },
-    { id: 'table', icon: List, label: 'Bookings' },
-    { id: 'services', icon: Tag, label: 'Services' },
-    { id: 'portfolio', icon: ImageIcon, label: 'Portfolio' },
-    { id: 'addons', icon: ShoppingBag, label: 'Add-ons' },
-    { id: 'photographers', icon: Camera, label: 'Photographers' },
-    { id: 'coupons', icon: Tag, label: 'Kupon' },
-    { id: 'users', icon: Users, label: 'Users' },
-    { id: 'payment-settings', icon: CreditCard, label: 'Payment Settings' },
-    { id: 'settings', icon: Settings, label: 'Settings' },
-  ];
+  // Get filtered menu items based on user permissions
+  const userPermissions = (session?.user as any)?.permissions;
+  const userRole = (session?.user as any)?.role;
+  const menuItems = getFilteredMenuItems(userPermissions, userRole);
+
+  // Map icon strings to actual icon components
+  const getIconComponent = (iconName: string) => {
+    const icons: Record<string, any> = {
+      LayoutDashboard,
+      Target,
+      Calendar,
+      List,
+      Tag,
+      ImageIcon,
+      ShoppingBag,
+      Camera,
+      Users,
+      CreditCard,
+      Settings
+    };
+    return icons[iconName] || LayoutDashboard;
+  };
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full bg-gray-900 text-white">
@@ -48,7 +58,7 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         {menuItems.map((item) => {
-          const Icon = item.icon;
+          const Icon = getIconComponent(item.icon);
           const isActive = viewMode === item.id;
           return (
             <button
@@ -58,8 +68,8 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
                 if (isMobile) setIsOpen(false);
               }}
               className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-colors ${
-                isActive 
-                  ? 'bg-blue-600 text-white border-l-4 border-blue-400' 
+                isActive
+                  ? 'bg-blue-600 text-white border-l-4 border-blue-400'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white border-l-4 border-transparent'
               }`}
             >

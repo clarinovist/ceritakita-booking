@@ -40,6 +40,8 @@ import { ViewMode } from './types/admin';
 
 export default function AdminDashboard() {
     const { data: session } = useSession();
+    const userPermissions = (session?.user as any)?.permissions;
+    const userRole = (session?.user as any)?.role;
 
     // Custom hooks
     const bookingsHook = useBookings();
@@ -48,8 +50,43 @@ export default function AdminDashboard() {
     const addonsHook = useAddons();
     const exportHook = useExport();
 
-    const [viewMode, setViewMode] = React.useState<ViewMode>('dashboard');
+    // Filter view modes based on permissions
+    const getAvailableViewModes = (): ViewMode[] => {
+      const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'services', 'portfolio', 'photographers', 'addons', 'coupons', 'users', 'payment-settings', 'settings'];
+      
+      if (userRole === 'admin') {
+        return allModes;
+      }
+
+      const allowedModes: ViewMode[] = [];
+      
+      if (userPermissions?.dashboard) allowedModes.push('dashboard');
+      if (userPermissions?.ads) allowedModes.push('ads');
+      if (userPermissions?.booking?.view) {
+        allowedModes.push('calendar', 'table');
+      }
+      if (userPermissions?.services?.view) allowedModes.push('services');
+      if (userPermissions?.portfolio?.view) allowedModes.push('portfolio');
+      if (userPermissions?.photographers?.view) allowedModes.push('photographers');
+      if (userPermissions?.addons?.view) allowedModes.push('addons');
+      if (userPermissions?.coupons?.view) allowedModes.push('coupons');
+      if (userPermissions?.users) allowedModes.push('users');
+      if (userPermissions?.payment) allowedModes.push('payment-settings');
+      if (userPermissions?.settings) allowedModes.push('settings');
+
+      return allowedModes.length > 0 ? allowedModes : ['table']; // Default to table if no permissions
+    };
+
+    const availableViewModes = getAvailableViewModes();
+    const [viewMode, setViewMode] = React.useState<ViewMode>(availableViewModes[0] || 'table');
     const [showPresets, setShowPresets] = React.useState(false);
+
+    // Reset view mode if current mode becomes unavailable
+    React.useEffect(() => {
+      if (!availableViewModes.includes(viewMode)) {
+        setViewMode(availableViewModes[0] || 'table');
+      }
+    }, [availableViewModes, viewMode]);
 
     // Fetch all data on mount
     useEffect(() => {
@@ -263,27 +300,28 @@ export default function AdminDashboard() {
     // Preset handlers
     const applyPreset = (preset: string) => {
         const today = new Date();
-        let start, end;
+        let start: string = '';
+        let end: string = '';
 
         switch (preset) {
             case 'today':
-                start = today.toISOString().split('T')[0];
+                start = today.toISOString().split('T')[0] || '';
                 end = start;
                 break;
             case 'yesterday':
-                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0] || '';
                 start = yesterday;
                 end = yesterday;
                 break;
             case 'last7days':
-                const last7Days = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+                const last7Days = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0] || '';
                 start = last7Days;
-                end = today.toISOString().split('T')[0];
+                end = today.toISOString().split('T')[0] || '';
                 break;
             case 'last30days':
-                const last30Days = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+                const last30Days = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0] || '';
                 start = last30Days;
-                end = today.toISOString().split('T')[0];
+                end = today.toISOString().split('T')[0] || '';
                 break;
             case 'thisMonth':
                 const year = today.getFullYear();
@@ -303,7 +341,7 @@ export default function AdminDashboard() {
             case 'thisYear':
                 const currentYear = today.getFullYear();
                 start = `${currentYear}-01-01`;
-                end = today.toISOString().split('T')[0];
+                end = today.toISOString().split('T')[0] || '';
                 break;
         }
 
@@ -528,6 +566,7 @@ export default function AdminDashboard() {
                                     <button
                                         onClick={() => bookingsHook.selectedBooking && bookingsHook.handleDeleteBooking(bookingsHook.selectedBooking.id)}
                                         className="text-red-600 hover:text-red-800 font-medium text-xs border border-red-200 px-3 py-1 rounded hover:bg-red-50"
+                                        disabled={bookingsHook.selectedBooking?.status === 'Completed'}
                                     >
                                         Delete Booking
                                     </button>
@@ -597,7 +636,7 @@ export default function AdminDashboard() {
                                 ) : (
                                     <select
                                         value={bookingsHook.selectedBooking.status}
-                                        onChange={(e) => bookingsHook.handleUpdateStatus(bookingsHook.selectedBooking.id, e.target.value as any)}
+                                        onChange={(e) => bookingsHook.handleUpdateStatus(bookingsHook.selectedBooking!.id, e.target.value as any)}
                                         className="w-full p-2 border rounded"
                                     >
                                         <option value="Active">Active (Confirmed)</option>
@@ -608,9 +647,9 @@ export default function AdminDashboard() {
                                 )}
                                 <button
                                     onClick={() => bookingsHook.selectedBooking && handleOpenRescheduleModal(bookingsHook.selectedBooking.id, bookingsHook.selectedBooking.booking.date)}
-                                    disabled={bookingsHook.selectedBooking.status === 'Completed'}
+                                    disabled={bookingsHook.selectedBooking?.status === 'Completed'}
                                     className={`mt-3 w-full px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 ${
-                                        bookingsHook.selectedBooking.status === 'Completed'
+                                        bookingsHook.selectedBooking?.status === 'Completed'
                                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                             : 'bg-blue-600 hover:bg-blue-700 text-white'
                                     }`}
@@ -651,7 +690,7 @@ export default function AdminDashboard() {
                                 </h4>
                                 <select
                                     value={bookingsHook.selectedBooking.photographer_id || ''}
-                                    onChange={(e) => bookingsHook.handleUpdate(bookingsHook.selectedBooking.id, { photographer_id: e.target.value || undefined })}
+                                    onChange={(e) => bookingsHook.handleUpdate(bookingsHook.selectedBooking!.id, { photographer_id: e.target.value || undefined })}
                                     disabled={bookingsHook.selectedBooking.status === 'Completed'}
                                     className={`w-full p-2 border rounded ${
                                         bookingsHook.selectedBooking.status === 'Completed'
@@ -668,7 +707,7 @@ export default function AdminDashboard() {
                                 </select>
                                 {bookingsHook.selectedBooking.photographer_id && (
                                     <p className="text-xs text-purple-600 mt-1">
-                                        Assigned to: {photographersHook.photographers.find(p => p.id === bookingsHook.selectedBooking.photographer_id)?.name || 'Unknown'}
+                                        Assigned to: {photographersHook.photographers.find(p => p.id === bookingsHook.selectedBooking?.photographer_id)?.name || 'Unknown'}
                                     </p>
                                 )}
                             </div>
@@ -822,23 +861,13 @@ export default function AdminDashboard() {
                                                         <span className="text-xs text-gray-500">{p.date}</span>
                                                     </div>
                                                     <div className="text-xs text-gray-500">{p.note}</div>
-                                                    {(p.proof_url || p.proof_filename || p.proof_base64) && (
+                                                    {(p.proof_filename || p.proof_base64) && (
                                                         <div className="flex flex-col gap-2">
                                                             <img
-                                                                src={p.proof_url || (p.proof_filename ? `/api/uploads/payment-proofs/${p.proof_filename}` : p.proof_base64 ?? '')}
+                                                                src={p.proof_filename ? `/api/uploads/payment-proofs/${p.proof_filename}` : p.proof_base64 ?? ''}
                                                                 alt="Payment Proof"
                                                                 className="h-32 object-contain self-start border rounded bg-white"
                                                             />
-                                                            {p.proof_url && (
-                                                                <a
-                                                                    href={p.proof_url}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="text-xs text-blue-600 hover:underline flex items-center gap-1"
-                                                                >
-                                                                    <span>📎</span> View full size
-                                                                </a>
-                                                            )}
                                                         </div>
                                                     )}
                                                 </div>
@@ -858,6 +887,8 @@ export default function AdminDashboard() {
                                             className="border-t pt-4 mt-4"
                                             onSubmit={(e) => {
                                                 e.preventDefault();
+                                                if (!bookingsHook.selectedBooking) return;
+                                                
                                                 const form = e.target as HTMLFormElement;
                                                 const formData = new FormData(form);
                                                 const amount = Number(formData.get('amount'));
@@ -871,9 +902,9 @@ export default function AdminDashboard() {
                                                     proof_base64: ''
                                                 };
 
-                                                bookingsHook.handleUpdateFinance(bookingsHook.selectedBooking.id, {
-                                                    ...bookingsHook.selectedBooking.finance,
-                                                    payments: [...bookingsHook.selectedBooking.finance.payments, newPayment]
+                                                bookingsHook.handleUpdateFinance(bookingsHook.selectedBooking!.id, {
+                                                    ...bookingsHook.selectedBooking!.finance,
+                                                    payments: [...bookingsHook.selectedBooking!.finance.payments, newPayment]
                                                 });
                                                 form.reset();
                                             }}

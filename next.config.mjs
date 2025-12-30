@@ -26,6 +26,24 @@ const nextConfig = {
       },
     ],
   },
+
+  // Exclude better-sqlite3 from client-side bundle
+  experimental: {
+    serverComponentsExternalPackages: ['better-sqlite3'],
+  },
+
+  // Webpack config to handle native modules
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+      };
+    }
+    return config;
+  },
 };
 
 export default nextConfig;

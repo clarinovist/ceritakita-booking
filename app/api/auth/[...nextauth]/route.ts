@@ -3,10 +3,19 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { NextRequest } from "next/server";
 import { rateLimiters } from '@/lib/rate-limit';
 import { logger } from '@/lib/logger';
-import { verifyUserCredentials, seedDefaultAdmin } from '@/lib/user-management';
 
-// Initialize default admin on first load
-seedDefaultAdmin();
+// Initialize default admin on first load (server-side)
+async function initializeAdmin() {
+  try {
+    const { seedDefaultAdmin } = await import('@/lib/auth-server');
+    seedDefaultAdmin();
+  } catch (error) {
+    // Ignore errors during initialization
+  }
+}
+
+// Call on module load
+initializeAdmin();
 
 export const authOptions: AuthOptions = {
     providers: [
@@ -21,6 +30,8 @@ export const authOptions: AuthOptions = {
                     return null;
                 }
 
+                // Import server-side function dynamically
+                const { verifyUserCredentials } = await import('@/lib/auth-server');
                 const user = verifyUserCredentials(credentials.username, credentials.password);
                 
                 if (user) {
@@ -40,7 +51,8 @@ export const authOptions: AuthOptions = {
                         id: user.id,
                         name: user.username,
                         email: `${user.username}@ceritakita.local`,
-                        role: user.role
+                        role: user.role,
+                        permissions: user.permissions
                     };
                 }
                 
@@ -73,6 +85,7 @@ export const authOptions: AuthOptions = {
             if (user) {
                 token.userId = user.id;
                 token.role = (user as any).role;
+                token.permissions = (user as any).permissions;
             }
             return token;
         },
@@ -80,6 +93,7 @@ export const authOptions: AuthOptions = {
             if (session.user) {
                 (session.user as any).id = token.userId;
                 (session.user as any).role = token.role;
+                (session.user as any).permissions = token.permissions;
             }
             return session;
         }

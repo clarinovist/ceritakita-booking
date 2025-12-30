@@ -226,9 +226,23 @@ function initializeSchema() {
       role TEXT NOT NULL DEFAULT 'staff' CHECK(role IN ('admin', 'staff')),
       is_active INTEGER DEFAULT 1,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      permissions TEXT
     )
   `);
+
+  // Add permissions column to existing users table if it doesn't exist (migration)
+  const tableInfo = db.prepare('PRAGMA table_info(users)').all() as { name: string }[];
+  const hasPermissionsColumn = tableInfo.some(col => col.name === 'permissions');
+
+  if (!hasPermissionsColumn) {
+    try {
+      db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT`);
+      console.log('✅ Database migration: Added permissions column to users table');
+    } catch (e) {
+      console.error('❌ Failed to add permissions column:', e);
+    }
+  }
 
   // Create payment_methods table (multiple payment options)
   db.exec(`

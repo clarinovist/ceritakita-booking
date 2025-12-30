@@ -4,19 +4,14 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Plus, Edit, Trash2, Shield, Users, ToggleLeft, ToggleRight, Key } from 'lucide-react';
 import { formatDate } from '@/utils/dateFormatter';
-
-interface User {
-  id: string;
-  username: string;
-  role: 'admin' | 'staff';
-  is_active: number;
-  created_at: string;
-}
+import { User, UserPermissions } from '@/lib/types/user';
+import { DEFAULT_STAFF_PERMISSIONS, getDefaultPermissions } from '@/lib/permissions';
 
 interface UserFormData {
   username: string;
   password: string;
   role: 'admin' | 'staff';
+  permissions: UserPermissions;
 }
 
 export default function UserManagement() {
@@ -26,7 +21,8 @@ export default function UserManagement() {
   const [formData, setFormData] = useState<UserFormData>({
     username: '',
     password: '',
-    role: 'staff'
+    role: 'staff',
+    permissions: DEFAULT_STAFF_PERMISSIONS
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -53,14 +49,16 @@ export default function UserManagement() {
       setFormData({
         username: user.username,
         password: '',
-        role: user.role
+        role: user.role,
+        permissions: user.permissions || getDefaultPermissions('staff')
       });
     } else {
       setEditingUser(null);
       setFormData({
         username: '',
         password: '',
-        role: 'staff'
+        role: 'staff',
+        permissions: getDefaultPermissions('staff')
       });
     }
     setError('');
@@ -78,39 +76,82 @@ export default function UserManagement() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handlePermissionChange = (category: string, field: string, value: boolean) => {
+    setFormData(prev => {
+      const categoryPermissions = prev.permissions[category as keyof UserPermissions];
+      if (typeof categoryPermissions === 'object' && categoryPermissions !== null) {
+        return {
+          ...prev,
+          permissions: {
+            ...prev.permissions,
+            [category]: {
+              ...categoryPermissions,
+              [field]: value
+            }
+          }
+        };
+      }
+      return prev;
+    });
+  };
+
+  const handleSimplePermissionChange = (field: keyof UserPermissions, value: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: {
+        ...prev.permissions,
+        [field]: value
+      }
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const url = editingUser ? '/api/users' : '/api/users';
-      const method = editingUser ? 'PUT' : 'POST';
-      
+      // Validate required fields for create
+      if (!editingUser && !formData.password) {
+        setError('Password is required');
+        setLoading(false);
+        return;
+      }
+
+      const permissions = getDefaultPermissions(formData.role);
+
       const payload: any = {
         username: formData.username,
-        role: formData.role
+        role: formData.role,
+        permissions
       };
 
-      // Only include password if provided
-      if (formData.password) {
-        payload.password = formData.password;
-      }
-
+      // Always include password for create, only include for update if provided
       if (editingUser) {
         payload.id = editingUser.id;
-      }
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to save user');
+        if (formData.password) {
+          payload.password = formData.password;
+        }
+        const res = await fetch('/api/users', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to update user');
+        }
+      } else {
+        payload.password = formData.password;
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Failed to create user');
+        }
       }
 
       await fetchUsers();
@@ -129,15 +170,12 @@ export default function UserManagement() {
       const res = await fetch('/api/users', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: user.id,
-          is_active: user.is_active ? 0 : 1
-        })
+        body: JSON.stringify({ id: user.id, is_active: user.is_active ? 0 : 1 })
       });
-
-      if (res.ok) {
-        await fetchUsers();
+      if (!res.ok) {
+        throw new Error('Failed to toggle user');
       }
+      await fetchUsers();
     } catch (err) {
       console.error('Failed to toggle user:', err);
     }
@@ -146,27 +184,17 @@ export default function UserManagement() {
   const handleDelete = async (user: User) => {
     if (!confirm(`Are you sure you want to delete user "${user.username}"? This action cannot be undone.`)) return;
 
-    if (user.role === 'admin') {
-      const adminCount = users.filter(u => u.role === 'admin' && u.is_active === 1).length;
-      if (adminCount <= 1) {
-        alert('Cannot delete the last active admin user');
-        return;
-      }
-    }
-
     try {
       const res = await fetch(`/api/users?id=${user.id}`, {
         method: 'DELETE'
       });
-
-      if (res.ok) {
-        await fetchUsers();
-      } else {
-        const data = await res.json();
-        alert(data.error || 'Failed to delete user');
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Failed to delete user');
       }
-    } catch (err) {
-      console.error('Failed to delete user:', err);
+      await fetchUsers();
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete user');
     }
   };
 
@@ -359,6 +387,136 @@ export default function UserManagement() {
                   <option value="staff">Staff</option>
                   <option value="admin">Admin</option>
                 </select>
+              </div>
+
+              {/* Permissions Section */}
+              <div className="border-t pt-4">
+                <label className="block text-sm font-bold text-gray-700 mb-3">
+                  Permissions (Customize Staff Access)
+                </label>
+                
+                <div className="space-y-3 bg-gray-50 p-3 rounded-lg border">
+                  {/* Booking Permissions */}
+                  <div>
+                    <p className="font-semibold text-xs text-gray-600 mb-2">Booking Management</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.booking.view}
+                          onChange={(e) => handlePermissionChange('booking', 'view', e.target.checked)}
+                          className="rounded" 
+                        /> View
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.booking.create}
+                          onChange={(e) => handlePermissionChange('booking', 'create', e.target.checked)}
+                          className="rounded" 
+                        /> Create
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.booking.update}
+                          onChange={(e) => handlePermissionChange('booking', 'update', e.target.checked)}
+                          className="rounded" 
+                        /> Update
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.booking.reschedule}
+                          onChange={(e) => handlePermissionChange('booking', 'reschedule', e.target.checked)}
+                          className="rounded" 
+                        /> Reschedule
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Master Data Permissions */}
+                  <div>
+                    <p className="font-semibold text-xs text-gray-600 mb-2">Master Data</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.services.create}
+                          onChange={(e) => handlePermissionChange('services', 'create', e.target.checked)}
+                          className="rounded" 
+                        /> Services
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.photographers.create}
+                          onChange={(e) => handlePermissionChange('photographers', 'create', e.target.checked)}
+                          className="rounded" 
+                        /> Photographers
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.addons.create}
+                          onChange={(e) => handlePermissionChange('addons', 'create', e.target.checked)}
+                          className="rounded" 
+                        /> Add-ons
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.portfolio.create}
+                          onChange={(e) => handlePermissionChange('portfolio', 'create', e.target.checked)}
+                          className="rounded" 
+                        /> Portfolio
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Admin Only */}
+                  <div className="border-t pt-2">
+                    <p className="font-semibold text-xs text-gray-600 mb-2">Admin Only</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.dashboard}
+                          onChange={(e) => handleSimplePermissionChange('dashboard', e.target.checked)}
+                          className="rounded" 
+                        /> Dashboard
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.ads}
+                          onChange={(e) => handleSimplePermissionChange('ads', e.target.checked)}
+                          className="rounded" 
+                        /> Ads
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.settings}
+                          onChange={(e) => handleSimplePermissionChange('settings', e.target.checked)}
+                          className="rounded" 
+                        /> Settings
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.permissions.users}
+                          onChange={(e) => handleSimplePermissionChange('users', e.target.checked)}
+                          className="rounded" 
+                        /> Users
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500 mt-2">
+                  {formData.role === 'admin' ? 'Admin has all permissions by default' : 'Customize permissions for this staff member'}
+                </p>
               </div>
 
               {error && (

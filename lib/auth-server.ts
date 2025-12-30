@@ -1,71 +1,84 @@
+// Server-side authentication functions
+// This file uses better-sqlite3 and should only be used in API routes
+
 import { getDb } from './db';
-import { randomUUID } from 'crypto';
 import bcrypt from 'bcryptjs';
-
-export interface User {
-  id: string;
-  username: string;
-  role: 'admin' | 'staff';
-  is_active: number;
-  created_at: string;
-  updated_at: string;
-  password_hash?: string; // Optional for internal use
-}
-
-export interface CreateUserInput {
-  username: string;
-  password: string;
-  role?: 'admin' | 'staff';
-}
-
-export interface UpdateUserInput {
-  username?: string;
-  password?: string;
-  is_active?: number;
-}
+import { randomUUID } from 'crypto';
+import { User, UserPermissions, CreateUserInput, UpdateUserInput } from './types/user';
+import { DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS, validateUserInput } from './permissions';
 
 /**
- * Get all users (excluding sensitive data)
+ * Get all users (server-side)
  */
 export function getAllUsers(): User[] {
   const db = getDb();
-  return db.prepare(`
-    SELECT id, username, role, is_active, created_at, updated_at 
+  const users = db.prepare(`
+    SELECT id, username, role, is_active, created_at, updated_at, permissions 
     FROM users 
     ORDER BY created_at DESC
-  `).all() as User[];
+  `).all() as any[];
+  
+  return users.map(user => ({
+    ...user,
+    permissions: user.permissions ? JSON.parse(user.permissions) : undefined
+  }));
 }
 
 /**
- * Get user by ID
+ * Get user by ID (server-side)
  */
 export function getUserById(id: string): User | null {
   const db = getDb();
-  return db.prepare(`
-    SELECT id, username, role, is_active, created_at, updated_at 
+  const user = db.prepare(`
+    SELECT id, username, role, is_active, created_at, updated_at, permissions 
     FROM users 
     WHERE id = ?
-  `).get(id) as User | null;
+  `).get(id) as any;
+  
+  if (!user) return null;
+  
+  return {
+    ...user,
+    permissions: user.permissions ? JSON.parse(user.permissions) : undefined
+  };
 }
 
 /**
- * Get user by username
+ * Get user by username (server-side)
  */
 export function getUserByUsername(username: string): User | null {
   const db = getDb();
-  return db.prepare(`
-    SELECT id, username, password_hash, role, is_active, created_at, updated_at 
+  const user = db.prepare(`
+    SELECT id, username, password_hash, role, is_active, created_at, updated_at, permissions 
     FROM users 
     WHERE username = ?
   `).get(username) as any;
+  
+  if (!user) return null;
+  
+  return {
+    ...user,
+    permissions: user.permissions ? JSON.parse(user.permissions) : undefined
+  };
 }
 
 /**
- * Create a new user
+ * Create a new user (server-side)
  */
 export function createUser(input: CreateUserInput): User {
   const db = getDb();
-  
+
+  // Check required fields
+  if (!input.username || !input.password) {
+    throw new Error('Username and password are required');
+  }
+
+  // Validate input
+  const validation = validateUserInput(input);
+  if (!validation.valid) {
+    throw new Error(validation.errors.join(', '));
+  }
+
   // Check if username already exists
   const existing = getUserByUsername(input.username);
   if (existing) {
@@ -75,13 +88,20 @@ export function createUser(input: CreateUserInput): User {
   // Hash password
   const saltRounds = 12;
   const passwordHash = bcrypt.hashSync(input.password, saltRounds);
-  
+
   const id = randomUUID();
   const now = new Date().toISOString();
-  
+
+  // Set default permissions based on role
+  const permissions = input.permissions ||
+    (input.role === 'admin' ? DEFAULT_ADMIN_PERMISSIONS : DEFAULT_STAFF_PERMISSIONS);
+
+  // Convert permissions to JSON string for storage
+  const permissionsJson = JSON.stringify(permissions);
+
   db.prepare(`
-    INSERT INTO users (id, username, password_hash, role, is_active, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (id, username, password_hash, role, is_active, created_at, updated_at, permissions)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(
     id,
     input.username,
@@ -89,18 +109,25 @@ export function createUser(input: CreateUserInput): User {
     input.role || 'staff',
     1,
     now,
-    now
+    now,
+    permissionsJson
   );
 
   return getUserById(id)!;
 }
 
 /**
- * Update user
+ * Update user (server-side)
  */
 export function updateUser(id: string, input: UpdateUserInput): User {
   const db = getDb();
-  
+
+  // Validate input
+  const validation = validateUserInput(input);
+  if (!validation.valid) {
+    throw new Error(validation.errors.join(', '));
+  }
+
   const existing = getUserById(id);
   if (!existing) {
     throw new Error('User not found');
@@ -116,23 +143,28 @@ export function updateUser(id: string, input: UpdateUserInput): User {
 
   const updates: string[] = [];
   const values: any[] = [];
-  
+
   if (input.username) {
     updates.push('username = ?');
     values.push(input.username);
   }
-  
+
   if (input.password) {
     const passwordHash = bcrypt.hashSync(input.password, 12);
     updates.push('password_hash = ?');
     values.push(passwordHash);
   }
-  
+
   if (input.is_active !== undefined) {
     updates.push('is_active = ?');
     values.push(input.is_active);
   }
-  
+
+  if (input.permissions) {
+    updates.push('permissions = ?');
+    values.push(JSON.stringify(input.permissions));
+  }
+
   updates.push('updated_at = ?');
   values.push(new Date().toISOString());
   values.push(id);
@@ -143,8 +175,8 @@ export function updateUser(id: string, input: UpdateUserInput): User {
   }
 
   db.prepare(`
-    UPDATE users 
-    SET ${updates.join(', ')} 
+    UPDATE users
+    SET ${updates.join(', ')}
     WHERE id = ?
   `).run(...values);
 
@@ -152,21 +184,30 @@ export function updateUser(id: string, input: UpdateUserInput): User {
 }
 
 /**
- * Delete user
+ * Delete user (server-side)
  */
 export function deleteUser(id: string): void {
   const db = getDb();
-  
+
   const existing = getUserById(id);
   if (!existing) {
     throw new Error('User not found');
+  }
+
+  // Prevent deleting the last active admin
+  if (existing.role === 'admin') {
+    const allUsers = getAllUsers();
+    const activeAdmins = allUsers.filter(u => u.role === 'admin' && u.is_active === 1);
+    if (activeAdmins.length <= 1) {
+      throw new Error('Cannot delete the last active admin user');
+    }
   }
 
   db.prepare('DELETE FROM users WHERE id = ?').run(id);
 }
 
 /**
- * Verify user credentials
+ * Verify user credentials (server-side)
  */
 export function verifyUserCredentials(username: string, password: string): User | null {
   const user = getUserByUsername(username);
@@ -187,11 +228,12 @@ export function verifyUserCredentials(username: string, password: string): User 
     is_active: user.is_active,
     created_at: user.created_at,
     updated_at: user.updated_at,
+    permissions: user.permissions
   };
 }
 
 /**
- * Seed default admin user if none exists
+ * Seed default admin user if none exists (server-side)
  */
 export function seedDefaultAdmin(): void {
   try {
@@ -212,10 +254,24 @@ export function seedDefaultAdmin(): void {
       console.log('✅ Default admin user created:', username);
     }
   } catch (error) {
-    // Silently ignore errors during seeding (e.g., user already exists, database locked)
-    // This is expected during build time or when the database is already seeded
+    // Silently ignore errors during seeding
     if (error instanceof Error && !error.message.includes('Username already exists')) {
       console.warn('Warning during admin seed:', error.message);
     }
   }
+}
+
+/**
+ * Sanitize user (remove password_hash for API responses)
+ */
+export function sanitizeUser(user: User): Omit<User, 'password_hash'> {
+  const { password_hash, ...safeUser } = user;
+  return safeUser;
+}
+
+/**
+ * Sanitize multiple users
+ */
+export function sanitizeUsers(users: User[]): Omit<User, 'password_hash'>[] {
+  return users.map(user => sanitizeUser(user));
 }
