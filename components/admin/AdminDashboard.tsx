@@ -272,50 +272,136 @@ export default function AdminDashboard() {
             
             <div className="flex-1 ml-0 md:ml-64 p-6 overflow-auto">
                 {/* Top Bar */}
-                <div className="bg-white border rounded-xl p-4 mb-6 flex flex-col md:flex-row justify-between items-center gap-4 sticky top-0 z-10">
-                    <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-1.5 font-bold text-xs text-gray-600">
-                        <Calendar size={14} />
-                        <input
-                            type="date"
-                            value={bookingsHook.dateRange.start}
-                            onChange={(e) => bookingsHook.setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                            className="bg-transparent outline-none cursor-pointer"
-                        />
-                        <span>to</span>
-                        <input
-                            type="date"
-                            value={bookingsHook.dateRange.end}
-                            onChange={(e) => bookingsHook.setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                            className="bg-transparent outline-none cursor-pointer"
-                        />
-                    </div>
-
-                    <div className="flex items-center gap-2">
+                <div className="bg-white border rounded-xl p-4 mb-6 sticky top-0 z-10">
+                    {/* Date Presets */}
+                    <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-gray-200">
                         <button
-                            onClick={() => exportHook.handleExportBookings(bookingsHook.filterStatus, bookingsHook.dateRange)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
-                            title="Export filtered bookings to Excel"
+                            onClick={() => {
+                                const today = new Date().toISOString().split('T')[0];
+                                bookingsHook.setDateRange({ start: today, end: today });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                         >
-                            <span>📥</span>
-                            <span className="hidden lg:inline">Bookings</span>
+                            Today
                         </button>
                         <button
-                            onClick={() => exportHook.handleExportFinancial(bookingsHook.dateRange)}
-                            className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
-                            title="Export financial report to Excel"
+                            onClick={() => {
+                                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+                                bookingsHook.setDateRange({ start: yesterday, end: yesterday });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                         >
-                            <span>📥</span>
-                            <span className="hidden lg:inline">Financial</span>
+                            Yesterday
+                        </button>
+                        <button
+                            onClick={() => {
+                                const today = new Date();
+                                const last7Days = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
+                                bookingsHook.setDateRange({ start: last7Days, end: today.toISOString().split('T')[0] });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            Last 7 Days
+                        </button>
+                        <button
+                            onClick={() => {
+                                const today = new Date();
+                                const last30Days = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
+                                bookingsHook.setDateRange({ start: last30Days, end: today.toISOString().split('T')[0] });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            Last 30 Days
+                        </button>
+                        <button
+                            onClick={() => {
+                                const now = new Date();
+                                const year = now.getFullYear();
+                                const month = String(now.getMonth() + 1).padStart(2, '0');
+                                const lastDay = new Date(year, now.getMonth() + 1, 0).getDate();
+                                bookingsHook.setDateRange({
+                                    start: `${year}-${month}-01`,
+                                    end: `${year}-${month}-${String(lastDay).padStart(2, '0')}`
+                                });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            This Month
+                        </button>
+                        <button
+                            onClick={() => {
+                                const now = new Date();
+                                const lastMonth = now.getMonth() === 0 ? 11 : now.getMonth() - 1;
+                                const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+                                const month = String(lastMonth + 1).padStart(2, '0');
+                                const lastDay = new Date(year, lastMonth + 1, 0).getDate();
+                                bookingsHook.setDateRange({
+                                    start: `${year}-${month}-01`,
+                                    end: `${year}-${month}-${String(lastDay).padStart(2, '0')}`
+                                });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            Last Month
+                        </button>
+                        <button
+                            onClick={() => {
+                                const today = new Date().toISOString().split('T')[0];
+                                const year = new Date().getFullYear();
+                                bookingsHook.setDateRange({ start: `${year}-01-01`, end: today });
+                            }}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                        >
+                            This Year
                         </button>
                     </div>
 
-                    <div className="flex items-center gap-3 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100">
-                        <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center">
-                            <User size={14} />
+                    {/* Custom Date Range & Export Buttons */}
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-1.5 font-bold text-xs text-gray-600">
+                            <Calendar size={14} />
+                            <input
+                                type="date"
+                                value={bookingsHook.dateRange.start}
+                                onChange={(e) => bookingsHook.setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                className="bg-transparent outline-none cursor-pointer"
+                            />
+                            <span>to</span>
+                            <input
+                                type="date"
+                                value={bookingsHook.dateRange.end}
+                                onChange={(e) => bookingsHook.setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                className="bg-transparent outline-none cursor-pointer"
+                            />
                         </div>
-                        <span className="text-sm font-bold text-blue-900">
-                            Hello, {session?.user?.name || 'Admin'}
-                        </span>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => exportHook.handleExportBookings(bookingsHook.filterStatus, bookingsHook.dateRange)}
+                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-green-700 bg-green-50 hover:bg-green-100 rounded-lg transition-colors border border-green-200"
+                                title="Export filtered bookings to Excel"
+                            >
+                                <span>📥</span>
+                                <span className="hidden lg:inline">Bookings</span>
+                            </button>
+                            <button
+                                onClick={() => exportHook.handleExportFinancial(bookingsHook.dateRange)}
+                                className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors border border-blue-200"
+                                title="Export financial report to Excel"
+                            >
+                                <span>📥</span>
+                                <span className="hidden lg:inline">Financial</span>
+                            </button>
+                        </div>
+
+                        <div className="flex items-center gap-3 px-3 py-1.5 bg-blue-50 rounded-full border border-blue-100">
+                            <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center">
+                                <User size={14} />
+                            </div>
+                            <span className="text-sm font-bold text-blue-900">
+                                Hello, {session?.user?.name || 'Admin'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -368,7 +454,10 @@ export default function AdminDashboard() {
                     {/* ADS VIEW */}
                     {viewMode === 'ads' && (
                         <div className="animate-in fade-in">
-                            <AdsPerformance bookings={bookingsHook.filteredBookings} />
+                            <AdsPerformance
+                                bookings={bookingsHook.filteredBookings}
+                                dateRange={bookingsHook.dateRange}
+                            />
                         </div>
                     )}
 

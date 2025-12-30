@@ -15,18 +15,6 @@ export interface MetaInsightsResponse {
   error?: string;
 }
 
-// Helper function to get date range for "This Month"
-function getThisMonthDateRange(): { start: string; end: string } {
-  const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  
-  return {
-    start: firstDay.toISOString().split('T')[0]!,
-    end: lastDay.toISOString().split('T')[0]!,
-  };
-}
-
 export async function GET(request: NextRequest): Promise<NextResponse<MetaInsightsResponse>> {
   try {
     // Get environment variables
@@ -45,21 +33,31 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       );
     }
 
-    // Get date range (This Month)
-    const { start, end } = getThisMonthDateRange();
+    // Get date range from query params
+    const searchParams = request.nextUrl.searchParams;
+    const since = searchParams.get('since');
+    const until = searchParams.get('until');
 
     // Build Meta API URL
     const url = `https://graph.facebook.com/${apiVersion}/${adAccountId}/insights`;
-    
-    const params = new URLSearchParams({
+
+    // Build params object
+    const params: Record<string, string> = {
       access_token: accessToken,
       fields: 'spend,impressions,inline_link_clicks,reach',
-      time_range: JSON.stringify({ since: start, until: end }),
-      time_increment: 'all_data',
       level: 'account',
-    });
+    };
 
-    const apiUrl = `${url}?${params.toString()}`;
+    // Use custom date range if provided, otherwise use this_month
+    if (since && until) {
+      params.time_range = JSON.stringify({ since, until });
+    } else {
+      params.date_preset = 'this_month';
+    }
+
+    const urlParams = new URLSearchParams(params);
+
+    const apiUrl = `${url}?${urlParams.toString()}`;
 
     // Fetch data from Meta API
     const response = await fetch(apiUrl, {
@@ -108,6 +106,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
 
     // Check if data exists
     if (!data.data || data.data.length === 0) {
+      const now = new Date();
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      const today = new Date();
+
       return NextResponse.json(
         {
           success: true,
@@ -116,8 +118,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
             impressions: 0,
             inlineLinkClicks: 0,
             reach: 0,
-            date_start: start,
-            date_end: end,
+            date_start: firstDay.toISOString().split('T')[0]!,
+            date_end: today.toISOString().split('T')[0]!,
           },
         },
         { status: 200 }
@@ -131,8 +133,8 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       impressions: parseInt(insights.impressions || '0'),
       inlineLinkClicks: parseInt(insights.inline_link_clicks || '0'),
       reach: parseInt(insights.reach || '0'),
-      date_start: start,
-      date_end: end,
+      date_start: insights.date_start || '',
+      date_end: insights.date_stop || '',
     };
 
     return NextResponse.json(

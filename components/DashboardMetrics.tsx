@@ -2,7 +2,7 @@
 
 import { Booking } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { DollarSign, Users, CalendarX, Target, TrendingUp, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { DollarSign, Users, CalendarX, Target, TrendingUp, ArrowUpRight, ArrowDownRight, Megaphone, MousePointerClick, CheckCircle } from 'lucide-react';
 import { MetaInsightsData } from "@/app/api/meta/insights/route";
 import { useState, useEffect } from 'react';
 
@@ -73,6 +73,16 @@ export default function DashboardMetrics({ bookings }: Props) {
     const adsRevenue = totalRevenue; // Revenue from bookings
     const roi = adsSpend > 0 ? ((adsRevenue - adsSpend) / adsSpend) * 100 : 0;
     const roas = adsSpend > 0 ? (adsRevenue / adsSpend) : 0;
+
+    // Marketing Funnel Metrics
+    const impressions = adsData.impressions;
+    const clicks = adsData.inlineLinkClicks;
+    const conversions = totalBookings;
+
+    // Calculate conversion rates
+    const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0; // Click-Through Rate
+    const conversionRate = clicks > 0 ? (conversions / clicks) * 100 : 0; // Conversion Rate
+    const overallConversionRate = impressions > 0 ? (conversions / impressions) * 100 : 0;
 
     // 3. Prepare Chart Data
     const categories = [
@@ -199,6 +209,130 @@ export default function DashboardMetrics({ bookings }: Props) {
                     </div>
                     <p className="text-xs text-gray-500 mt-3">
                         * ROI calculated as: ((Revenue - Spend) / Spend) × 100
+                    </p>
+                </div>
+            )}
+
+            {/* Marketing Funnel */}
+            {!adsData.isLoading && impressions > 0 && (
+                <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
+                    <h3 className="text-lg font-bold mb-6 text-gray-700 flex items-center gap-2">
+                        <Target size={20} /> Marketing Funnel Analysis
+                    </h3>
+
+                    <div className="space-y-4">
+                        {/* Stage 1: Impressions */}
+                        <div className="relative">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+                                        <Megaphone size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-700">Impressions</p>
+                                        <p className="text-xs text-gray-500">People who saw your ads</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-2xl font-bold text-blue-600">{impressions.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500">100%</p>
+                                </div>
+                            </div>
+                            <div className="h-12 bg-gradient-to-r from-blue-500 to-blue-400 rounded-lg shadow-md"></div>
+                        </div>
+
+                        {/* Arrow & CTR */}
+                        <div className="flex items-center justify-center">
+                            <div className="text-center px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                                <p className="text-xs text-gray-500">Click-Through Rate</p>
+                                <p className="text-lg font-bold text-purple-600">{ctr.toFixed(2)}%</p>
+                                <p className="text-xs text-gray-400">{clicks.toLocaleString()} clicks</p>
+                            </div>
+                        </div>
+
+                        {/* Stage 2: Clicks */}
+                        <div className="relative">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
+                                        <MousePointerClick size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-700">WhatsApp Clicks</p>
+                                        <p className="text-xs text-gray-500">Visitors who clicked</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-2xl font-bold text-orange-600">{clicks.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500">{((clicks / impressions) * 100).toFixed(1)}%</p>
+                                </div>
+                            </div>
+                            <div
+                                className="h-12 bg-gradient-to-r from-orange-500 to-orange-400 rounded-lg shadow-md"
+                                style={{ width: `${Math.max((clicks / impressions) * 100, 5)}%` }}
+                            ></div>
+                        </div>
+
+                        {/* Arrow & Conversion Rate */}
+                        <div className="flex items-center justify-center">
+                            <div className="text-center px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                                <p className="text-xs text-gray-500">Conversion Rate</p>
+                                <p className="text-lg font-bold text-green-600">{conversionRate.toFixed(2)}%</p>
+                                <p className="text-xs text-gray-400">{conversions.toLocaleString()} bookings</p>
+                            </div>
+                        </div>
+
+                        {/* Stage 3: Conversions */}
+                        <div className="relative">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 bg-green-100 text-green-600 rounded-lg">
+                                        <CheckCircle size={18} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-gray-700">Conversions</p>
+                                        <p className="text-xs text-gray-500">Confirmed bookings</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-2xl font-bold text-green-600">{conversions.toLocaleString()}</p>
+                                    <p className="text-xs text-gray-500">{((conversions / impressions) * 100).toFixed(2)}%</p>
+                                </div>
+                            </div>
+                            <div
+                                className="h-12 bg-gradient-to-r from-green-500 to-green-400 rounded-lg shadow-md"
+                                style={{ width: `${Math.max((conversions / impressions) * 100, 3)}%` }}
+                            ></div>
+                        </div>
+                    </div>
+
+                    {/* Summary Stats */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                <p className="text-xs text-gray-600 mb-1">Overall Conversion</p>
+                                <p className="text-xl font-bold text-blue-700">{overallConversionRate.toFixed(3)}%</p>
+                                <p className="text-xs text-gray-500 mt-1">Impression → Booking</p>
+                            </div>
+                            <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+                                <p className="text-xs text-gray-600 mb-1">Cost Per Click</p>
+                                <p className="text-xl font-bold text-orange-700">
+                                    {clicks > 0 ? `Rp ${Math.round(adsSpend / clicks).toLocaleString()}` : 'N/A'}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">Average CPC</p>
+                            </div>
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                <p className="text-xs text-gray-600 mb-1">Cost Per Acquisition</p>
+                                <p className="text-xl font-bold text-green-700">
+                                    {conversions > 0 ? `Rp ${Math.round(adsSpend / conversions).toLocaleString()}` : 'N/A'}
+                                </p>
+                                <p className="text-xs text-gray-500 mt-1">Average CPA</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p className="text-xs text-gray-500 mt-4">
+                        * Funnel shows the customer journey from ad impression to confirmed booking
                     </p>
                 </div>
             )}

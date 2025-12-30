@@ -10,6 +10,7 @@ import { Booking } from '@/lib/storage';
 
 interface AdsPerformanceProps {
   bookings: Booking[];
+  dateRange?: { start: string; end: string };
 }
 
 interface AdsData extends MetaInsightsData {
@@ -17,7 +18,7 @@ interface AdsData extends MetaInsightsData {
   error: string | null;
 }
 
-export default function AdsPerformance({ bookings }: AdsPerformanceProps) {
+export default function AdsPerformance({ bookings, dateRange }: AdsPerformanceProps) {
   const [adsData, setAdsData] = useState<AdsData>({
     spend: 0,
     impressions: 0,
@@ -31,9 +32,19 @@ export default function AdsPerformance({ bookings }: AdsPerformanceProps) {
 
   const fetchAdsData = async () => {
     setAdsData(prev => ({ ...prev, isLoading: true, error: null }));
-    
+
     try {
-      const response = await fetch('/api/meta/insights');
+      // Build URL with date range params if provided
+      let url = '/api/meta/insights';
+      if (dateRange?.start && dateRange?.end) {
+        const params = new URLSearchParams({
+          since: dateRange.start,
+          until: dateRange.end,
+        });
+        url = `${url}?${params.toString()}`;
+      }
+
+      const response = await fetch(url);
       const result = await response.json();
 
       if (result.success && result.data) {
@@ -61,7 +72,7 @@ export default function AdsPerformance({ bookings }: AdsPerformanceProps) {
 
   useEffect(() => {
     fetchAdsData();
-  }, []);
+  }, [dateRange]);
 
   // Calculate ROI metrics
   const totalRevenue = bookings
@@ -279,22 +290,24 @@ export default function AdsPerformance({ bookings }: AdsPerformanceProps) {
         </div>
       </div>
 
-      {/* Configuration Help */}
-      <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-        <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
-          <AlertCircle size={18} /> Setup Required
-        </h4>
-        <p className="text-sm text-blue-800 mb-2">
-          To use this feature, ensure you have configured the following environment variables:
-        </p>
-        <code className="block bg-white p-3 rounded border border-blue-300 text-xs text-blue-900 font-mono">
-          META_ACCESS_TOKEN=your_meta_access_token_here<br />
-          META_AD_ACCOUNT_ID=act_your_ad_account_id_here
-        </code>
-        <p className="text-xs text-blue-700 mt-2">
-          Get these from Meta Business Manager > Business Settings > System Users
-        </p>
-      </div>
+      {/* Configuration Help - Only show if there's an error */}
+      {adsData.error && (
+        <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
+          <h4 className="font-bold text-blue-900 mb-2 flex items-center gap-2">
+            <AlertCircle size={18} /> Setup Required
+          </h4>
+          <p className="text-sm text-blue-800 mb-2">
+            To use this feature, ensure you have configured the following environment variables:
+          </p>
+          <code className="block bg-white p-3 rounded border border-blue-300 text-xs text-blue-900 font-mono">
+            META_ACCESS_TOKEN=your_meta_access_token_here<br />
+            META_AD_ACCOUNT_ID=act_your_ad_account_id_here
+          </code>
+          <p className="text-xs text-blue-700 mt-2">
+            Get these from Meta Business Manager > Business Settings > System Users
+          </p>
+        </div>
+      )}
     </div>
   );
 }
