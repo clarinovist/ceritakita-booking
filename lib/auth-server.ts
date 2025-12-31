@@ -5,7 +5,8 @@ import { getDb } from './db';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import { User, UserPermissions, CreateUserInput, UpdateUserInput } from './types/user';
-import { DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS, validateUserInput } from './permissions';
+import { DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from './permissions-types';
+import { validateUserInput } from './permissions';
 
 /**
  * Get all users (server-side)

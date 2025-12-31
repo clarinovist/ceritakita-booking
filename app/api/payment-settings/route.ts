@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { uploadToB2 } from '@/lib/b2-s3-client';
 import { randomUUID } from 'crypto';
 import { getDb } from '@/lib/db';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 interface PaymentMethod {
   id: string;
@@ -40,8 +41,9 @@ export async function GET() {
       updated_at: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Error fetching payment settings:', error);
-    return NextResponse.json({ error: 'Failed to fetch payment settings' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error fetching payment settings', {}, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -100,7 +102,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating payment settings:', error);
-    return NextResponse.json({ error: 'Failed to update payment settings' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error updating payment settings', {}, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

@@ -1,3 +1,5 @@
+'use client';
+
 export const useExport = () => {
     const handleExportBookings = async (filterStatus: string, dateRange: { start: string; end: string }) => {
         try {

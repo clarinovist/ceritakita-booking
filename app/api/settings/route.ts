@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { getSystemSettings, updateSystemSettings } from '@/lib/storage-sqlite';
 import { FILE_CONSTRAINTS } from '@/lib/constants';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 /**
  * Validate if a URL points to a valid image
@@ -42,11 +43,9 @@ export async function GET(req: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Settings GET error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch settings' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Settings GET error', {}, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -118,10 +117,8 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    console.error('Settings POST error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update settings' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Settings POST error', {}, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

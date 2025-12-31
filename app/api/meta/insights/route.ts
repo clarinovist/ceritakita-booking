@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveAdsLog, AdsData } from '@/lib/storage-sqlite';
+import { saveAdsLog, AdsData } from '@/lib';
+import { logger } from '@/lib/logger';
+
+// Force dynamic rendering to handle search params properly
+export const dynamic = 'force-dynamic';
 
 export interface MetaInsightsData {
   spend: number;
@@ -72,7 +76,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
     // Handle API errors
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('Meta API Error:', errorData);
+      logger.warn('Meta API Error', { errorData });
 
       // Handle specific error codes
       if (errorData?.error?.code === 190) {
@@ -152,7 +156,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       saveAdsLog(adsData);
     } catch (dbError) {
       // Log the error but don't fail the request
-      console.error('Database save failed (non-critical):', dbError);
+      logger.warn('Database save failed (non-critical)', {}, dbError as Error);
     }
     return NextResponse.json(
       {
@@ -162,7 +166,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       { status: 200 }
     );
   } catch (error) {
-    console.error('Unexpected error in Meta insights API:', error);
+    logger.error('Unexpected error in Meta insights API', {}, error as Error);
     
     return NextResponse.json(
       {

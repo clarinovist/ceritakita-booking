@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * Health Check Endpoint
@@ -32,7 +33,7 @@ export async function GET() {
       status: 200,
     });
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error('Health check failed', {}, error as Error);
 
     return NextResponse.json({
       status: 'unhealthy',

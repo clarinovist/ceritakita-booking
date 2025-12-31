@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdsLog } from '@/lib/storage-sqlite';
+import { getAdsLog } from '@/lib';
+import { logger, createErrorResponse } from '@/lib/logger';
+
+// Force dynamic rendering to handle search params properly
+export const dynamic = 'force-dynamic';
 
 export interface AdsHistoryRecord {
   spend: number;
@@ -46,14 +50,14 @@ export async function GET(request: NextRequest): Promise<NextResponse<AdsHistory
       { status: 200 }
     );
   } catch (error) {
-    console.error('Error fetching ads history:', error);
-    
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error fetching ads history', { limit, startDate, endDate }, error as Error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to fetch ads history',
+        error: errorResponse.error.message || 'Failed to fetch ads history',
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }

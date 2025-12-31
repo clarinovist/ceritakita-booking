@@ -3,7 +3,8 @@ import { requireAuth } from '@/lib/auth';
 import { getUploadPath } from '@/lib/file-storage';
 import { stat } from 'fs/promises';
 import path from 'path';
-import getDb from '@/lib/db';
+import { getDb } from '@/lib/db';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 /**
  * Serve uploaded files with authentication
@@ -94,10 +95,8 @@ export async function GET(
       }
     });
   } catch (error) {
-    console.error('Error serving file:', error);
-    return NextResponse.json(
-      { error: 'Failed to serve file' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error serving file', { path: params.path }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

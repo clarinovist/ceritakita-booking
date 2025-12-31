@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readBooking, updateBooking, type Booking } from '@/lib/storage-sqlite';
 import { requireAuth } from '@/lib/auth';
-import { updateBookingSchema } from '@/lib/validation';
+import { updateBookingSchema } from '@/lib';
 import { rateLimiters } from '@/lib/rate-limit';
 import { logger, createErrorResponse, createValidationError } from '@/lib/logger';
 import { safeString } from '@/lib/type-utils';

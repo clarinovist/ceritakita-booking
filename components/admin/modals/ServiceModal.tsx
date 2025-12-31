@@ -1,5 +1,5 @@
 import { XCircle, Save } from 'lucide-react';
-import { ServiceFormData } from '../types/admin';
+import { ServiceFormData } from '@/lib/types';
 
 interface ServiceModalProps {
     isOpen: boolean;

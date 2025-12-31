@@ -1,4 +1,4 @@
-import { Photographer } from '../types/admin';
+import { Photographer } from '@/lib/types';
 
 interface PhotographersTableProps {
     photographers: Photographer[];

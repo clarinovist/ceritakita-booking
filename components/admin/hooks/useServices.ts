@@ -1,6 +1,7 @@
+'use client';
+
 import { useState } from 'react';
-import { Service } from '@/lib/storage';
-import { ServiceFormData } from '../types/admin';
+import { Service, ServiceFormData } from '@/lib/types';
 
 export const useServices = () => {
     const [services, setServices] = useState<Service[]>([]);

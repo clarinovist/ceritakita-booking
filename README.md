@@ -99,6 +99,11 @@ B2_APPLICATION_KEY_ID=your_key
 B2_APPLICATION_KEY=your_secret
 B2_BUCKET_ID=your_bucket
 B2_BUCKET_NAME=your_bucket_name
+
+# Optional (Meta Marketing API - for ads performance tracking)
+META_ACCESS_TOKEN=your_meta_access_token
+META_AD_ACCOUNT_ID=act_your_ad_account_id
+META_API_VERSION=v19.0
 ```
 
 **Note**: Portfolio images are stored in Backblaze B2. The B2 bucket domain is configured in `next.config.mjs` under `images.remotePatterns` to enable Next.js Image Optimization.
@@ -164,6 +169,7 @@ cp data/bookings.db /backup/bookings.db.$(date +%Y%m%d)
 - Search and filter capabilities
 - Payment tracking with progress visualization
 - Excel export for bookings and financial reports
+- Meta Ads performance tracking with ROI analysis
 
 ### Booking System
 - Multi-step booking form with validation
@@ -204,6 +210,11 @@ cp data/bookings.db /backup/bookings.db.$(date +%Y%m%d)
 - `GET /api/uploads/[...path]` - Serve uploaded files
 - `GET /api/export/bookings` - Export bookings to Excel
 - `GET /api/export/financial` - Export financial report to Excel
+
+### Meta Ads Integration (Optional)
+- `GET /api/meta/insights` - Fetch Meta Ads performance data
+- `GET /api/meta/history` - Get historical ads data from database
+- `POST /api/meta/backfill` - Backfill historical ads data (up to 90 days)
 
 ## 🎯 Price Calculation
 
@@ -271,7 +282,44 @@ pm2 status
 - **User Manual**: `USER_MANUAL.md` - Non-technical guide for studio staff
 - **Deployment Guide**: `DEPLOYMENT_GUIDE.md` - Technical deployment and maintenance
 - **Changelog**: `CHANGELOG.md` - Version history and recent changes
-- **Logo Guide**: `LOGO_CHANGE_GUIDE.md` - Customizing the logo (if exists)
+
+## 📊 Meta Ads Integration (Optional)
+
+The system includes optional integration with Meta Marketing API for tracking ad performance and ROI analysis.
+
+### Setup
+
+1. Get Meta API credentials from [Meta Business Manager](https://business.facebook.com/)
+   - Create a System User in Business Settings
+   - Generate an Access Token
+   - Get your Ad Account ID (format: `act_123456789`)
+
+2. Add to `.env.local`:
+   ```bash
+   META_ACCESS_TOKEN=your_token_here
+   META_AD_ACCOUNT_ID=act_123456789
+   META_API_VERSION=v19.0  # Optional, defaults to v19.0
+   ```
+
+3. Access "Ads Performance" in the admin dashboard sidebar
+
+### Features
+
+- **Real-time Metrics**: Track spend, impressions, clicks, and reach
+- **ROI Analysis**: Calculate return on ad spend and conversion rates
+- **Historical Data**: Daily logging system for trend analysis
+- **Dashboard Integration**: Ads metrics displayed in main dashboard
+- **Backfill Support**: Import historical data up to 90 days
+
+### Daily Logging System
+
+The system automatically logs daily ads data when the dashboard is accessed. To backfill historical data:
+
+```bash
+curl -X POST "http://localhost:3000/api/meta/backfill?days=30"
+```
+
+Maximum backfill: 90 days. Data is stored in SQLite with daily granularity for accurate tracking.
 
 ## 🔄 Migration
 

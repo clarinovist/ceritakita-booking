@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllCoupons, createCoupon, updateCoupon, deleteCoupon, getCouponById } from '@/lib/coupons';
 import { requireAuth } from '@/lib/auth';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 // GET - Get all coupons
 export async function GET(req: NextRequest) {
@@ -11,8 +12,9 @@ export async function GET(req: NextRequest) {
         const coupons = getAllCoupons();
         return NextResponse.json(coupons);
     } catch (error) {
-        console.error('Error fetching coupons:', error);
-        return NextResponse.json({ error: 'Failed to fetch coupons' }, { status: 500 });
+        const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        logger.error('Error fetching coupons', {}, error as Error);
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }
 
@@ -54,12 +56,19 @@ export async function POST(req: NextRequest) {
 
         const coupon = getCouponById(id);
         return NextResponse.json(coupon, { status: 201 });
-    } catch (error: any) {
-        console.error('Error creating coupon:', error);
-        if (error.message?.includes('UNIQUE')) {
-            return NextResponse.json({ error: 'Kode kupon sudah digunakan' }, { status: 409 });
+    } catch (error: unknown) {
+        const errorObj = error as Error;
+        logger.error('Error creating coupon', { code: body.code }, errorObj);
+        
+        if (errorObj.message?.includes('UNIQUE')) {
+            return NextResponse.json(
+                { error: 'Kode kupon sudah digunakan', code: 'DUPLICATE_COUPON_CODE' },
+                { status: 409 }
+            );
         }
-        return NextResponse.json({ error: 'Failed to create coupon' }, { status: 500 });
+        
+        const { error: errorResponse, statusCode } = createErrorResponse(errorObj);
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }
 
@@ -91,8 +100,9 @@ export async function PUT(req: NextRequest) {
         const updatedCoupon = getCouponById(body.id);
         return NextResponse.json(updatedCoupon);
     } catch (error) {
-        console.error('Error updating coupon:', error);
-        return NextResponse.json({ error: 'Failed to update coupon' }, { status: 500 });
+        const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        logger.error('Error updating coupon', { couponId: body.id }, error as Error);
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }
 
@@ -112,7 +122,8 @@ export async function DELETE(req: NextRequest) {
         deleteCoupon(id);
         return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error deleting coupon:', error);
-        return NextResponse.json({ error: 'Failed to delete coupon' }, { status: 500 });
+        const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        logger.error('Error deleting coupon', { couponId: id }, error as Error);
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }

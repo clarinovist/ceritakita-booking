@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllCouponUsage, getCouponUsageHistory } from '@/lib/coupons';
 import { requireAuth } from '@/lib/auth';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 export async function GET(req: NextRequest) {
     const authCheck = await requireAuth(req);
@@ -20,7 +21,8 @@ export async function GET(req: NextRequest) {
             return NextResponse.json(history);
         }
     } catch (error) {
-        console.error('Error fetching coupon usage:', error);
-        return NextResponse.json({ error: 'Failed to fetch usage history' }, { status: 500 });
+        const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        logger.error('Error fetching coupon usage', { couponId }, error as Error);
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }

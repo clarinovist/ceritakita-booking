@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readData } from '@/lib/storage-sqlite';
+import { readData } from '@/lib';
 import { requireAuth } from '@/lib/auth';
+import { logger, createErrorResponse } from '@/lib/logger';
 import * as XLSX from 'xlsx';
 
 /**
@@ -198,7 +199,8 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error exporting financial report:', error);
-    return NextResponse.json({ error: 'Failed to export financial report' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error exporting financial report', { startDate, endDate }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

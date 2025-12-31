@@ -24,7 +24,7 @@ export const formatDate = (date: string | Date): string => {
 
     return `${day}-${month}-${year}`;
   } catch (error) {
-    console.error('Error formatting date:', error);
+    // Silent failure for date formatting - return default
     return '-';
   }
 };
@@ -49,7 +49,7 @@ export const formatDateTime = (date: string | Date): string => {
 
     return `${dateStr} ${hours}:${minutes}`;
   } catch (error) {
-    console.error('Error formatting datetime:', error);
+    // Silent failure for date formatting - return default
     return '-';
   }
 };
@@ -73,7 +73,7 @@ export const formatTime = (date: string | Date): string => {
 
     return `${hours}:${minutes}`;
   } catch (error) {
-    console.error('Error formatting time:', error);
+    // Silent failure for date formatting - return default
     return '-';
   }
 };
@@ -98,7 +98,7 @@ export const formatDateForInput = (date: string | Date): string => {
 
     return `${year}-${month}-${day}`;
   } catch (error) {
-    console.error('Error formatting date for input:', error);
+    // Silent failure for date formatting - return default
     return '';
   }
 };
@@ -124,7 +124,7 @@ export const formatDateShort = (date: string | Date): string => {
 
     return `${day} ${month} ${year}`;
   } catch (error) {
-    console.error('Error formatting date short:', error);
+    // Silent failure for date formatting - return default
     return '-';
   }
 };

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSuggestedCoupons } from '@/lib/coupons';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,10 +17,8 @@ export async function POST(req: NextRequest) {
         const suggestions = getSuggestedCoupons(totalAmount);
         return NextResponse.json(suggestions);
     } catch (error) {
-        console.error('Error getting coupon suggestions:', error);
-        return NextResponse.json(
-            { error: 'Failed to get suggestions' },
-            { status: 500 }
-        );
+        const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        logger.error('Error getting coupon suggestions', { totalAmount }, error as Error);
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }

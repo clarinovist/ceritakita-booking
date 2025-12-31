@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateCoupon } from '@/lib/coupons';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
     try {
@@ -32,10 +33,11 @@ export async function POST(req: NextRequest) {
             discount_amount: result.discount_amount
         });
     } catch (error) {
-        console.error('Error validating coupon:', error);
+        const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        logger.error('Error validating coupon', { code: body.code }, error as Error);
         return NextResponse.json(
-            { error: 'Terjadi kesalahan saat memvalidasi kupon' },
-            { status: 500 }
+            { ...errorResponse, error: 'Terjadi kesalahan saat memvalidasi kupon' },
+            { status: statusCode }
         );
     }
 }

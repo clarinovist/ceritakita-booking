@@ -1,6 +1,7 @@
+'use client';
+
 import { useState, useEffect, useMemo } from 'react';
-import { Booking, FinanceData } from '@/lib/storage';
-import { BookingUpdate, FilterStatus, DateRange } from '../types/admin';
+import { Booking, FinanceData, BookingUpdate, FilterStatus, DateRange } from '@/lib/types';
 
 export const useBookings = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -105,7 +106,9 @@ export const useBookings = () => {
         return { total, paid, balance, isPaidOff: balance <= 0 && total > 0 };
     };
 
-    const getOrReconstructBreakdown = (booking: Booking) => {
+    const getOrReconstructBreakdown = (booking: Booking | null) => {
+        if (!booking) return null;
+        
         // If breakdown already exists, return it
         if (booking.finance.service_base_price !== undefined) {
             return {
@@ -147,7 +150,7 @@ export const useBookings = () => {
     const bookingsByDateRange = useMemo(() => {
         return bookings.filter(b => {
             const sessionDate = new Date(b.booking.date).toISOString().split('T')[0];
-            return sessionDate >= dateRange.start && sessionDate <= dateRange.end;
+            return sessionDate && sessionDate >= dateRange.start && sessionDate <= dateRange.end;
         });
     }, [bookings, dateRange]);
 
@@ -155,7 +158,7 @@ export const useBookings = () => {
     const bookingsByCreatedDate = useMemo(() => {
         return bookings.filter(b => {
             const createdDate = new Date(b.created_at).toISOString().split('T')[0];
-            return createdDate >= dateRange.start && createdDate <= dateRange.end;
+            return createdDate && createdDate >= dateRange.start && createdDate <= dateRange.end;
         });
     }, [bookings, dateRange]);
 
@@ -176,7 +179,7 @@ export const useBookings = () => {
 
             // Filter by date range
             const bookingDate = new Date(b.booking.date).toISOString().split('T')[0];
-            const dateMatch = bookingDate >= dateRange.start && bookingDate <= dateRange.end;
+            const dateMatch = bookingDate && bookingDate >= dateRange.start && bookingDate <= dateRange.end;
 
             return statusMatch && dateMatch;
         });
@@ -186,7 +189,7 @@ export const useBookings = () => {
         .filter(b => {
             const isActive = b.status === 'Active' || b.status === 'Rescheduled';
             const bookingDate = new Date(b.booking.date).toISOString().split('T')[0];
-            const inDateRange = bookingDate >= dateRange.start && bookingDate <= dateRange.end;
+            const inDateRange = bookingDate && bookingDate >= dateRange.start && bookingDate <= dateRange.end;
             return isActive && inDateRange;
         })
         .map(b => ({

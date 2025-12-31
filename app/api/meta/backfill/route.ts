@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { backfillAdsHistory } from '@/lib/storage-sqlite';
+import { backfillAdsHistory } from '@/lib';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 export interface BackfillResponse {
   success: boolean;
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<BackfillR
       );
     }
 
-    console.log(`Starting backfill for ${days} days...`);
+    logger.info(`Starting backfill for ${days} days`, { days });
 
     // Perform backfill
     const result = await backfillAdsHistory(accessToken, adAccountId, days, apiVersion);
@@ -80,14 +81,15 @@ export async function POST(request: NextRequest): Promise<NextResponse<BackfillR
       );
     }
   } catch (error) {
-    console.error('Backfill API error:', error);
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Backfill API error', { days }, error as Error);
 
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : 'Internal server error during backfill',
+        message: errorResponse.error.message || 'Internal server error during backfill',
       },
-      { status: 500 }
+      { status: statusCode }
     );
   }
 }

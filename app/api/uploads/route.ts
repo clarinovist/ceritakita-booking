@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { uploadToB2 } from '@/lib/b2-s3-client';
 import { randomUUID } from 'crypto';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 /**
  * POST /api/uploads
@@ -62,10 +63,8 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    console.error('Upload error:', error);
-    return NextResponse.json(
-      { error: 'Failed to upload file' }, 
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Upload error', { folder }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

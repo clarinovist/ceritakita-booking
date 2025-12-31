@@ -397,3 +397,243 @@
 [2025-12-30T08:05:19.352Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
 [2025-12-30T08:05:19.790Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":835193,"impressions":91115,"clicks":367,"reach":33598}
 [2025-12-30T08:05:20.296Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":835193,"impressions":91115,"clicks":367,"reach":33598}
+[2025-12-31T03:42:08.717Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T03:42:08.719Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:08.776Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:08.775Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T03:42:08.798Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T03:42:08.798Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:08.810Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T03:42:08.811Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:12.409Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":887881,"impressions":97575,"clicks":387,"reach":35643}
+[2025-12-31T03:42:12.899Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":887881,"impressions":97575,"clicks":387,"reach":35643}
+[2025-12-31T03:42:14.497Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:14.506Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:17.647Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:17.657Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:18.630Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:18.636Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:32.176Z] [INFO] User updated successfully | Context: {"userId":"590c2bdd-dde7-4aa5-a381-7db80b343578","username":"Kafi"}
+[2025-12-31T03:42:32.186Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:52.968Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:52.981Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:55.224Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:42:55.234Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:43:05.156Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":888119,"impressions":97598,"clicks":387,"reach":35643}
+[2025-12-31T03:43:05.730Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":888119,"impressions":97598,"clicks":387,"reach":35643}
+[2025-12-31T03:43:11.331Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":887881,"impressions":97575,"clicks":387,"reach":35643}
+[2025-12-31T03:43:11.824Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":887881,"impressions":97575,"clicks":387,"reach":35643}
+[2025-12-31T03:43:24.773Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T03:43:24.781Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T04:38:37.096Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T04:38:37.098Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T04:38:37.150Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T04:38:37.150Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T04:38:37.169Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T04:38:37.170Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T04:38:37.182Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T04:38:37.182Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T04:38:39.525Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T04:38:39.533Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T04:38:42.757Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":891677,"impressions":98084,"clicks":388,"reach":35904}
+[2025-12-31T04:38:43.099Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":891677,"impressions":98084,"clicks":388,"reach":35904}
+[2025-12-31T04:38:43.558Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":891677,"impressions":98084,"clicks":388,"reach":35904}
+[2025-12-31T04:38:43.936Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":891677,"impressions":98084,"clicks":388,"reach":35904}
+[2025-12-31T04:38:47.413Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":24810,"impressions":2816,"clicks":7,"reach":2480}
+[2025-12-31T06:12:11.129Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:12:11.127Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:12:11.238Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:12:11.239Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:12:11.288Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:12:11.289Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:12:11.303Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:12:11.303Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:12:13.186Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T06:12:13.194Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T06:12:13.774Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T06:12:13.785Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T06:26:56.067Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:26:56.066Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:26:56.131Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:26:56.132Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:26:56.172Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:26:56.173Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:26:56.185Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:26:56.185Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:21.722Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:27:21.724Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:21.766Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:27:21.767Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:21.785Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:27:21.786Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:21.797Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T06:27:21.797Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:26.144Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:26.155Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:28.440Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:28.451Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T06:27:41.315Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":898442,"impressions":98892,"clicks":390,"reach":36230}
+[2025-12-31T06:27:42.210Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":898442,"impressions":98892,"clicks":390,"reach":36230}
+[2025-12-31T11:38:03.168Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":48608,"impressions":5872,"clicks":15,"reach":5096}
+[2025-12-31T12:57:31.563Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T12:57:31.561Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T12:57:31.594Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T12:57:31.595Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T12:57:31.618Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T12:57:31.619Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T12:57:31.631Z] [INFO] Bookings retrieved successfully | Context: {"count":2}
+[2025-12-31T12:57:31.630Z] [INFO] Retrieved bookings from database | Context: {"count":2}
+[2025-12-31T12:57:34.681Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T12:57:34.689Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T13:26:57.361Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T13:26:57.377Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T13:26:58.648Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T13:26:58.657Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T13:27:03.543Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T13:27:03.551Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T13:27:13.361Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":51129,"impressions":6178,"clicks":16,"reach":5304}
+[2025-12-31T13:27:17.735Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":51129,"impressions":6178,"clicks":16,"reach":5304}
+[2025-12-31T13:27:17.748Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":51129,"impressions":6178,"clicks":16,"reach":5304}
+[2025-12-31T14:10:35.382Z] [INFO] File uploaded successfully to local storage | Context: {"bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","paymentIndex":0,"filename":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40_0_1767190235381_7d77dce3-131e-425f-8164-863f17d03767.png","size":71093,"mimeType":"image/png","storage":"local"}
+[2025-12-31T14:10:35.383Z] [INFO] Payment proof uploaded | Context: {"requestId":"4c0462db-7496-4446-be87-bd0240bd0e49","bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","filename":"2025-12/2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40_0_1767190235381_7d77dce3-131e-425f-8164-863f17d03767.png","size":71093,"storage":"local"}
+[2025-12-31T14:10:35.390Z] [INFO] AUDIT: CREATE_BOOKING on booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40 | Context: {"action":"CREATE_BOOKING","resource":"booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","date":"2026-01-07T09:00"} | User: Cerita Kita Studio
+[2025-12-31T14:10:35.390Z] [INFO] Booking created successfully | Context: {"requestId":"4c0462db-7496-4446-be87-bd0240bd0e49","bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","customer":"Cerita Kita Studio","date":"2026-01-07T09:00","total":2800000}
+[2025-12-31T14:10:45.909Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:10:45.911Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:10:46.381Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:10:46.382Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:10:46.411Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:10:46.410Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:10:46.423Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:10:46.424Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:10:59.898Z] [INFO] AUDIT: UPDATE_BOOKING on booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40 | Context: {"action":"UPDATE_BOOKING","resource":"booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","date":"2026-01-07T09:00","status":"Active"} | User: Cerita Kita Studio
+[2025-12-31T14:10:59.899Z] [INFO] AUDIT: UPDATE_BOOKING on booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40 | Context: {"action":"UPDATE_BOOKING","resource":"booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","requestId":"05724710-76ff-48d0-9b42-4b27cb98c56f","updates":["finance"]} | User: Cerita Kita Studio
+[2025-12-31T14:11:04.949Z] [INFO] AUDIT: BOOKING_COMPLETED on booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40 | Context: {"action":"BOOKING_COMPLETED","resource":"booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","requestId":"d54640fd-8dca-4589-8c69-b3b1655e3919","totalPrice":2800000,"totalPaid":2800000,"bookingDate":"2026-01-07T09:00"} | User: Cerita Kita Studio
+[2025-12-31T14:11:04.950Z] [INFO] AUDIT: UPDATE_BOOKING on booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40 | Context: {"action":"UPDATE_BOOKING","resource":"booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","date":"2026-01-07T09:00","status":"Completed"} | User: Cerita Kita Studio
+[2025-12-31T14:11:04.950Z] [INFO] AUDIT: UPDATE_BOOKING on booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40 | Context: {"action":"UPDATE_BOOKING","resource":"booking:2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","requestId":"d54640fd-8dca-4589-8c69-b3b1655e3919","updates":["status"]} | User: Cerita Kita Studio
+[2025-12-31T14:11:16.523Z] [INFO] Booking retrieved successfully | Context: {"requestId":"3d2d9abe-23e4-468d-a530-b83b8afa800f","bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","customer":"Cerita Kita Studio"}
+[2025-12-31T14:11:16.566Z] [INFO] Booking retrieved successfully | Context: {"requestId":"7da99fe3-de8c-4ed1-91f2-7b532c9d2075","bookingId":"2213efae-8aa8-4cb5-b8cb-9dffd8eb0b40","customer":"Cerita Kita Studio"}
+[2025-12-31T14:11:24.876Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:11:24.884Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:11:35.432Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T14:11:35.440Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":918049,"impressions":101453,"clicks":397,"reach":37136}
+[2025-12-31T14:19:56.896Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:19:56.914Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:20:52.998Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:20:53.014Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:29:38.028Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:29:38.030Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:29:38.095Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:29:38.096Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:29:38.166Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:29:38.167Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:29:38.191Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:29:38.192Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:32:37.445Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:32:37.447Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:32:37.518Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:32:37.519Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:32:37.616Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:32:37.617Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:32:37.631Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:32:37.632Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:32:47.821Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:32:47.843Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:35:28.372Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:35:28.369Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:35:28.451Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:35:28.451Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:35:28.479Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:35:28.480Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:35:28.498Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:35:28.500Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:35:35.546Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:35:35.579Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:35:38.080Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:35:38.093Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:35:47.135Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:35:47.158Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T14:35:47.184Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:35:47.207Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T14:44:03.194Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:03.191Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:03.283Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:03.284Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:03.312Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:03.312Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:03.331Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:03.331Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:05.367Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:44:05.399Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:44:15.373Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:15.375Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:15.514Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:15.515Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:15.558Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:15.557Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:15.575Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:15.576Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:50.412Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:50.414Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:50.446Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:50.447Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:50.465Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:50.464Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:44:50.481Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:44:50.480Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:45:02.301Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:45:02.309Z] [INFO] Users retrieved successfully | Context: {"count":2}
+[2025-12-31T14:45:03.061Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T14:45:03.069Z] [INFO] Payment methods retrieved successfully | Context: {"count":2}
+[2025-12-31T14:47:14.996Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:47:14.998Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:47:15.042Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:47:15.042Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:47:15.115Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:47:15.115Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:47:15.132Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:47:15.133Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:47:25.669Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:47:25.684Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:47:30.706Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:47:30.716Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:50:57.901Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:50:57.899Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:50:57.964Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:50:57.965Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:50:58.001Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:50:58.001Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:50:58.016Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:50:58.015Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:51:01.371Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:51:01.386Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:53:14.712Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:53:14.715Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:53:14.776Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:53:14.777Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:53:14.805Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:53:14.804Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:53:14.818Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:53:14.819Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:53:18.751Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:53:18.766Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:02.236Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:55:02.238Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:55:02.304Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:55:02.305Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:55:02.339Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:55:02.341Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:55:02.366Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T14:55:02.367Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T14:55:04.597Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:04.614Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:05.731Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:05.745Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:11.870Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:11.884Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:12.965Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:12.974Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:14.094Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:14.105Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:21.892Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function
+[2025-12-31T14:55:21.902Z] [WARN] Database save failed (non-critical) | Context: {} | User: TypeError: (0 , _lib__WEBPACK_IMPORTED_MODULE_1__.saveAdsLog) is not a function

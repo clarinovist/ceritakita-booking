@@ -1,5 +1,5 @@
-import MultiStepBookingForm from '@/components/booking/MultiStepBookingForm';
-import { HeroLogo } from '@/components/ui/Logo';
+import { MultiStepBookingForm } from '@/components/booking';
+import { HeroLogo } from '@/components/ui';
 
 export default function Home() {
   return (

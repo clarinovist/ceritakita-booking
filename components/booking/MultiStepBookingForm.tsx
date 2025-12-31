@@ -2,11 +2,11 @@
 
 import { MultiStepFormProvider, useMultiStepForm } from './MultiStepForm';
 import { ProgressIndicator, MobileStepNavigation } from './ProgressIndicator';
-import { StepServiceSelection } from './StepServiceSelection';
-import { StepAddons } from './StepAddons';
-import { StepSchedule } from './StepSchedule';
-import { StepCustomerInfo } from './StepCustomerInfo';
-import { StepPayment } from './StepPayment';
+import { ServiceSelection } from './steps/ServiceSelection';
+import { AddonsSelection } from './steps/AddonsSelection';
+import { ScheduleInfo } from './steps/ScheduleInfo';
+import { CustomerInfo } from './steps/CustomerInfo';
+import { PaymentInfo } from './steps/PaymentInfo';
 import { ValidationSummary } from '@/components/ui/ValidationMessage';
 import { Lightbox } from './components/Lightbox';
 import { useEffect } from 'react';
@@ -17,15 +17,15 @@ function StepContent() {
 
   switch (currentStep) {
     case 1:
-      return <StepServiceSelection />;
+      return <ServiceSelection />;
     case 2:
-      return <StepAddons />;
+      return <AddonsSelection />;
     case 3:
-      return <StepSchedule />;
+      return <ScheduleInfo />;
     case 4:
-      return <StepCustomerInfo />;
+      return <CustomerInfo />;
     case 5:
-      return <StepPayment />;
+      return <PaymentInfo />;
     default:
       return null;
   }

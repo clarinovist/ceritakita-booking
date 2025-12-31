@@ -1,23 +1,13 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { NextResponse } from 'next/server';
-
-/**
- * Get the NextAuth configuration
- * We need to import this dynamically to avoid circular dependencies
- */
-async function getAuthOptions() {
-  // Import the auth handler from the route
-  const { authOptions } = await import('@/app/api/auth/[...nextauth]/route');
-  return authOptions;
-}
+import { authOptions } from './auth-config';
 
 /**
  * Check if the request is authenticated
  * Returns the session if authenticated, null otherwise
  */
 export async function getSession() {
-  const authOptions = await getAuthOptions();
   const session = await getServerSession(authOptions);
   return session;
 }

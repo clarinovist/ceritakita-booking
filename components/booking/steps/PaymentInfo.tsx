@@ -1,26 +1,104 @@
+'use client';
+
 import { MessageSquare, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { PaymentDetails } from '../components/PaymentDetails';
+import { useMultiStepForm } from '../MultiStepForm';
+import { useEffect, useState } from 'react';
+import { fieldValidators } from '@/lib/validation/schemas';
 
 interface PaymentInfoProps {
-    formData: {
+    formData?: {
         dp_amount: string;
     };
-    handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    proofPreview: string;
-    handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    paymentSettings: any;
-    copyToClipboard: (text: string) => void;
+    handleChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    proofPreview?: string;
+    handleFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    paymentSettings?: any;
+    copyToClipboard?: (text: string) => void;
 }
 
 export const PaymentInfo = ({
-    formData,
-    handleChange,
-    proofPreview,
-    handleFileChange,
-    paymentSettings,
-    copyToClipboard
-}: PaymentInfoProps) => {
+    formData: propFormData,
+    handleChange: propHandleChange,
+    proofPreview: propProofPreview,
+    handleFileChange: propHandleFileChange,
+    paymentSettings: propPaymentSettings,
+    copyToClipboard: propCopyToClipboard
+}: PaymentInfoProps = {}) => {
+    // Use context if no props provided (for MultiStepBookingForm)
+    const context = useMultiStepForm();
+    const isContextMode = !propFormData;
+    
+    const formData = isContextMode ? context.formData : propFormData!;
+    const updateFormData = isContextMode ? context.updateFormData : () => {};
+    const errors = isContextMode ? context.errors : {};
+    const setFieldError = isContextMode ? context.setFieldError : () => {};
+    const clearFieldError = isContextMode ? context.clearFieldError : () => {};
+    const paymentSettings = isContextMode ? context.formData.paymentSettings : propPaymentSettings;
+    const copyToClipboard = isContextMode ? (text: string) => {
+        navigator.clipboard.writeText(text);
+    } : propCopyToClipboard!;
+
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+    // File handling for context mode
+    const [proofPreview, setProofPreview] = useState(isContextMode ? context.formData.proofPreview : propProofPreview || '');
+    const [proofFile, setProofFile] = useState(isContextMode ? context.formData.proofFile : null);
+
+    // Real-time validation (only in context mode)
+    useEffect(() => {
+        if (!isContextMode) return;
+        
+        if (touched.dp_amount && formData.dp_amount) {
+            const error = fieldValidators.dp_amount(formData.dp_amount, context.formData.totalPrice);
+            if (error) {
+                setFieldError('dp_amount', error);
+            } else {
+                clearFieldError('dp_amount');
+            }
+        }
+    }, [formData.dp_amount, touched.dp_amount, isContextMode, context.formData.totalPrice]);
+
+    const handleDpAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isContextMode) {
+            updateFormData({ dp_amount: e.target.value });
+            if (!touched.dp_amount) setTouched(prev => ({ ...prev, dp_amount: true }));
+        } else if (propHandleChange) {
+            propHandleChange(e);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isContextMode) {
+            const file = e.target.files?.[0];
+            if (file) {
+                if (file.size > 5 * 1024 * 1024) {
+                    setFieldError('proofFile', 'File terlalu besar (maksimal 5MB)');
+                    return;
+                }
+                
+                setProofFile(file);
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const result = e.target?.result as string;
+                    setProofPreview(result);
+                    updateFormData({ 
+                        proofFile: file,
+                        proofPreview: result 
+                    });
+                };
+                reader.readAsDataURL(file);
+                clearFieldError('proofFile');
+            }
+        } else if (propHandleFileChange) {
+            propHandleFileChange(e);
+        }
+    };
+
+    const proofError = isContextMode ? errors[5]?.find(e => e.field === 'proofFile') : null;
+    const dpError = isContextMode ? errors[5]?.find(e => e.field === 'dp_amount') : null;
+
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
             <div className="flex items-center gap-2 font-bold text-gray-800">
@@ -34,16 +112,37 @@ export const PaymentInfo = ({
                 copyToClipboard={copyToClipboard}
             />
 
-            <input
-                required
-                type="number"
-                name="dp_amount"
-                value={formData.dp_amount}
-                onChange={handleChange}
-                placeholder="Masukkan Jumlah DP (Rp)"
-                className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700"
-            />
+            {/* DP Amount Input */}
+            {isContextMode ? (
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-medium">Jumlah DP (Rp)</label>
+                    <input
+                        required
+                        type="number"
+                        name="dp_amount"
+                        value={formData.dp_amount}
+                        onChange={handleDpAmountChange}
+                        onBlur={() => setTouched(prev => ({ ...prev, dp_amount: true }))}
+                        placeholder="Masukkan Jumlah DP (Rp)"
+                        className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700"
+                        aria-describedby={dpError ? 'dp_amount-error' : undefined}
+                        aria-invalid={!!dpError}
+                    />
+                    {dpError && <p className="text-xs text-red-600" id="dp_amount-error">{dpError.message}</p>}
+                </div>
+            ) : (
+                <input
+                    required
+                    type="number"
+                    name="dp_amount"
+                    value={formData.dp_amount}
+                    onChange={handleDpAmountChange}
+                    placeholder="Masukkan Jumlah DP (Rp)"
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700"
+                />
+            )}
 
+            {/* File Upload */}
             <div className="relative group overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-4 transition-all hover:bg-white hover:border-blue-300">
                 <input
                     required={!proofPreview}
@@ -72,6 +171,11 @@ export const PaymentInfo = ({
                     </div>
                 )}
             </div>
+
+            {/* Validation Error */}
+            {isContextMode && proofError && (
+                <p className="text-xs text-red-600">{proofError.message}</p>
+            )}
         </div>
     );
 };

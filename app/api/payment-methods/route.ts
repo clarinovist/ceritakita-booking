@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { 
-  getAllPaymentMethods, 
+import {
+  getAllPaymentMethods,
   getActivePaymentMethods,
-  createPaymentMethod, 
-  updatePaymentMethod, 
+  createPaymentMethod,
+  updatePaymentMethod,
   deletePaymentMethod,
-  seedDefaultPaymentMethods 
+  seedDefaultPaymentMethods
 } from '@/lib/payment-methods';
 import { logger, createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';

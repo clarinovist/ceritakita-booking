@@ -4,10 +4,11 @@ import {
   getActiveAddons,
   createAddon,
   updateAddon,
-  deleteAddon,
-  type Addon
+  deleteAddon
 } from '@/lib/addons';
+import { type Addon } from '@/lib/types';
 import { requireAuth } from '@/lib/auth';
+import { logger, createErrorResponse } from '@/lib/logger';
 import { z } from 'zod';
 
 // Validation schema for addon
@@ -42,8 +43,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(addons);
   } catch (error) {
-    console.error('Error fetching add-ons:', error);
-    return NextResponse.json({ error: 'Failed to fetch add-ons' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error fetching add-ons', { activeOnly, category }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -71,8 +73,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(addon, { status: 201 });
   } catch (error) {
-    console.error('Error creating add-on:', error);
-    return NextResponse.json({ error: 'Failed to create add-on' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error creating add-on', {}, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -112,8 +115,9 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating add-on:', error);
-    return NextResponse.json({ error: 'Failed to update add-on' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error updating add-on', { addonId: body.id }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -141,7 +145,8 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting add-on:', error);
-    return NextResponse.json({ error: 'Failed to delete add-on' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error deleting add-on', { addonId: id }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

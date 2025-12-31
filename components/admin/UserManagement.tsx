@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Plus, Edit, Trash2, Shield, Users, ToggleLeft, ToggleRight, Key } from 'lucide-react';
 import { formatDate } from '@/utils/dateFormatter';
-import { User, UserPermissions } from '@/lib/types/user';
-import { DEFAULT_STAFF_PERMISSIONS, getDefaultPermissions } from '@/lib/permissions';
+import { User, UserPermissions } from '@/lib/types';
+import { DEFAULT_STAFF_PERMISSIONS, getDefaultPermissions } from '@/lib/permissions-types';
 
 interface UserFormData {
   username: string;

@@ -1,5 +1,7 @@
+'use client';
+
 import { useState } from 'react';
-import { Photographer, PhotographerFormData } from '../types/admin';
+import { Photographer, PhotographerFormData } from '@/lib/types';
 
 export const usePhotographers = () => {
     const [photographers, setPhotographers] = useState<Photographer[]>([]);

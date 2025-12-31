@@ -1,4 +1,4 @@
-import { Addon } from '../types/admin';
+import { Addon } from '@/lib/types';
 
 interface AddonsTableProps {
     addons: Addon[];

@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { readData as readDataSQLite, createBooking, type Booking } from '@/lib/storage-sqlite';
+import {
+  readData as readDataSQLite,
+  createBooking,
+  checkSlotAvailability
+} from '@/lib/storage-sqlite';
 import { readServices } from '@/lib/storage';
+import { type Booking } from '@/lib/types';
 import { requireAuth } from '@/lib/auth';
 import { createBookingSchema } from '@/lib/validation';
-import formidable from 'formidable';
-import { IncomingMessage } from 'http';
-import { Readable } from 'stream';
 import { saveUploadedFile, validateFile } from '@/lib/file-storage';
-import { readFile } from 'fs/promises';
 import { rateLimiters } from '@/lib/rate-limit';
 import { logger, createErrorResponse, createValidationError } from '@/lib/logger';
 import { safeNumber, safeProperty } from '@/lib/type-utils';
-import { recordCouponUsage, incrementCouponUsage, getCouponByCode } from '@/lib/coupons';
+import { 
+  recordCouponUsage, 
+  incrementCouponUsage, 
+  getCouponByCode 
+} from '@/lib/coupons';
+import formidable from 'formidable';
+import { IncomingMessage } from 'http';
+import { Readable } from 'stream';
+import { readFile } from 'fs/promises';
 
 /**
  * Helper: Parse multipart form data

@@ -7,6 +7,7 @@ import {
   deletePhotographer,
 } from '@/lib/photographers';
 import { requireAuth } from '@/lib/auth';
+import { logger, createErrorResponse } from '@/lib/logger';
 import { z } from 'zod';
 
 // Validation schema for photographer
@@ -33,8 +34,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(photographers);
   } catch (error) {
-    console.error('Error fetching photographers:', error);
-    return NextResponse.json({ error: 'Failed to fetch photographers' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error fetching photographers', {}, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -62,8 +64,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(photographer, { status: 201 });
   } catch (error) {
-    console.error('Error creating photographer:', error);
-    return NextResponse.json({ error: 'Failed to create photographer' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error creating photographer', {}, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -103,8 +106,9 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating photographer:', error);
-    return NextResponse.json({ error: 'Failed to update photographer' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error updating photographer', { photographerId: body.id }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -132,7 +136,8 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting photographer:', error);
-    return NextResponse.json({ error: 'Failed to delete photographer' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error deleting photographer', { photographerId: id }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

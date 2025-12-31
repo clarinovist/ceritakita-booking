@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth';
 import { uploadToB2 } from '@/lib/b2-s3-client';
 import { randomUUID } from 'crypto';
 import { getDb } from '@/lib/db';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 // GET - Fetch portfolio images for a service
 export async function GET(req: NextRequest) {
@@ -23,8 +24,9 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(images);
   } catch (error) {
-    console.error('Error fetching portfolio images:', error);
-    return NextResponse.json({ error: 'Failed to fetch portfolio images' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error fetching portfolio images', { serviceId }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -72,8 +74,9 @@ export async function POST(req: NextRequest) {
       image_url: imageUrl
     }, { status: 201 });
   } catch (error) {
-    console.error('Error uploading portfolio image:', error);
-    return NextResponse.json({ error: 'Failed to upload portfolio image' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error uploading portfolio image', { serviceId }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -99,7 +102,8 @@ export async function DELETE(req: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting portfolio image:', error);
-    return NextResponse.json({ error: 'Failed to delete portfolio image' }, { status: 500 });
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error deleting portfolio image', { imageId: id }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

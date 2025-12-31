@@ -6,7 +6,7 @@ import {
   Users, Image as ImageIcon, CreditCard, LogOut, Menu, X, Target, Settings
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
-import { getFilteredMenuItems } from '@/lib/permissions';
+import { getFilteredMenuItems } from '@/lib/permissions-types';
 
 interface AdminSidebarProps {
   viewMode: string;

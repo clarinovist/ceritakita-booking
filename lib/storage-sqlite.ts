@@ -3,6 +3,7 @@
  * Replaces the file-based JSON storage with a proper database
  */
 
+import 'server-only';
 import getDb from './db';
 import type Database from 'better-sqlite3';
 import { getBookingAddons, setBookingAddons, type BookingAddon } from './addons';

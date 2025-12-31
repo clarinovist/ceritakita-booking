@@ -1,5 +1,5 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { Service, Addon, PaymentSettings, CouponValidation, BookingFormData, BookingPayload } from '../types/booking';
+import { Service, Addon, PaymentSettings, CouponValidation, BookingFormData, BookingPayload } from '@/lib/types';
 
 export const useBookingForm = () => {
     const [loading, setLoading] = useState(false);

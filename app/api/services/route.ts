@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { readServices, writeServices } from '@/lib/storage';
 import { requireAuth } from '@/lib/auth';
 import { servicesArraySchema } from '@/lib/validation';
+import { logger, createErrorResponse } from '@/lib/logger';
 
 // Public endpoint - customers need to see active services
 export async function GET() {
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest) {
         await writeServices(validationResult.data);
         return NextResponse.json(validationResult.data);
     } catch (error) {
-        console.error('Error updating services:', error);
-        return NextResponse.json({ error: 'Failed to update services' }, { status: 500 });
+        const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        logger.error('Error updating services', {}, error as Error);
+        return NextResponse.json(errorResponse, { status: statusCode });
     }
 }

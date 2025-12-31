@@ -1,5 +1,7 @@
+'use client';
+
 import { useState } from 'react';
-import { Addon, AddonFormData } from '../types/admin';
+import { Addon, AddonFormData } from '@/lib/types';
 
 export const useAddons = () => {
     const [addons, setAddons] = useState<Addon[]>([]);

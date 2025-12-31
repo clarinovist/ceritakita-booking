@@ -1,5 +1,4 @@
-import { Booking } from '@/lib/storage';
-import { FilterStatus } from '../types/admin';
+import { Booking, FilterStatus } from '@/lib/types';
 import { useExport } from '../hooks/useExport';
 import { formatDate, formatTime } from '@/utils/dateFormatter';
 
