@@ -12,10 +12,12 @@ import { logger, createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
 
 // Initialize default payment methods on first request
-seedDefaultPaymentMethods();
+// seedDefaultPaymentMethods();
 
 export async function GET(req: NextRequest) {
   try {
+    seedDefaultPaymentMethods();
+    
     // Rate limiting
     const rateLimitResult = rateLimiters.moderate(req);
     if (rateLimitResult) {
