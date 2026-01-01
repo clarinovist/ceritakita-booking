@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Admin Settings Refactor - 2026-01-01
+
+#### Comprehensive Settings Management with Tabbed Interface
+- **Tabbed Settings UI**: Refactored admin settings into 5 logical tabs for better organization
+  - **General & SEO**: Site branding, hero title, meta tags for SEO
+  - **Contact & Socials**: Business email, social media links (Instagram, TikTok), Google Maps link
+  - **Finance**: Bank details (name, number, holder), invoice notes, tax rate, deposit rules
+  - **Booking Rules**: Minimum booking notice, maximum booking advance period
+  - **Templates**: WhatsApp message template management with variable support
+
+#### Enhanced Invoice Generation
+- **Dynamic Bank Details**: Invoices now display bank information from system settings
+- **Business Email**: Configurable business email shown on invoices
+- **Tax Calculation**: Automatic tax calculation with configurable rate (0-100%)
+- **Social Media Links**: Optional social media profiles displayed on invoices
+- **Custom Invoice Notes**: Configurable footer notes for payment terms and disclaimers
+
+#### Booking Rules Enforcement
+- **Minimum Notice Period**: Prevents same-day bookings based on configured notice
+- **Maximum Advance Booking**: Limits how far in advance customers can book
+- **Server-Side Validation**: Booking API enforces rules to prevent bypassing client validation
+- **Smart Date Picker**: Calendar interface disables dates outside allowed range
+
+#### Database & Type Safety
+- **Schema Expansion**: Added 15+ new settings columns to `system_settings` table
+- **TypeScript Interfaces**: Comprehensive type definitions in `lib/types/settings.ts`
+- **Migration Script**: SQLite-compatible migration with default values and backward compatibility
+- **No `any` Types**: Full type safety maintained throughout
+
+#### New Components
+- `components/admin/settings/GeneralTab.tsx` - Branding and SEO management
+- `components/admin/settings/ContactTab.tsx` - Contact info and social links
+- `components/admin/settings/FinanceTab.tsx` - Financial settings
+- `components/admin/settings/RulesTab.tsx` - Booking constraints
+- `components/admin/settings/TemplatesTab.tsx` - Message templates
+
+#### Files Modified
+- `components/admin/SettingsManagement.tsx` - Refactored to tabbed interface
+- `app/admin/invoices/[id]/page.tsx` - Dynamic settings integration
+- `app/api/bookings/route.ts` - Server-side rule validation
+- `components/booking/steps/ScheduleInfo.tsx` - Client-side rule enforcement
+- `lib/types/settings.ts` - Expanded type definitions
+- `scripts/migrate-settings.sql` - Database migration script
+- `user_stories_admin_settings_refactor.md` - Comprehensive documentation
+
+#### Impact
+- **Improved UX**: Settings organized logically, easier to find and manage
+- **Dynamic Configuration**: All business settings configurable without code changes
+- **Enhanced Invoices**: Professional invoices with accurate business information
+- **Flexible Booking Rules**: Business owners control booking constraints
+- **Type Safety**: Reduced bugs through comprehensive TypeScript types
+- **Backward Compatible**: Existing functionality preserved while adding new features
+
 ### Code Quality Improvements - 2025-01-XX
 
 #### Standardized Error Handling & Logging
