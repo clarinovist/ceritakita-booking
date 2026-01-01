@@ -661,3 +661,123 @@
 [2025-12-31T15:51:30.769Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
 [2025-12-31T15:51:30.781Z] [INFO] Retrieved bookings from database | Context: {"count":3}
 [2025-12-31T15:51:30.782Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:45:41.727Z] [INFO] User signed in | Context: {"userId":"6862da46-2e30-4df4-ada0-86a0ac49b568","name":"admin","role":"admin"}
+[2025-12-31T23:45:41.726Z] [INFO] Successful login | Context: {"username":"admin","role":"admin"}
+[2025-12-31T23:45:45.217Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:45:45.219Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:45:45.294Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:45:45.295Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:45:45.321Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:45:45.320Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:45:45.332Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:45:45.333Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:45:45.775Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:45:45.784Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:45:49.909Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:45:49.923Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:45:51.233Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:45:51.245Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:18.852Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:18.880Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:19.677Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:19.715Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:22.728Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:46:22.728Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:46:22.870Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:46:22.869Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:46:22.901Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:46:22.901Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:46:22.918Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:46:22.919Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:46:24.676Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:24.689Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:26.495Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:46:26.511Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:47:36.361Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:47:36.392Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:49:38.124Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:49:38.134Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:49:38.136Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:49:38.235Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2025-12-31T23:49:38.245Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:49:38.246Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:49:38.295Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:49:38.296Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:49:38.332Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:49:38.333Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:56:52.483Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:56:52.486Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:56:53.289Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:56:53.290Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:56:53.345Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:56:53.346Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:56:53.389Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:56:53.390Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:57:26.688Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:57:26.688Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:57:26.826Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:57:26.827Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:57:26.911Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:57:26.912Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2025-12-31T23:57:26.973Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2025-12-31T23:57:26.974Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:01:48.622Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:01:48.626Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:01:48.846Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:01:48.846Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:01:48.923Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:01:48.924Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:01:48.961Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:01:48.962Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:02:56.157Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:02:56.160Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:02:56.885Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:02:56.887Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:02:57.100Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:02:57.099Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:02:57.215Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:02:57.216Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:01.944Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2026-01-01T00:03:01.960Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:01.963Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:02.079Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2026-01-01T00:03:02.099Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:02.100Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:02.214Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:02.213Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:02.228Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:02.230Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:33.586Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2026-01-01T00:03:33.609Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:33.611Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:33.726Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":67477,"impressions":8580,"clicks":25,"reach":7084}
+[2026-01-01T00:03:33.746Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:33.745Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:33.875Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:33.876Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:03:33.896Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:03:33.897Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:04:21.587Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:04:21.589Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:04:21.838Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:04:21.839Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:04:21.944Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:04:21.946Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:04:21.987Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:04:21.986Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:06:50.560Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:06:50.563Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:06:50.618Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:06:50.619Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:06:50.665Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:06:50.664Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:06:50.679Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:06:50.679Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:11:23.998Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:11:23.994Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:11:24.052Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:11:24.053Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:11:24.086Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-01T00:11:24.087Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:11:24.100Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-01T00:11:24.099Z] [INFO] Retrieved bookings from database | Context: {"count":3}

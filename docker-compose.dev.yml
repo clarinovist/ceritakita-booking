@@ -1,0 +1,82 @@
+services:
+  # Next.js Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runner
+    container_name: ceritakita-booking-dev
+    ports:
+      - "3001:3000"
+    volumes:
+      # Named volumes for persistent data
+      - booking-data:/app/data
+      - booking-uploads:/app/uploads
+    environment:
+      # Force Environment ke Production (Next.js di Docker jalan mode build)
+      - NODE_ENV=production
+      
+      # PENTING: Override URL agar Auth jalan di domain dev lokal
+      - NEXTAUTH_URL=https://dev.ceritakitastudio.site
+      
+      # Variable lain akan diambil dari file .env.local
+    env_file:
+      - .env.local   # <--- INI JAWABANNYA: Kita arahkan ke .env.local
+    restart: unless-stopped
+    networks:
+      - ceritakita-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 1G  # Saya naikkan sedikit untuk dev agar lancar
+        reservations:
+          memory: 256M
+
+  # Nginx Reverse Proxy Service (Versi Lokal)
+  nginx:
+    image: nginx:alpine
+    container_name: ceritakita-nginx-dev
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # 1. Gunakan config khusus dev yang tadi kamu edit
+      - ./nginx/nginx.dev.conf:/etc/nginx/nginx.conf:ro,z
+      
+      # 2. Gunakan folder SSL lokal yang baru kamu generate
+      - ./nginx/ssl:/etc/nginx/ssl:ro,z
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - ceritakita-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+# Named volumes
+volumes:
+  booking-data:
+    driver: local
+    name: ceritakita-booking_data_dev
+  booking-uploads:
+    driver: local
+    name: ceritakita-booking_uploads_dev
+
+# Network
+networks:
+  ceritakita-network:
+    driver: bridge
+    name: ceritakita-network-dev

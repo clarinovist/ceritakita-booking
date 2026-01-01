@@ -380,6 +380,45 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_system_settings_audit_key ON system_settings_audit(key);
     CREATE INDEX IF NOT EXISTS idx_system_settings_audit_updated_at ON system_settings_audit(updated_at);
   `);
+
+  // Create leads table for Mini CRM
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS leads (
+      id TEXT PRIMARY KEY,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      
+      -- Core lead information
+      name TEXT NOT NULL,
+      whatsapp TEXT NOT NULL,
+      email TEXT,
+      
+      -- Lead tracking
+      status TEXT NOT NULL CHECK(status IN ('New', 'Contacted', 'Follow Up', 'Won', 'Lost', 'Converted')),
+      source TEXT NOT NULL CHECK(source IN ('Meta Ads', 'Organic', 'Referral', 'Instagram', 'WhatsApp', 'Phone Call', 'Website Form', 'Other')),
+      notes TEXT,
+      
+      -- Assignment and conversion
+      assigned_to TEXT,
+      booking_id TEXT,
+      converted_at TEXT,
+      last_contacted_at TEXT,
+      next_follow_up TEXT,
+      
+      -- Foreign key constraints
+      FOREIGN KEY (assigned_to) REFERENCES users(id),
+      FOREIGN KEY (booking_id) REFERENCES bookings(id)
+    )
+  `);
+
+  // Create indexes for leads table
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
+    CREATE INDEX IF NOT EXISTS idx_leads_source ON leads(source);
+    CREATE INDEX IF NOT EXISTS idx_leads_assigned_to ON leads(assigned_to);
+    CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at);
+    CREATE INDEX IF NOT EXISTS idx_leads_whatsapp ON leads(whatsapp);
+  `);
 }
 
 /**

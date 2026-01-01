@@ -42,6 +42,12 @@ export interface UserPermissions {
   settings: boolean;
   payment: boolean;
   users: boolean;
+  leads: {
+    view: boolean;
+    create: boolean;
+    update: boolean;
+    delete: boolean;
+  };
 }
 
 export interface User {

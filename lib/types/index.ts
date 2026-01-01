@@ -60,6 +60,20 @@ export type {
   SettingsAuditLog
 } from './settings';
 
+// Leads Types (new)
+export type {
+  Lead,
+  LeadStatus,
+  LeadSource,
+  LeadFormData,
+  LeadUpdateData,
+  LeadFilters,
+  getLeadStatusColor,
+  getLeadSourceIcon,
+  LEAD_STATUSES,
+  LEAD_SOURCES
+} from './leads';
+
 // User Types (existing)
 export type {
   User,

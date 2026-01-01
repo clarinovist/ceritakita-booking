@@ -17,18 +17,19 @@ import UserManagement from './UserManagement';
 import PaymentMethodsManagement from './PaymentMethodsManagement';
 import SettingsManagement from './SettingsManagement';
 import AdsPerformance from './AdsPerformance';
-
 // Tables
 import { BookingsTable } from './tables/BookingsTable';
 import { ServicesTable } from './tables/ServicesTable';
 import { PhotographersTable } from './tables/PhotographersTable';
 import { AddonsTable } from './tables/AddonsTable';
+import { LeadsTable } from './tables/LeadsTable';
 
 // Modals
 import { ServiceModal } from './modals/ServiceModal';
 import { BookingDetailModal } from './Bookings/modals/BookingDetailModal';
 import { RescheduleModal } from './Bookings/modals/RescheduleModal';
 import { CreateBookingModal } from './Bookings/modals/CreateBookingModal';
+import { LeadModal } from './modals/LeadModal';
 
 // Hooks
 // ⚠️ Pastikan file-file ini tidak mengimport database secara langsung
@@ -40,7 +41,7 @@ import { useExport } from './hooks/useExport';
 
 // Types
 // ✅ Menggunakan import type agar aman
-import { type ViewMode } from '@/lib/types';
+import { type ViewMode, type Lead, type LeadFormData, type LeadStatus, type LeadSource, type Addon } from '@/lib/types';
 
 export default function AdminDashboard() {
     const { data: session } = useSession();
@@ -55,9 +56,44 @@ export default function AdminDashboard() {
     const addonsHook = useAddons();
     const exportHook = useExport();
 
+    // Leads state
+    const [leads, setLeads] = useState<Lead[]>([]);
+    const [filterStatus, setFilterStatus] = useState<LeadStatus | 'All'>('All');
+    const [filterSource, setFilterSource] = useState<LeadSource | 'All'>('All');
+    const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+    const [isLeadModalOpen, setIsLeadModalOpen] = useState(false);
+    const [leadFormData, setLeadFormData] = useState<LeadFormData>({
+        name: '',
+        whatsapp: '',
+        email: '',
+        source: 'Meta Ads',
+        status: 'New',
+        notes: '',
+        assigned_to: '',
+        next_follow_up: ''
+    });
+
+    // Leads conversion state
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [bookingFormData, setBookingFormData] = useState({
+        customer_name: '',
+        customer_whatsapp: '',
+        service_id: '',
+        booking_date: '',
+        booking_time: '',
+        booking_notes: '',
+        location_link: '',
+        photographer_id: '',
+        dp_amount: 0,
+        payment_note: 'DP Awal'
+    });
+    const [selectedBookingAddons, setSelectedBookingAddons] = useState<Map<string, number>>(new Map());
+    const [availableBookingAddons, setAvailableBookingAddons] = useState<Addon[]>([]);
+    const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
+
     // Filter view modes based on permissions
     const getAvailableViewModes = (): ViewMode[] => {
-      const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'services', 'portfolio', 'photographers', 'addons', 'coupons', 'users', 'payment-settings', 'settings'];
+      const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'services', 'portfolio', 'photographers', 'addons', 'coupons', 'users', 'payment-settings', 'settings'];
       
       if (userRole === 'admin') {
         return allModes;
@@ -70,6 +106,7 @@ export default function AdminDashboard() {
       if (userPermissions?.booking?.view) {
         allowedModes.push('calendar', 'table');
       }
+      if (userPermissions?.leads?.view) allowedModes.push('leads');
       if (userPermissions?.services?.view) allowedModes.push('services');
       if (userPermissions?.portfolio?.view) allowedModes.push('portfolio');
       if (userPermissions?.photographers?.view) allowedModes.push('photographers');
@@ -89,7 +126,10 @@ export default function AdminDashboard() {
     // Reset view mode if current mode becomes unavailable
     useEffect(() => {
       if (availableViewModes.length > 0 && !availableViewModes.includes(viewMode)) {
-        setViewMode(availableViewModes[0]);
+        const firstMode = availableViewModes[0];
+        if (firstMode) {
+          setViewMode(firstMode);
+        }
       }
     }, [availableViewModes, viewMode]);
 
@@ -99,8 +139,179 @@ export default function AdminDashboard() {
         servicesHook.fetchData();
         photographersHook.fetchData();
         addonsHook.fetchData();
+        fetchLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Leads functions
+    const fetchLeads = async () => {
+        try {
+            const res = await fetch('/api/leads');
+            if (res.ok) {
+                const data = await res.json();
+                setLeads(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch leads:', error);
+        }
+    };
+
+    const filteredLeads = leads.filter(lead => {
+        if (filterStatus !== 'All' && lead.status !== filterStatus) return false;
+        if (filterSource !== 'All' && lead.source !== filterSource) return false;
+        return true;
+    });
+
+    const handleOpenLeadModal = (lead?: Lead) => {
+        if (lead) {
+            setSelectedLead(lead);
+            setLeadFormData({
+                name: lead.name,
+                whatsapp: lead.whatsapp,
+                email: lead.email || '',
+                source: lead.source,
+                status: lead.status,
+                notes: lead.notes || '',
+                assigned_to: lead.assigned_to || '',
+                next_follow_up: lead.next_follow_up || ''
+            });
+        } else {
+            setSelectedLead(null);
+            setLeadFormData({
+                name: '',
+                whatsapp: '',
+                email: '',
+                source: 'Meta Ads',
+                status: 'New',
+                notes: '',
+                assigned_to: '',
+                next_follow_up: ''
+            });
+        }
+        setIsLeadModalOpen(true);
+    };
+
+    const handleSaveLead = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const method = selectedLead ? 'PUT' : 'POST';
+            const url = selectedLead ? `/api/leads/${selectedLead.id}` : '/api/leads';
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(leadFormData)
+            });
+            if (!res.ok) throw new Error('Failed to save lead');
+            setIsLeadModalOpen(false);
+            fetchLeads();
+            alert(selectedLead ? 'Lead updated!' : 'Lead created!');
+        } catch (error) {
+            console.error('Error saving lead:', error);
+            alert('Failed to save lead');
+        }
+    };
+
+    const handleDeleteLead = async (id: string) => {
+        try {
+            const res = await fetch(`/api/leads/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Failed to delete lead');
+            fetchLeads();
+            alert('Lead deleted!');
+        } catch (error) {
+            console.error('Error deleting lead:', error);
+            alert('Failed to delete lead');
+        }
+    };
+
+    const handleWhatsApp = (whatsapp: string) => {
+        window.open(`https://wa.me/${whatsapp}`, '_blank');
+    };
+
+    const handleConvertToBooking = async (lead: Lead) => {
+        setConvertingLead(lead);
+        setBookingFormData({
+            customer_name: lead.name,
+            customer_whatsapp: lead.whatsapp,
+            service_id: '',
+            booking_date: '',
+            booking_time: '',
+            booking_notes: `Converted from lead: ${lead.id}\n${lead.notes || ''}`,
+            location_link: '',
+            photographer_id: '',
+            dp_amount: 0,
+            payment_note: 'DP Awal'
+        });
+        setSelectedBookingAddons(new Map());
+        setAvailableBookingAddons([]);
+        setIsBookingModalOpen(true);
+    };
+
+    const handleCreateBookingFromLead = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!bookingFormData.service_id) {
+            alert('Please select a service');
+            return;
+        }
+        try {
+            const addonsData = Array.from(selectedBookingAddons.entries()).map(([addonId, quantity]) => {
+                const addon = availableBookingAddons.find(a => a.id === addonId);
+                return {
+                    addon_id: addonId,
+                    addon_name: addon?.name || '',
+                    quantity,
+                    price_at_booking: addon?.price || 0
+                };
+            });
+            const selectedService = servicesHook.services.find(s => s.id === bookingFormData.service_id);
+            const payload = {
+                customer: {
+                    name: bookingFormData.customer_name,
+                    whatsapp: bookingFormData.customer_whatsapp,
+                    category: selectedService?.name || '',
+                    serviceId: bookingFormData.service_id
+                },
+                booking: {
+                    date: `${bookingFormData.booking_date}T${bookingFormData.booking_time}`,
+                    notes: bookingFormData.booking_notes,
+                    location_link: bookingFormData.location_link
+                },
+                finance: {
+                    total_price: calculateBookingTotal(),
+                    payments: bookingFormData.dp_amount > 0 ? [{
+                        date: new Date().toISOString().split('T')[0] ?? '',
+                        amount: bookingFormData.dp_amount,
+                        note: bookingFormData.payment_note
+                    }] : []
+                },
+                photographer_id: bookingFormData.photographer_id || undefined,
+                addons: addonsData.length > 0 ? addonsData : undefined
+            };
+            const res = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || 'Failed to create booking');
+            }
+            const newBooking = await res.json();
+            if (convertingLead) {
+                await fetch(`/api/leads/${convertingLead.id}/convert`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ booking_id: newBooking.id })
+                });
+            }
+            setIsBookingModalOpen(false);
+            setConvertingLead(null);
+            fetchLeads();
+            alert('Booking created! Lead marked as Converted.');
+        } catch (error) {
+            console.error('Error creating booking:', error);
+            alert(`Failed to create booking: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    };
 
     // Booking creation handlers
     const handleOpenCreateBookingModal = () => {
@@ -370,7 +581,7 @@ export default function AdminDashboard() {
     return (
         <div className="min-h-screen bg-gray-50 flex">
             {/* ✅ FIX TYPE: Mengirim function yang benar */}
-            <AdminSidebar viewMode={viewMode} setViewMode={(mode: ViewMode) => setViewMode(mode)} />
+            <AdminSidebar viewMode={viewMode as string} setViewMode={(mode: string) => setViewMode(mode as ViewMode)} />
             
             <div className="flex-1 ml-0 md:ml-64 p-6 overflow-auto">
                 {/* Command Bar */}
@@ -552,7 +763,52 @@ export default function AdminDashboard() {
                             <SettingsManagement />
                         </div>
                     )}
+
+                    {/* LEADS VIEW */}
+                    {viewMode === 'leads' && (
+                        <LeadsTable
+                            leads={filteredLeads}
+                            filterStatus={filterStatus}
+                            setFilterStatus={setFilterStatus}
+                            filterSource={filterSource}
+                            setFilterSource={setFilterSource}
+                            onOpenModal={handleOpenLeadModal}
+                            onDeleteLead={handleDeleteLead}
+                            onConvertToBooking={handleConvertToBooking}
+                            onWhatsApp={handleWhatsApp}
+                        />
+                    )}
                 </div>
+
+                {/* Lead Modal */}
+                <LeadModal
+                    isOpen={isLeadModalOpen}
+                    onClose={() => setIsLeadModalOpen(false)}
+                    onSubmit={handleSaveLead}
+                    formData={leadFormData}
+                    setFormData={setLeadFormData}
+                    editingLead={selectedLead}
+                />
+
+                {/* Create Booking Modal (for lead conversion) */}
+                <CreateBookingModal
+                    isOpen={isBookingModalOpen}
+                    onClose={() => {
+                        setIsBookingModalOpen(false);
+                        setConvertingLead(null);
+                    }}
+                    onSubmit={handleCreateBookingFromLead}
+                    formData={bookingFormData}
+                    setFormData={setBookingFormData}
+                    services={servicesHook.services}
+                    photographers={photographersHook.photographers}
+                    availableAddons={availableBookingAddons}
+                    selectedAddons={selectedBookingAddons}
+                    onServiceChange={handleServiceChange}
+                    onToggleAddon={toggleBookingAddon}
+                    onUpdateAddonQuantity={updateBookingAddonQuantity}
+                    calculateTotal={calculateBookingTotal}
+                />
 
                 {/* Service Modal */}
                 <ServiceModal

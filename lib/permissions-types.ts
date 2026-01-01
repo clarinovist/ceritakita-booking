@@ -16,7 +16,8 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   ads: true,
   settings: true,
   payment: true,
-  users: true
+  users: true,
+  leads: { view: true, create: true, update: true, delete: true }
 };
 
 /**
@@ -34,7 +35,8 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   ads: false,
   settings: false,
   payment: false,
-  users: false
+  users: false,
+  leads: { view: true, create: true, update: true, delete: false }
 };
 
 /**
@@ -84,6 +86,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
     { id: 'ads', icon: 'Target', label: 'Ads Performance', permission: 'ads' },
     { id: 'calendar', icon: 'Calendar', label: 'Calendar', permission: 'booking.view' },
     { id: 'table', icon: 'List', label: 'Bookings', permission: 'booking.view' },
+    { id: 'leads', icon: 'Target', label: 'Leads', permission: 'leads.view' },
     { id: 'services', icon: 'Tag', label: 'Services', permission: 'services.view' },
     { id: 'portfolio', icon: 'ImageIcon', label: 'Portfolio', permission: 'portfolio.view' },
     { id: 'addons', icon: 'ShoppingBag', label: 'Add-ons', permission: 'addons.view' },
