@@ -5,18 +5,16 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useSession } from "next-auth/react";
-import { Calendar, User } from 'lucide-react';
-import { formatDateTime } from '@/utils/dateFormatter'; 
+import { User } from 'lucide-react';
 
 // Components
 import AdminSidebar from '../AdminSidebar';
 import DashboardMetrics from '../DashboardMetrics';
 import CouponManagement from '../CouponManagement';
 import PortfolioManagement from '../PortfolioManagement';
-import UserManagement from './UserManagement';
-import PaymentMethodsManagement from './PaymentMethodsManagement';
 import SettingsManagement from './SettingsManagement';
 import AdsPerformance from './AdsPerformance';
+
 // Tables
 import { BookingsTable } from './tables/BookingsTable';
 import { ServicesTable } from './tables/ServicesTable';
@@ -30,9 +28,10 @@ import { BookingDetailModal } from './Bookings/modals/BookingDetailModal';
 import { RescheduleModal } from './Bookings/modals/RescheduleModal';
 import { CreateBookingModal } from './Bookings/modals/CreateBookingModal';
 import { LeadModal } from './modals/LeadModal';
+import UserManagement from './UserManagement';
+import PaymentMethodsManagement from './PaymentMethodsManagement';
 
 // Hooks
-// ⚠️ Pastikan file-file ini tidak mengimport database secara langsung
 import { useBookings } from './hooks/useBookings';
 import { useServices } from './hooks/useServices';
 import { usePhotographers } from './hooks/usePhotographers';
@@ -40,12 +39,10 @@ import { useAddons } from './hooks/useAddons';
 import { useExport } from './hooks/useExport';
 
 // Types
-// ✅ Menggunakan import type agar aman
 import { type ViewMode, type Lead, type LeadFormData, type LeadStatus, type LeadSource, type Addon } from '@/lib/types';
 
 export default function AdminDashboard() {
     const { data: session } = useSession();
-    // Safe access for permissions
     const userPermissions = (session?.user as any)?.permissions || {};
     const userRole = (session?.user as any)?.role;
 
@@ -93,7 +90,9 @@ export default function AdminDashboard() {
 
     // Filter view modes based on permissions
     const getAvailableViewModes = (): ViewMode[] => {
-      const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'services', 'portfolio', 'photographers', 'addons', 'coupons', 'users', 'payment-settings', 'settings'];
+      // Note: 'users' and 'payment-settings' are now handled within SettingsManagement, 
+      // but kept in type definition for compatibility if needed elsewhere.
+      const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'services', 'portfolio', 'photographers', 'addons', 'coupons', 'settings'];
       
       if (userRole === 'admin') {
         return allModes;
@@ -112,16 +111,18 @@ export default function AdminDashboard() {
       if (userPermissions?.photographers?.view) allowedModes.push('photographers');
       if (userPermissions?.addons?.view) allowedModes.push('addons');
       if (userPermissions?.coupons?.view) allowedModes.push('coupons');
-      if (userPermissions?.users) allowedModes.push('users');
-      if (userPermissions?.payment) allowedModes.push('payment-settings');
       if (userPermissions?.settings) allowedModes.push('settings');
+      
+      // If user has permissions for modules inside settings, allow settings access
+      if ((userPermissions?.users || userPermissions?.payment) && !allowedModes.includes('settings')) {
+          allowedModes.push('settings');
+      }
 
       return allowedModes.length > 0 ? allowedModes : ['table'];
     };
 
     const availableViewModes = getAvailableViewModes();
     const [viewMode, setViewMode] = useState<ViewMode>(availableViewModes[0] || 'table');
-    const [showPresets, setShowPresets] = useState(false);
 
     // Reset view mode if current mode becomes unavailable
     useEffect(() => {
@@ -514,60 +515,6 @@ export default function AdminDashboard() {
         }
     };
 
-    // Preset handlers
-    const applyPreset = (preset: string) => {
-        const today = new Date();
-        let start: string = '';
-        let end: string = '';
-
-        switch (preset) {
-            case 'today':
-                start = today.toISOString().split('T')[0] || '';
-                end = start;
-                break;
-            case 'yesterday':
-                const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0] || '';
-                start = yesterday;
-                end = yesterday;
-                break;
-            case 'last7days':
-                const last7Days = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0] || '';
-                start = last7Days;
-                end = today.toISOString().split('T')[0] || '';
-                break;
-            case 'last30days':
-                const last30Days = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0] || '';
-                start = last30Days;
-                end = today.toISOString().split('T')[0] || '';
-                break;
-            case 'thisMonth':
-                const year = today.getFullYear();
-                const month = String(today.getMonth() + 1).padStart(2, '0');
-                const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
-                start = `${year}-${month}-01`;
-                end = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-                break;
-            case 'lastMonth':
-                const lastMonth = today.getMonth() === 0 ? 11 : today.getMonth() - 1;
-                const lastMonthYear = today.getMonth() === 0 ? today.getFullYear() - 1 : today.getFullYear();
-                const lastMonthStr = String(lastMonth + 1).padStart(2, '0');
-                const lastDayLastMonth = new Date(lastMonthYear, lastMonth + 1, 0).getDate();
-                start = `${lastMonthYear}-${lastMonthStr}-01`;
-                end = `${lastMonthYear}-${lastMonthStr}-${String(lastDayLastMonth).padStart(2, '0')}`;
-                break;
-            case 'thisYear':
-                const currentYear = today.getFullYear();
-                start = `${currentYear}-01-01`;
-                end = today.toISOString().split('T')[0] || '';
-                break;
-        }
-
-        bookingsHook.setDateRange({ start, end });
-        setShowPresets(false);
-    };
-
-    // ✅ FIX ERROR SYNTAX DI SINI (Missing semicolon previously)
-    // Calendar events
     const events = bookingsHook.bookings
         .filter(b => b.status === 'Active' || b.status === 'Rescheduled')
         .map(b => ({
@@ -580,54 +527,16 @@ export default function AdminDashboard() {
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
-            {/* ✅ FIX TYPE: Mengirim function yang benar */}
             <AdminSidebar viewMode={viewMode as string} setViewMode={(mode: string) => setViewMode(mode as ViewMode)} />
             
             <div className="flex-1 ml-0 md:ml-64 p-6 overflow-auto">
-                {/* Command Bar */}
+                {/* Command Bar - Simplified */}
                 <div className="bg-white border rounded-xl p-4 mb-6 sticky top-0 z-10 flex justify-between items-center shadow-sm">
-                    {/* Left Side: Date Range Picker + Presets */}
+                    {/* Left Side: View Title */}
                     <div className="flex items-center gap-3">
-                        {/* Presets Dropdown */}
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowPresets(!showPresets)}
-                                className="flex items-center gap-2 px-3 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                            >
-                                <span>📅</span>
-                                <span>Presets</span>
-                                <span className="text-xs">▼</span>
-                            </button>
-                            {showPresets && (
-                                <div className="absolute top-full left-0 mt-2 bg-white border rounded-lg shadow-lg p-2 min-w-[180px] z-20">
-                                    <button onClick={() => applyPreset('today')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">Today</button>
-                                    <button onClick={() => applyPreset('yesterday')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">Yesterday</button>
-                                    <button onClick={() => applyPreset('last7days')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">Last 7 Days</button>
-                                    <button onClick={() => applyPreset('last30days')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">Last 30 Days</button>
-                                    <button onClick={() => applyPreset('thisMonth')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">This Month</button>
-                                    <button onClick={() => applyPreset('lastMonth')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">Last Month</button>
-                                    <button onClick={() => applyPreset('thisYear')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 rounded">This Year</button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Date Range Picker */}
-                        <div className="flex items-center gap-2 bg-gray-50 border rounded-lg px-3 py-2 font-bold text-xs text-gray-600">
-                            <Calendar size={14} />
-                            <input
-                                type="date"
-                                value={bookingsHook.dateRange.start}
-                                onChange={(e) => bookingsHook.setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                                className="bg-transparent outline-none cursor-pointer"
-                            />
-                            <span>to</span>
-                            <input
-                                type="date"
-                                value={bookingsHook.dateRange.end}
-                                onChange={(e) => bookingsHook.setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                                className="bg-transparent outline-none cursor-pointer"
-                            />
-                        </div>
+                        <h2 className="text-lg font-bold text-gray-800 capitalize">
+                            {viewMode.replace(/_/g, ' ')} Management
+                        </h2>
                     </div>
 
                     {/* Right Side: Admin Profile */}
@@ -649,6 +558,7 @@ export default function AdminDashboard() {
                                 sessionBookings={bookingsHook.bookingsByDateRange}
                                 createdBookings={bookingsHook.bookingsByCreatedDate}
                                 dateRange={bookingsHook.dateRange}
+                                onDateRangeChange={bookingsHook.setDateRange}
                             />
                         </div>
                     )}
@@ -660,6 +570,7 @@ export default function AdminDashboard() {
                             <AdsPerformance
                                 bookings={bookingsHook.bookingsByDateRange}
                                 dateRange={bookingsHook.dateRange}
+                                onDateRangeChange={bookingsHook.setDateRange}
                             />
                         </div>
                     )}
@@ -692,6 +603,7 @@ export default function AdminDashboard() {
                             calculateFinance={bookingsHook.calculateFinance}
                             exportHook={exportHook}
                             dateRange={bookingsHook.dateRange}
+                            onDateRangeChange={bookingsHook.setDateRange}
                         />
                     )}
 
@@ -740,20 +652,6 @@ export default function AdminDashboard() {
                     {viewMode === 'coupons' && (
                         <div className="animate-in fade-in">
                             <CouponManagement />
-                        </div>
-                    )}
-
-                    {/* USERS VIEW */}
-                    {viewMode === 'users' && (
-                        <div className="animate-in fade-in">
-                            <UserManagement />
-                        </div>
-                    )}
-
-                    {/* PAYMENT METHODS VIEW */}
-                    {viewMode === 'payment-settings' && (
-                        <div className="animate-in fade-in">
-                            <PaymentMethodsManagement />
                         </div>
                     )}
 

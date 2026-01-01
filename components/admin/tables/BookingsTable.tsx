@@ -1,6 +1,7 @@
 import { Booking, FilterStatus } from '@/lib/types';
 import { useExport } from '../hooks/useExport';
 import { formatDate, formatTime } from '@/utils/dateFormatter';
+import DateFilterToolbar from '@/components/admin/DateFilterToolbar';
 
 interface BookingsTableProps {
     bookings: Booking[];
@@ -13,6 +14,7 @@ interface BookingsTableProps {
     calculateFinance: (b: Booking) => { total: number; paid: number; balance: number; isPaidOff: boolean };
     exportHook: ReturnType<typeof useExport>;
     dateRange: { start: string; end: string };
+    onDateRangeChange: (range: { start: string; end: string }) => void;
 }
 
 export const BookingsTable = ({
@@ -25,7 +27,8 @@ export const BookingsTable = ({
     handleOpenCreateBookingModal,
     calculateFinance,
     exportHook,
-    dateRange
+    dateRange,
+    onDateRangeChange
 }: BookingsTableProps) => {
     // Helper function to determine if booking is paid off
     const isBookingPaid = (booking: Booking): boolean => {
@@ -47,8 +50,8 @@ export const BookingsTable = ({
 
     return (
         <div className="bg-white rounded-xl shadow overflow-hidden animate-in fade-in min-h-[500px]">
-            <div className="p-4 border-b flex gap-4 items-center bg-gray-50 justify-between">
-                <div className="flex gap-4 items-center">
+            <div className="p-4 border-b flex flex-col md:flex-row gap-4 items-center bg-gray-50 justify-between">
+                <div className="flex gap-4 items-center flex-wrap">
                     <h3 className="font-bold text-gray-700 flex items-center gap-2">
                         <span>📋</span> All Bookings
                     </h3>
@@ -64,20 +67,28 @@ export const BookingsTable = ({
                         ))}
                     </div>
                 </div>
-                <div className="flex gap-3">
+                
+                <div className="flex gap-3 items-center flex-wrap justify-end">
+                    {/* Date Filter Toolbar embedded in table header */}
+                    <DateFilterToolbar 
+                        dateRange={dateRange} 
+                        onDateRangeChange={onDateRangeChange}
+                        className="mr-2"
+                    />
+
                     <button
                         onClick={() => exportHook.handleExportBookings(filterStatus, dateRange)}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 bg-white hover:bg-gray-50 rounded-lg transition-colors border border-gray-300"
                         title="Export filtered bookings to CSV"
                     >
                         <span>📥</span>
-                        <span>Export CSV</span>
+                        <span className="hidden sm:inline">Export</span>
                     </button>
                     <button
                         onClick={handleOpenCreateBookingModal}
                         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
                     >
-                        <span>➕</span> Create Booking
+                        <span>➕</span> <span className="hidden sm:inline">Create</span>
                     </button>
                 </div>
             </div>
@@ -98,7 +109,7 @@ export const BookingsTable = ({
                     </thead>
                     <tbody className="divide-y">
                         {bookings.length === 0 && (
-                            <tr><td colSpan={8} className="text-center p-8 text-gray-400">No bookings found.</td></tr>
+                            <tr><td colSpan={8} className="text-center p-8 text-gray-400">No bookings found within this date range.</td></tr>
                         )}
                         {bookings.map(b => {
                             const { balance, isPaidOff } = calculateFinance(b);

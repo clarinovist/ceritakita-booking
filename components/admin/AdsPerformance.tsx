@@ -5,11 +5,11 @@ import {
   Target, TrendingUp, Users, DollarSign, 
   ArrowUpRight, ArrowDownRight, RefreshCw, AlertCircle 
 } from 'lucide-react';
-// ✅ Import Recharts untuk Grafik
 import { 
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip 
 } from 'recharts';
 import { type Booking } from '@/lib/types';
+import DateFilterToolbar from '@/components/admin/DateFilterToolbar';
 
 export interface MetaInsightsData {
   spend: number;
@@ -25,7 +25,8 @@ export interface MetaInsightsData {
 
 interface AdsPerformanceProps {
   bookings: Booking[];
-  dateRange?: { start: string; end: string };
+  dateRange: { start: string; end: string };
+  onDateRangeChange: (range: { start: string; end: string }) => void;
 }
 
 interface AdsData extends MetaInsightsData {
@@ -33,7 +34,7 @@ interface AdsData extends MetaInsightsData {
   error: string | null;
 }
 
-export default function AdsPerformance({ bookings, dateRange }: AdsPerformanceProps) {
+export default function AdsPerformance({ bookings, dateRange, onDateRangeChange }: AdsPerformanceProps) {
   const [adsData, setAdsData] = useState<AdsData>({
     spend: 0,
     impressions: 0,
@@ -100,12 +101,10 @@ export default function AdsPerformance({ bookings, dateRange }: AdsPerformancePr
   const cpm = adsData.impressions > 0 ? (adsSpend / adsData.impressions) * 1000 : 0;
   const ctr = adsData.impressions > 0 ? (adsData.inlineLinkClicks / adsData.impressions) * 100 : 0;
 
-  // ✅ DEFINE CHART DATA (Fix ReferenceError)
-  // Mengolah data booking menjadi grafik Revenue Harian
+  // Chart Data
   const chartData = bookings
     .filter(b => b.status !== 'Cancelled')
     .reduce((acc, curr) => {
-      // Format tanggal: "10 Okt"
       const date = new Date(curr.booking_date).toLocaleDateString('id-ID', { 
         day: 'numeric', 
         month: 'short' 
@@ -119,12 +118,11 @@ export default function AdsPerformance({ bookings, dateRange }: AdsPerformancePr
       }
       return acc;
     }, [] as { name: string; value: number }[])
-    // Ambil 7 entri terakhir agar grafik rapi
     .slice(-7);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header with Date Filter */}
       <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -136,14 +134,21 @@ export default function AdsPerformance({ bookings, dateRange }: AdsPerformancePr
               Meta Ads Insights - {adsData.date_start || '...'} to {adsData.date_end || '...'}
             </p>
           </div>
-          <button
-            onClick={fetchAdsData}
-            disabled={adsData.isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <RefreshCw size={16} className={adsData.isLoading ? 'animate-spin' : ''} />
-            Refresh Data
-          </button>
+          
+          <div className="flex items-center gap-3">
+             <DateFilterToolbar 
+                 dateRange={dateRange} 
+                 onDateRangeChange={onDateRangeChange} 
+             />
+             <button
+                onClick={fetchAdsData}
+                disabled={adsData.isLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
+             >
+                <RefreshCw size={16} className={adsData.isLoading ? 'animate-spin' : ''} />
+                <span className="hidden sm:inline">Refresh</span>
+             </button>
+          </div>
         </div>
       </div>
 
@@ -217,7 +222,6 @@ export default function AdsPerformance({ bookings, dateRange }: AdsPerformancePr
       {chartData.length > 0 && (
         <div className="bg-white p-6 rounded-lg shadow border border-gray-100">
           <h2 className="text-lg font-bold mb-4 text-gray-700">Revenue Trend (Last 7 Entries)</h2>
-          {/* 👇 PENTING: h-[300px] agar chart tidak error */}
           <div className="w-full h-[300px] min-h-[300px]"> 
             <ResponsiveContainer width="100%" minHeight={300}>
               <AreaChart data={chartData}>
