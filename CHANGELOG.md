@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Portfolio Showcase Display Fix - 2026-01-01
+
+#### Bug Fix: Portfolio Display in Multi-Step Form
+- **Fixed Portfolio Positioning**: Moved PortfolioShowcase from Step 1 to Step 2 (Add-ons Selection)
+- **Safe Data Access**: Implemented null-safe portfolio image retrieval with fallback handling
+- **Error Prevention**: Added optional chaining to prevent "Cannot read properties of undefined" errors
+- **Conditional Rendering**: Portfolio only displays when images are available and service is selected
+- **Enhanced UX**: Portfolio images now appear above add-ons list in Step 2 for better visibility
+
+#### Files Modified
+- `components/booking/steps/AddonsSelection.tsx` - Added PortfolioShowcase with safe data access
+- `components/booking/steps/ServiceSelection.tsx` - Removed duplicate portfolio display
+
+#### Technical Implementation
+- Used `formData?.portfolioImages || []` pattern for safe array access
+- Implemented conditional rendering: `isContextMode && selectedService && portfolioImages.length > 0`
+- Proper prop passing to PortfolioShowcase component (selectedService, portfolioImages, openLightbox)
+- Wrapped portfolio and addons sections in `space-y-6` container for proper spacing
+
 ### Dashboard Enhancements - 2026-01-01
 
 #### DateFilterToolbar Component

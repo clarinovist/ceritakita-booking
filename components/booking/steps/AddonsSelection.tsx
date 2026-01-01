@@ -4,6 +4,7 @@ import { ShoppingBag } from 'lucide-react';
 import { Addon } from '@/lib/types';
 import { useMultiStepForm } from '../MultiStepForm';
 import { useEffect, useState } from 'react';
+import { PortfolioShowcase } from './PortfolioShowcase';
 
 interface AddonsSelectionProps {
     availableAddons?: Addon[];
@@ -144,12 +145,28 @@ export const AddonsSelection = ({
         );
     }
 
+    // Safely get portfolio data from context
+    const portfolioImages = formData?.portfolioImages || [];
+    const selectedService = formData ? { name: formData.serviceName } : null;
+    const { openLightbox } = context;
+
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-2 mb-4 text-gray-800 font-bold">
-                <ShoppingBag className="text-blue-600" size={20} />
-                <h3>Tambahan (Opsional)</h3>
-            </div>
+        <div className="space-y-6">
+            {/* Portfolio Showcase */}
+            {isContextMode && selectedService && portfolioImages.length > 0 && (
+                <PortfolioShowcase
+                    selectedService={selectedService}
+                    portfolioImages={portfolioImages}
+                    openLightbox={openLightbox}
+                />
+            )}
+
+            {/* Addons Selection */}
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-top-4 duration-300">
+                <div className="flex items-center gap-2 mb-4 text-gray-800 font-bold">
+                    <ShoppingBag className="text-blue-600" size={20} />
+                    <h3>Tambahan (Opsional)</h3>
+                </div>
             <div className="space-y-3" role="list" aria-label="Pilihan tambahan layanan">
                 {availableAddons.map(addon => {
                     const isSelected = selectedAddonsMap.has(addon.id);
@@ -234,9 +251,10 @@ export const AddonsSelection = ({
                 </div>
             )}
 
-            {/* Help Text */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mt-4">
-                <strong>Petunjuk:</strong> Pilih tambahan yang Anda butuhkan. Anda dapat mengubah jumlah dengan tombol +/-
+                {/* Help Text */}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mt-4">
+                    <strong>Petunjuk:</strong> Pilih tambahan yang Anda butuhkan. Anda dapat mengubah jumlah dengan tombol +/-
+                </div>
             </div>
         </div>
     );

@@ -29,12 +29,13 @@ export function ServiceSelection({
   const context = useMultiStepForm();
   const isContextMode = !propServices;
   
-  const formData = isContextMode ? context.formData : { serviceId: propSelectedService?.id || '' };
+  const formData = isContextMode ? context.formData : { serviceId: propSelectedService?.id || '', portfolioImages: [] };
   const updateFormData = isContextMode ? context.updateFormData : () => {};
   const errors = isContextMode ? context.errors : {};
   const setFieldError = isContextMode ? context.setFieldError : () => {};
   const clearFieldError = isContextMode ? context.clearFieldError : () => {};
   const fetchPortfolioImages = isContextMode ? context.fetchPortfolioImages : () => {};
+  const openLightbox = isContextMode ? context.openLightbox : () => {};
 
   const [services, setServices] = useState<Service[]>(propServices || []);
   const [loading, setLoading] = useState(!propServices);
@@ -196,16 +197,16 @@ export function ServiceSelection({
 
       {/* Validation Error */}
       {serviceError && (
-        <ValidationMessage 
-          message={serviceError.message} 
+        <ValidationMessage
+          message={serviceError.message}
           type="error"
           showIcon={true}
         />
       )}
 
       {/* Help Text */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-        <strong>Petunjuk:</strong> Pilih layanan yang sesuai dengan kebutuhan Anda. 
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mt-4">
+        <strong>Petunjuk:</strong> Pilih layanan yang sesuai dengan kebutuhan Anda.
         Anda dapat menambahkan layanan tambahan di langkah berikutnya.
       </div>
     </div>
