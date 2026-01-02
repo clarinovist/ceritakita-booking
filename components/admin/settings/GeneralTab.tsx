@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { SystemSettings } from '@/lib/types/settings';
-import { FILE_CONSTRAINTS, UPLOAD_FOLDERS } from '@/lib/constants';
+import { FILE_CONSTRAINTS } from '@/lib/constants';
 
 interface GeneralTabProps {
   settings: SystemSettings;
@@ -52,7 +52,7 @@ export default function GeneralTab({ settings, onChange, onLogoUpload, uploading
       {/* Site Branding */}
       <div className="bg-white border rounded-lg p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Site Branding</h3>
-        
+
         <div className="space-y-4">
           {/* Site Name */}
           <div>
@@ -78,39 +78,67 @@ export default function GeneralTab({ settings, onChange, onLogoUpload, uploading
             <div className="space-y-3">
               {settings.site_logo && (
                 <div className="flex items-center gap-4">
-                  <img 
-                    src={settings.site_logo} 
-                    alt="Current logo" 
-                    className="h-16 w-auto object-contain border rounded-lg p-2"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/default-logo.png';
-                    }}
-                  />
-                  <span className="text-sm text-gray-600 break-all">{settings.site_logo}</span>
+                  <div className="relative group">
+                    <img
+                      src={settings.site_logo}
+                      alt="Current logo"
+                      className="h-16 w-auto object-contain border rounded-lg p-2 bg-gray-50"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/default-logo.png';
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                      <a href={settings.site_logo} target="_blank" rel="noreferrer" className="text-white text-xs font-medium hover:underline">
+                        View
+                      </a>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-gray-900">Current Logo</span>
+                    <span className="text-xs text-gray-500 break-all max-w-md">{settings.site_logo}</span>
+                  </div>
                 </div>
               )}
-              <div className="flex items-center gap-3">
-                <label className="cursor-pointer px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors">
-                  {uploading ? 'Uploading...' : 'Upload New Logo'}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    disabled={uploading}
-                  />
-                </label>
-                <input
-                  type="text"
-                  value={settings.site_logo}
-                  onChange={(e) => onChange('site_logo', e.target.value)}
-                  className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="/images/default-logo.png"
-                />
+
+              <div className="flex items-start gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all shadow-sm
+                      ${uploading
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                        : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400'
+                      }`}
+                    >
+                      <svg className={`w-5 h-5 ${uploading ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        {uploading ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        )}
+                      </svg>
+                      {uploading ? 'Uploading...' : 'Upload Image'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                    </label>
+                    <span className="text-sm text-gray-400">or</span>
+                    <input
+                      type="text"
+                      value={settings.site_logo}
+                      onChange={(e) => onChange('site_logo', e.target.value)}
+                      className="flex-1 p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Recommended: PNG or SVG with transparent background. Max 5MB.
+                  </p>
+                </div>
               </div>
-              <p className="text-xs text-gray-500">
-                Upload an image or enter a URL. Supported formats: JPG, PNG, GIF, WEBP. Max 5MB.
-              </p>
             </div>
           </div>
         </div>
@@ -119,7 +147,7 @@ export default function GeneralTab({ settings, onChange, onLogoUpload, uploading
       {/* Hero Section */}
       <div className="bg-white border rounded-lg p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-4">Hero Section</h3>
-        
+
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Hero Title (H1)
@@ -138,7 +166,7 @@ export default function GeneralTab({ settings, onChange, onLogoUpload, uploading
       {/* SEO Settings */}
       <div className="bg-white border rounded-lg p-6">
         <h3 className="text-lg font-bold text-gray-900 mb-4">SEO Settings</h3>
-        
+
         <div className="space-y-4">
           {/* Meta Title */}
           <div>

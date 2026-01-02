@@ -16,7 +16,7 @@ interface LogoProps {
  */
 export function Logo({ className = '', size = 'md', showText = true }: LogoProps) {
   const { settings, loading } = useSettings();
-  
+
   const sizeClasses = {
     sm: 'text-lg',
     md: 'text-xl',
@@ -30,6 +30,8 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
   };
 
   const siteName = settings?.site_name || 'Cerita Kita';
+
+  const hasLogo = !!settings?.site_logo;
 
   if (loading) {
     // Show skeleton while loading
@@ -53,8 +55,27 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
       aria-label={`${siteName} - Beranda`}
     >
       <div className="relative flex items-center justify-center">
-        {/* Camera Icon with gradient background */}
-        <div className="bg-gradient-to-br from-primary-600 to-secondary-600 rounded-lg p-1.5 shadow-lg">
+        {hasLogo ? (
+          /* Dynamic Logo Image */
+          <img
+            src={settings?.site_logo}
+            alt={siteName}
+            className="object-contain"
+            style={{
+              height: iconSize[size] * 1.5, // Slightly larger than icon
+              width: "auto",
+              maxWidth: 150
+            }}
+            onError={(e) => {
+              // Fallback to icon if image fails
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
+
+        {/* Camera Icon (Fallback or Default) */}
+        <div className={`${hasLogo ? 'hidden' : ''} bg-gradient-to-br from-primary-600 to-secondary-600 rounded-lg p-1.5 shadow-lg`}>
           <Camera
             size={iconSize[size]}
             className="text-white"
@@ -62,9 +83,6 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
             fill="currentColor"
           />
         </div>
-        
-        {/* Decorative pulse effect on hover */}
-        <div className="absolute inset-0 bg-primary-600/20 rounded-lg opacity-0 hover:opacity-100 transition-opacity animate-pulse" />
       </div>
 
       {showText && (
@@ -111,6 +129,7 @@ export function MobileLogo() {
 export function HeroLogo() {
   const { settings, loading } = useSettings();
   const siteName = settings?.site_name || 'Cerita Kita';
+  const hasLogo = !!settings?.site_logo;
 
   if (loading) {
     return (
@@ -129,10 +148,23 @@ export function HeroLogo() {
 
   return (
     <div className="text-center space-y-3">
-      <div className="inline-flex items-center gap-3">
-        <div className="bg-gradient-to-br from-primary-600 to-secondary-600 rounded-xl p-3 shadow-xl">
+      <div className="inline-flex items-center gap-3 justify-center">
+        {hasLogo ? (
+          <img
+            src={settings?.site_logo}
+            alt={siteName}
+            className="object-contain h-16 w-auto"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
+
+        <div className={`${hasLogo ? 'hidden' : ''} bg-gradient-to-br from-primary-600 to-secondary-600 rounded-xl p-3 shadow-xl`}>
           <Camera size={40} className="text-white" strokeWidth={2} fill="currentColor" />
         </div>
+
         <div className="flex flex-col text-left">
           <span className="text-3xl font-black text-gray-900 tracking-tight">{siteName}</span>
           <span className="text-lg font-semibold text-primary-600 tracking-wide">STUDIO</span>
