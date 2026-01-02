@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Dynamic Branding & Upload Reliability - 2026-01-02
+
+#### Dynamic Site Branding
+- **Configurable Branding**: Admins can now update Site Name and Logo directly from the Admin Panel.
+- **Real-time Updates**: Changes reflect instantly on the public website header, browser tab title, and favicon.
+- **Zero-Latency Metadata**: Server-side metadata fetching optimized with direct DB access for best performance.
+
+#### Robust File Uploads
+- **Smart B2 Integration**: Auto-detection of Backblaze B2 region from endpoint configuration.
+- **Local Storage Fallback**: Automatic fallback to local `public/uploads` storage if external storage fails, ensuring 100% upload reliability.
+
+#### Files Modified
+- `lib/types/settings.ts` - Added branding fields.
+- `components/admin/settings/GeneralTab.tsx` - Added logo upload and site name editing.
+- `components/ui/Logo.tsx` - Made logo and text dynamic.
+- `app/layout.tsx` - Implemented dynamic metadata generation.
+- `lib/b2-s3-client.ts` - Fixed region detection.
+- `app/api/uploads/route.ts` - Added local fallback logic.
+
 ### Portfolio Showcase Display Fix - 2026-01-01
 
 #### Bug Fix: Portfolio Display in Multi-Step Form

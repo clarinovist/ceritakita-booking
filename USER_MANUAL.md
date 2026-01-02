@@ -12,6 +12,7 @@ This manual provides non-technical instructions for managing the booking system 
 3. [Payment Methods Management](#payment-methods-management)
 4. [User Account Management](#user-account-management)
 5. [Booking Status Management](#booking-status-management)
+6. [Site Branding Configuration](#site-branding-configuration)
 
 ---
 
@@ -307,3 +308,34 @@ Track and update booking progress from inquiry to completion.
 ---
 
 **Remember**: Always double-check booking details before updating status. Customer satisfaction is our priority!
+
+---
+
+## Site Branding Configuration
+
+Customize your website's identity directly from the admin panel.
+
+### Changing Site Name & Logo
+
+1. **Navigate to Settings**
+   - Login to Admin Dashboard
+   - Click **"System Settings"** (or the Gear Icon)
+   - Ensure you are on the **"General & SEO"** tab
+
+2. **Update Site Name**
+   - Enter your new business name in the **"Site Name"** field
+   - This name appears in the browser title and site headers
+
+3. **Upload Logo**
+   - Click **"Upload New Logo"**
+   - Select a transparent PNG or high-quality JPG
+   - The system will upload it (supports large files up to 5MB)
+   - **Preview**: You can see your new logo immediately
+
+4. **SEO Settings**
+   - Update **"Hero Title"** to change the main headline on the homepage
+   - Update **"Meta Title"** and **"Meta Description"** for Google search results
+
+5. **Save Changes**
+   - Click **"Save All Settings"**
+   - **Verify**: Refresh your public website to see the changes instantly (Logo, Title, and Favicon)

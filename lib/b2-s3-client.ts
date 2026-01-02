@@ -11,8 +11,13 @@ export function getS3Client(): S3Client {
       throw new Error('Missing Backblaze B2 environment variables');
     }
 
+    // Determine region from endpoint or env var
+    const endpoint = process.env.B2_ENDPOINT || '';
+    const regionMatch = endpoint.match(/s3\.([a-z0-9-]+)\.backblazeb2\.com/);
+    const region = process.env.B2_REGION || (regionMatch ? regionMatch[1] : 'us-west-004');
+
     s3Client = new S3Client({
-      region: 'us-west-004',
+      region: region,
       endpoint: `https://${process.env.B2_ENDPOINT}`,
       credentials: {
         accessKeyId: process.env.B2_APPLICATION_KEY_ID,
@@ -32,10 +37,10 @@ export function getS3Client(): S3Client {
  */
 export async function uploadToB2(file: Buffer, key: string, contentType: string): Promise<string> {
   const { PutObjectCommand } = await import('@aws-sdk/client-s3');
-  
+
   const s3 = getS3Client();
   const bucket = process.env.B2_BUCKET_NAME;
-  
+
   if (!bucket) {
     throw new Error('B2_BUCKET_NAME environment variable is not set');
   }
@@ -52,7 +57,7 @@ export async function uploadToB2(file: Buffer, key: string, contentType: string)
 
   // Upload file
   await s3.send(command);
-  
+
   // Return public URL
   return `https://${bucket}.${process.env.B2_ENDPOINT}/${key}`;
 }
