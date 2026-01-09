@@ -19,19 +19,19 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
     // Use context if no props provided (for MultiStepBookingForm)
     const context = useMultiStepForm();
     const isContextMode = !propFormData;
-    
+
     const formData = isContextMode ? context.formData : propFormData!;
-    const updateFormData = isContextMode ? context.updateFormData : () => {};
+    const updateFormData = isContextMode ? context.updateFormData : () => { };
     const errors = isContextMode ? context.errors : {};
-    const setFieldError = isContextMode ? context.setFieldError : () => {};
-    const clearFieldError = isContextMode ? context.clearFieldError : () => {};
+    const setFieldError = isContextMode ? context.setFieldError : () => { };
+    const clearFieldError = isContextMode ? context.clearFieldError : () => { };
 
     const [touched, setTouched] = useState<Record<string, boolean>>({});
 
     // Real-time validation (only in context mode)
     useEffect(() => {
         if (!isContextMode) return;
-        
+
         if (touched.name && formData.name) {
             const error = fieldValidators.name(formData.name);
             if (error) {
@@ -44,7 +44,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
 
     useEffect(() => {
         if (!isContextMode) return;
-        
+
         if (touched.whatsapp && formData.whatsapp) {
             const error = fieldValidators.whatsapp(formData.whatsapp);
             if (error) {
@@ -57,7 +57,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
 
     useEffect(() => {
         if (!isContextMode) return;
-        
+
         if (touched.notes && formData.notes) {
             const error = fieldValidators.notes(formData.notes);
             if (error) {
@@ -111,9 +111,9 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-2 text-lg font-bold text-gray-800">
-                <User className="text-primary-600" size={24} />
-                <h2>Informasi Kontak</h2>
+            <div className="flex items-center gap-2 text-lg font-bold text-olive-800">
+                <User className="text-olive-600" size={24} />
+                <h2 className="font-display text-xl">Informasi Kontak</h2>
             </div>
 
             {/* Name */}
@@ -130,7 +130,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
                         onChange={handleNameChange}
                         onBlur={() => setTouched(prev => ({ ...prev, name: true }))}
                         placeholder="Masukkan nama lengkap Anda"
-                        className="w-full p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 transition-all touch-target"
+                        className="w-full p-3 bg-white border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 transition-all touch-target"
                         aria-describedby={nameError ? 'name-error' : undefined}
                         aria-invalid={!!nameError}
                         autoComplete="name"
@@ -146,7 +146,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
                         value={formData.name}
                         onChange={handleNameChange}
                         placeholder="Nama Lengkap"
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full p-3 bg-cream-50 border border-olive-200 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none"
                     />
                 </div>
             )}
@@ -165,7 +165,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
                         onChange={handleWhatsappChange}
                         onBlur={() => setTouched(prev => ({ ...prev, whatsapp: true }))}
                         placeholder="Contoh: 081234567890"
-                        className="w-full p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 touch-target font-mono"
+                        className="w-full p-3 bg-white border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 touch-target font-mono"
                         aria-describedby={whatsappError ? 'whatsapp-error' : undefined}
                         aria-invalid={!!whatsappError}
                         autoComplete="tel"
@@ -187,7 +187,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
                         value={formData.whatsapp}
                         onChange={handleWhatsappChange}
                         placeholder="Nomor WhatsApp"
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full p-3 bg-cream-50 border border-olive-200 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none"
                     />
                 </div>
             )}
@@ -205,7 +205,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
                         onBlur={() => setTouched(prev => ({ ...prev, notes: true }))}
                         placeholder="Tambahkan catatan atau permintaan khusus..."
                         rows={4}
-                        className="w-full p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 resize-none touch-target"
+                        className="w-full p-3 bg-white border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 resize-none touch-target"
                         aria-describedby={notesError ? 'notes-error' : undefined}
                         aria-invalid={!!notesError}
                         maxLength={500}
@@ -227,7 +227,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
                         value={formData.notes}
                         onChange={handleNotesChange}
                         placeholder="Catatan tambahan (opsional)"
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none min-h-[100px]"
+                        className="w-full p-3 bg-cream-50 border border-olive-200 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none min-h-[100px]"
                     />
                 </div>
             )}
@@ -243,16 +243,16 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
 
             {/* Help Text (context mode only) */}
             {isContextMode && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                    <strong>Petunjuk:</strong> Nomor WhatsApp akan digunakan admin untuk menghubungi Anda.
+                <div className="bg-cream-100 border border-olive-200 rounded-lg p-3 text-sm text-olive-700">
+                    <strong className="text-gold-600">Petunjuk:</strong> Nomor WhatsApp akan digunakan admin untuk menghubungi Anda.
                     Pastikan nomor aktif dan dapat dihubungi.
                 </div>
             )}
 
             {/* Privacy Notice (context mode only) */}
             {isContextMode && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-xs text-purple-800">
-                    <strong>Privasi:</strong> Data Anda aman dan hanya digunakan untuk keperluan booking.
+                <div className="bg-gold-50 border border-gold-200 rounded-lg p-3 text-xs text-olive-800">
+                    <strong className="text-gold-700">Privasi:</strong> Data Anda aman dan hanya digunakan untuk keperluan booking.
                     Kami tidak membagikan informasi pihak ketiga.
                 </div>
             )}

@@ -8,8 +8,38 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Modern Color Palette
+      // Earthy/Moody Color Palette for Photography Studio
       colors: {
+        // Olive/Dark tones - Primary backgrounds
+        olive: {
+          900: "#1a1a14",
+          800: "#2c2c20",
+          700: "#4a4a3a",
+          600: "#6b6b50",
+          500: "#8a8a6c",
+        },
+        // Cream tones - Text and accents
+        cream: {
+          50: "#fdfcfa",
+          100: "#f5f2eb",
+          200: "#e8e4d9",
+          300: "#d4cfc0",
+          400: "#b8b19e",
+        },
+        // Gold tones - Accents and CTAs
+        gold: {
+          300: "#d4b896",
+          400: "#c9a96e",
+          500: "#b89856",
+          600: "#9a7d42",
+        },
+        // Warm brown - Borders and subtle elements
+        warmBrown: {
+          300: "#a89580",
+          400: "#8b7355",
+          500: "#6d5840",
+        },
+        // Keep original primary for booking form compatibility
         primary: {
           50: "#eff6ff",
           100: "#dbeafe",
@@ -85,26 +115,29 @@ const config: Config = {
         background: "var(--background)",
         foreground: "var(--foreground)",
       },
-      
-      // Typography Scale
+
+      // Typography Scale - Elegant Photography Theme
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+        display: ['"Playfair Display"', 'Georgia', 'serif'],
+        serif: ['"Cormorant Garamond"', 'Georgia', 'serif'],
+        script: ['Sacramento', 'cursive'],
       },
-      
+
       // Spacing Scale (4px base)
       spacing: {
         '18': '4.5rem',
         '88': '22rem',
       },
-      
+
       // Border Radius
       borderRadius: {
         'xl': '0.75rem',
         '2xl': '1rem',
         '3xl': '1.5rem',
       },
-      
+
       // Shadows
       boxShadow: {
         'sm': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
@@ -113,7 +146,7 @@ const config: Config = {
         'xl': '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
         '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
       },
-      
+
       // Animation
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',
@@ -122,7 +155,7 @@ const config: Config = {
         'bounce-subtle': 'bounceSubtle 2s infinite',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
-      
+
       keyframes: {
         fadeIn: {
           '0%': { opacity: '0' },
@@ -141,7 +174,7 @@ const config: Config = {
           '50%': { transform: 'translateY(-5px)' },
         },
       },
-      
+
       // Mobile-first breakpoints
       screens: {
         'xs': '475px',
@@ -151,12 +184,12 @@ const config: Config = {
         'xl': '1280px',
         '2xl': '1536px',
       },
-      
+
       // Minimum touch target sizes
       minWidth: {
         'touch': '44px',
       },
-      
+
       minHeight: {
         'touch': '44px',
       },

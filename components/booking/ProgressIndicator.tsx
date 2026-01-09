@@ -17,11 +17,11 @@ interface ProgressIndicatorProps {
  * Shows step-by-step progress with visual feedback
  * Optimized for mobile with touch-friendly targets and ARIA support
  */
-export function ProgressIndicator({ 
-  currentStep, 
-  totalSteps, 
+export function ProgressIndicator({
+  currentStep,
+  totalSteps,
   stepLabels,
-  isLoading = false 
+  isLoading = false
 }: ProgressIndicatorProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -32,10 +32,10 @@ export function ProgressIndicator({
   if (!mounted) {
     // Prevent hydration mismatch
     return (
-      <div className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+      <div className="w-full bg-white rounded-2xl shadow-sm border border-olive-200 p-4">
         <div className="flex justify-between items-center">
           {[...Array(totalSteps)].map((_, i) => (
-            <div key={i} className="flex-1 h-2 bg-gray-200 rounded-full mx-1" />
+            <div key={i} className="flex-1 h-2 bg-olive-200 rounded-full mx-1" />
           ))}
         </div>
       </div>
@@ -45,16 +45,16 @@ export function ProgressIndicator({
   const progressPercentage = ((currentStep - 1) / (totalSteps - 1)) * 100;
 
   return (
-    <div 
-      className="w-full bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6"
+    <div
+      className="w-full bg-white rounded-2xl shadow-sm border border-olive-200 p-4 md:p-6"
       role="navigation"
       aria-label={`Langkah ${currentStep} dari ${totalSteps}`}
     >
       {/* Progress Bar */}
       <div className="relative mb-6">
-        <div className="absolute top-1/2 left-0 w-full h-2 bg-gray-200 rounded-full -translate-y-1/2" />
-        <div 
-          className="absolute top-1/2 left-0 h-2 bg-primary-600 rounded-full -translate-y-1/2 transition-all duration-500 ease-out"
+        <div className="absolute top-1/2 left-0 w-full h-2 bg-olive-200 rounded-full -translate-y-1/2" />
+        <div
+          className="absolute top-1/2 left-0 h-2 bg-gold-500 rounded-full -translate-y-1/2 transition-all duration-500 ease-out"
           style={{ width: `${progressPercentage}%` }}
           role="progressbar"
           aria-valuenow={progressPercentage}
@@ -62,18 +62,18 @@ export function ProgressIndicator({
           aria-valuemax={100}
           aria-label={`Progress: ${Math.round(progressPercentage)}%`}
         />
-        
+
         {/* Loading Indicator */}
         {isLoading && (
-          <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-primary-50 px-3 py-1 rounded-full animate-pulse">
-            <Loader2 size={14} className="text-primary-600 animate-spin" />
-            <span className="text-xs font-semibold text-primary-700">Memproses...</span>
+          <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-cream-100 px-3 py-1 rounded-full animate-pulse">
+            <Loader2 size={14} className="text-gold-500 animate-spin" />
+            <span className="text-xs font-semibold text-olive-700">Memproses...</span>
           </div>
         )}
       </div>
 
       {/* Step Indicators */}
-      <div 
+      <div
         className="flex justify-between items-start gap-2"
         role="list"
         aria-label="Daftar langkah booking"
@@ -85,7 +85,7 @@ export function ProgressIndicator({
           const isUpcoming = stepNumber > currentStep;
 
           return (
-            <div 
+            <div
               key={label}
               className="flex-1 flex flex-col items-center gap-2 min-w-0"
               role="listitem"
@@ -95,28 +95,28 @@ export function ProgressIndicator({
               {/* Step Circle */}
               <div className="relative flex items-center justify-center">
                 {isCompleted && (
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-success-100 border-2 border-success-300">
-                    <CheckCircle2 
-                      size={18} 
-                      className="text-success-600" 
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gold-300/30 border-2 border-gold-400">
+                    <CheckCircle2
+                      size={18}
+                      className="text-gold-600"
                       aria-hidden="true"
                     />
                   </div>
                 )}
-                
+
                 {isCurrent && (
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary-600 border-2 border-primary-700 shadow-md animate-bounce-subtle">
-                    <span className="text-white font-bold text-sm" aria-hidden="true">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-olive-800 border-2 border-olive-700 shadow-md animate-bounce-subtle">
+                    <span className="text-cream-100 font-bold text-sm font-serif" aria-hidden="true">
                       {stepNumber}
                     </span>
                   </div>
                 )}
-                
+
                 {isUpcoming && (
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 border-2 border-gray-300">
-                    <Circle 
-                      size={16} 
-                      className="text-gray-400" 
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-cream-200 border-2 border-olive-300">
+                    <Circle
+                      size={16}
+                      className="text-olive-400"
                       aria-hidden="true"
                     />
                   </div>
@@ -126,21 +126,20 @@ export function ProgressIndicator({
               {/* Step Label */}
               <div className="flex-1 min-w-0 text-center">
                 <span
-                  className={`text-xs font-medium block truncate ${
-                    isCompleted
-                      ? 'text-success-700'
-                      : isCurrent
-                      ? 'text-primary-700 font-bold'
+                  className={`text-xs font-medium block truncate ${isCompleted
+                    ? 'text-gold-600'
+                    : isCurrent
+                      ? 'text-olive-800 font-bold'
                       : isUpcoming
-                      ? 'text-gray-400'
-                      : ''
-                  }`}
+                        ? 'text-olive-400'
+                        : ''
+                    }`}
                 >
                   {label}
                 </span>
-                
+
                 {/* Mobile: Show only current step number */}
-                <span className="md:hidden text-[10px] text-gray-500 font-mono mt-0.5">
+                <span className="md:hidden text-[10px] text-olive-500 font-serif mt-0.5">
                   {stepNumber}/{totalSteps}
                 </span>
               </div>
@@ -183,8 +182,8 @@ export function MobileStepNavigation({
   const showSkip = canSkip && currentStep < totalSteps;
 
   return (
-    <div 
-      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-area-inset-bottom md:relative md:bg-transparent md:border-none md:p-0 md:mt-6"
+    <div
+      className="fixed bottom-0 left-0 right-0 bg-cream-50 border-t border-olive-200 p-4 safe-area-inset-bottom md:relative md:bg-transparent md:border-none md:p-0 md:mt-6"
       role="toolbar"
       aria-label="Navigasi langkah"
     >
@@ -194,7 +193,7 @@ export function MobileStepNavigation({
           <button
             type="button"
             onClick={onBack}
-            className="flex-1 md:flex-none px-6 py-3 md:py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all active:scale-95 touch-target"
+            className="flex-1 md:flex-none px-6 py-3 md:py-3 bg-cream-200 hover:bg-cream-300 text-olive-700 font-semibold rounded-xl transition-all active:scale-95 touch-target"
             aria-label="Kembali ke langkah sebelumnya"
           >
             Kembali
@@ -206,7 +205,7 @@ export function MobileStepNavigation({
           <button
             type="button"
             onClick={onSkip}
-            className="flex-1 md:flex-none px-6 py-3 md:py-3 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium rounded-xl transition-all active:scale-95 touch-target"
+            className="flex-1 md:flex-none px-6 py-3 md:py-3 bg-cream-100 hover:bg-cream-200 text-olive-600 font-medium rounded-xl transition-all active:scale-95 touch-target"
             aria-label="Lewati langkah ini"
           >
             Lewati
@@ -219,11 +218,10 @@ export function MobileStepNavigation({
             type="button"
             onClick={onNext}
             disabled={isNextDisabled}
-            className={`flex-1 md:flex-none px-6 py-4 md:py-3 font-bold rounded-xl transition-all active:scale-95 touch-target flex items-center justify-center gap-2 ${
-              isNextDisabled
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-primary-600 hover:bg-primary-700 text-white shadow-lg shadow-primary-200'
-            }`}
+            className={`flex-1 md:flex-none px-6 py-4 md:py-3 font-bold rounded-xl transition-all active:scale-95 touch-target flex items-center justify-center gap-2 ${isNextDisabled
+              ? 'bg-olive-300 text-olive-500 cursor-not-allowed'
+              : 'bg-olive-800 hover:bg-olive-900 text-cream-100 shadow-lg shadow-olive-300'
+              }`}
             aria-label="Lanjut ke Langkah Berikutnya"
             aria-disabled={isNextDisabled}
           >
@@ -237,11 +235,10 @@ export function MobileStepNavigation({
           <button
             type="submit"
             disabled={isNextDisabled}
-            className={`flex-1 md:flex-none px-6 py-4 md:py-3 font-bold rounded-xl transition-all active:scale-95 touch-target flex items-center justify-center gap-2 ${
-              isNextDisabled
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-success-600 hover:bg-success-700 text-white shadow-lg shadow-success-200'
-            }`}
+            className={`flex-1 md:flex-none px-6 py-4 md:py-3 font-bold rounded-xl transition-all active:scale-95 touch-target flex items-center justify-center gap-2 ${isNextDisabled
+              ? 'bg-olive-300 text-olive-500 cursor-not-allowed'
+              : 'bg-gold-500 hover:bg-gold-600 text-olive-900 shadow-lg shadow-gold-200'
+              }`}
             aria-label="Selesaikan Booking"
             aria-disabled={isNextDisabled}
           >

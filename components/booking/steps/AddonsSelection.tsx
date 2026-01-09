@@ -22,10 +22,10 @@ export const AddonsSelection = ({
     // Use context if no props provided (for MultiStepBookingForm)
     const context = useMultiStepForm();
     const isContextMode = !propAvailableAddons;
-    
+
     const formData = isContextMode ? context.formData : null;
-    const updateFormData = isContextMode ? context.updateFormData : () => {};
-    
+    const updateFormData = isContextMode ? context.updateFormData : () => { };
+
     const [availableAddons, setAvailableAddons] = useState<Addon[]>(propAvailableAddons || []);
     const [loading, setLoading] = useState(!propAvailableAddons);
 
@@ -88,7 +88,7 @@ export const AddonsSelection = ({
                 const currentAddons = formData.addons.filter(a => a.addonId !== addonId);
                 updateAddons(currentAddons);
             } else {
-                const currentAddons = formData.addons.map(a => 
+                const currentAddons = formData.addons.map(a =>
                     a.addonId === addonId ? { ...a, quantity } : a
                 );
                 updateAddons(currentAddons);
@@ -98,7 +98,7 @@ export const AddonsSelection = ({
 
     const updateAddons = (addons: any[]) => {
         if (!formData) return;
-        
+
         const addonsTotal = addons.reduce((sum, addon) =>
             sum + (addon.priceAtBooking * addon.quantity), 0
         );
@@ -121,7 +121,7 @@ export const AddonsSelection = ({
             <div className="space-y-6">
                 <div className="flex items-center gap-2 text-lg font-bold text-gray-800">
                     <ShoppingBag className="text-primary-600" size={24} />
-                    <h2>Tambahan (Opsional)</h2>
+                    <h2 className="font-display text-xl">Tambahan (Opsional)</h2>
                 </div>
                 <div className="animate-pulse space-y-3">
                     <div className="h-16 bg-gray-200 rounded-xl"></div>
@@ -134,11 +134,11 @@ export const AddonsSelection = ({
     if (availableAddons.length === 0) {
         return (
             <div className="space-y-6">
-                <div className="flex items-center gap-2 text-lg font-bold text-gray-800">
-                    <ShoppingBag className="text-primary-600" size={24} />
-                    <h2>Tambahan (Opsional)</h2>
+                <div className="flex items-center gap-2 text-lg font-bold text-olive-800">
+                    <ShoppingBag className="text-olive-600" size={24} />
+                    <h2 className="font-display text-xl">Tambahan (Opsional)</h2>
                 </div>
-                <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 text-center text-gray-500">
+                <div className="bg-cream-50 border border-olive-200 rounded-xl p-6 text-center text-olive-500">
                     Tidak ada tambahan yang tersedia untuk layanan ini.
                 </div>
             </div>
@@ -162,98 +162,100 @@ export const AddonsSelection = ({
             )}
 
             {/* Addons Selection */}
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-top-4 duration-300">
-                <div className="flex items-center gap-2 mb-4 text-gray-800 font-bold">
-                    <ShoppingBag className="text-blue-600" size={20} />
-                    <h3>Tambahan (Opsional)</h3>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-olive-200 animate-in slide-in-from-top-4 duration-300">
+                <div className="flex items-center gap-2 mb-4 text-olive-800 font-bold">
+                    <ShoppingBag className="text-olive-600" size={20} />
+                    <h3 className="font-display text-xl">Tambahan (Opsional)</h3>
                 </div>
-            <div className="space-y-3" role="list" aria-label="Pilihan tambahan layanan">
-                {availableAddons.map(addon => {
-                    const isSelected = selectedAddonsMap.has(addon.id);
-                    const quantity = selectedAddonsMap.get(addon.id) || 1;
+                <div className="space-y-3" role="list" aria-label="Pilihan tambahan layanan">
+                    {availableAddons.map(addon => {
+                        const isSelected = selectedAddonsMap.has(addon.id);
+                        const quantity = selectedAddonsMap.get(addon.id) || 1;
 
-                    return (
-                        <div 
-                            key={addon.id}
-                            className={`
+                        return (
+                            <div
+                                key={addon.id}
+                                className={`
                                 border-2 rounded-xl p-4 transition-all
-                                ${isSelected 
-                                    ? 'border-primary-600 bg-primary-50' 
-                                    : 'border-gray-200 bg-white hover:border-primary-300'
-                                }
+                                ${isSelected
+                                        ? 'border-gold-500 bg-cream-50'
+                                        : 'border-olive-200 bg-white hover:border-gold-300'
+                                    }
                             `}
-                            role="listitem"
-                        >
-                            <div className="flex items-center justify-between gap-4">
-                                {/* Checkbox & Info */}
-                                <label className="flex items-center gap-3 flex-1 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isSelected}
-                                        onChange={() => toggleAddon(addon.id)}
-                                        className="w-5 h-5 text-primary-600 rounded focus:ring-2 focus:ring-primary-500 touch-target"
-                                        aria-label={`Pilih ${addon.name}, harga Rp ${addon.price.toLocaleString()}`}
-                                    />
-                                    
-                                    <div className="flex-1">
-                                        <div className="font-semibold text-gray-800">{addon.name}</div>
-                                        <div className="text-sm text-success-600 font-bold">
-                                            +Rp {addon.price.toLocaleString('id-ID')}
+                                role="listitem"
+                            >
+                                <div className="flex items-center justify-between gap-4">
+                                    {/* Checkbox & Info */}
+                                    <label className="flex items-center gap-3 flex-1 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={() => toggleAddon(addon.id)}
+                                            className="w-5 h-5 text-gold-600 rounded focus:ring-2 focus:ring-gold-500 touch-target"
+                                            aria-label={`Pilih ${addon.name}, harga Rp ${addon.price.toLocaleString()}`}
+                                        />
+
+                                        <div className="flex justify-between items-start mb-1 w-full">
+                                            <div>
+                                                <h4 className="font-bold text-olive-800 font-serif text-lg">{addon.name}</h4>
+                                            </div>
+                                            <span className="font-bold text-gold-600 font-serif whitespace-nowrap ml-4">
+                                                +Rp {addon.price.toLocaleString('id-ID')}
+                                            </span>
                                         </div>
-                                    </div>
-                                </label>
+                                    </label>
 
-                                {/* Quantity Controls */}
-                                {isSelected && (
-                                    <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-gray-200">
-                                        <button
-                                            type="button"
-                                            onClick={() => updateAddonQuantity(addon.id, quantity - 1)}
-                                            className="w-8 h-8 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition-colors touch-target"
-                                            aria-label={`Kurangi ${addon.name}`}
-                                        >
-                                            -
-                                        </button>
-                                        
-                                        <span 
-                                            className="w-8 text-center font-bold text-sm"
-                                            aria-live="polite"
-                                            aria-label={`Jumlah ${addon.name}: ${quantity}`}
-                                        >
-                                            {quantity}
-                                        </span>
-                                        
-                                        <button
-                                            type="button"
-                                            onClick={() => updateAddonQuantity(addon.id, quantity + 1)}
-                                            className="w-8 h-8 flex items-center justify-center bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold transition-colors touch-target"
-                                            aria-label={`Tambah ${addon.name}`}
-                                        >
-                                            +
-                                        </button>
-                                    </div>
-                                )}
+                                    {/* Quantity Controls */}
+                                    {isSelected && (
+                                        <div className="flex items-center gap-2 bg-white rounded-lg p-1 border border-olive-200">
+                                            <button
+                                                type="button"
+                                                onClick={() => updateAddonQuantity(addon.id, quantity - 1)}
+                                                className="w-8 h-8 flex items-center justify-center bg-cream-100 hover:bg-cream-200 rounded-lg font-bold text-olive-700 transition-colors touch-target"
+                                                aria-label={`Kurangi ${addon.name}`}
+                                            >
+                                                -
+                                            </button>
+
+                                            <span
+                                                className="w-8 text-center font-bold text-sm text-olive-900"
+                                                aria-live="polite"
+                                                aria-label={`Jumlah ${addon.name}: ${quantity}`}
+                                            >
+                                                {quantity}
+                                            </span>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => updateAddonQuantity(addon.id, quantity + 1)}
+                                                className="w-8 h-8 flex items-center justify-center bg-gold-500 hover:bg-gold-600 text-olive-900 rounded-lg font-bold transition-colors touch-target"
+                                                aria-label={`Tambah ${addon.name}`}
+                                            >
+                                                +
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
-
-            {/* Summary */}
-            {isContextMode && formData && formData.addons.length > 0 && (
-                <div className="bg-success-50 border border-success-200 rounded-xl p-4 animate-fade-in mt-4">
-                    <div className="flex justify-between items-center">
-                        <span className="font-semibold text-success-800">Total Tambahan:</span>
-                        <span className="font-bold text-success-900 text-lg">
-                            Rp {formData.addonsTotal.toLocaleString('id-ID')}
-                        </span>
-                    </div>
+                        );
+                    })}
                 </div>
-            )}
+
+                {/* Summary */}
+                {isContextMode && formData && formData.addons.length > 0 && (
+                    <div className="bg-cream-100 border border-olive-200 rounded-xl p-4 animate-fade-in mt-4">
+                        <div className="flex justify-between items-center">
+                            <span className="font-semibold text-olive-800">Total Tambahan:</span>
+                            <span className="font-bold text-olive-900 text-lg">
+                                Rp {formData.addonsTotal.toLocaleString('id-ID')}
+                            </span>
+                        </div>
+                    </div>
+                )}
 
                 {/* Help Text */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800 mt-4">
-                    <strong>Petunjuk:</strong> Pilih tambahan yang Anda butuhkan. Anda dapat mengubah jumlah dengan tombol +/-
+                <div className="bg-cream-100 border border-olive-200 rounded-lg p-3 text-sm text-olive-700 mt-4">
+                    <strong className="text-gold-600">Petunjuk:</strong> Pilih tambahan yang Anda butuhkan. Anda dapat mengubah jumlah dengan tombol +/-
                 </div>
             </div>
         </div>

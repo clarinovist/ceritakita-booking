@@ -29,12 +29,12 @@ export const PaymentInfo = ({
     // Use context if no props provided (for MultiStepBookingForm)
     const context = useMultiStepForm();
     const isContextMode = !propFormData;
-    
+
     const formData = isContextMode ? context.formData : propFormData!;
-    const updateFormData = isContextMode ? context.updateFormData : () => {};
+    const updateFormData = isContextMode ? context.updateFormData : () => { };
     const errors = isContextMode ? context.errors : {};
-    const setFieldError = isContextMode ? context.setFieldError : () => {};
-    const clearFieldError = isContextMode ? context.clearFieldError : () => {};
+    const setFieldError = isContextMode ? context.setFieldError : () => { };
+    const clearFieldError = isContextMode ? context.clearFieldError : () => { };
     const paymentSettings = isContextMode ? context.formData.paymentSettings : propPaymentSettings;
     const copyToClipboard = isContextMode ? (text: string) => {
         navigator.clipboard.writeText(text);
@@ -49,7 +49,7 @@ export const PaymentInfo = ({
     // Real-time validation (only in context mode)
     useEffect(() => {
         if (!isContextMode) return;
-        
+
         if (touched.dp_amount && formData.dp_amount) {
             const error = fieldValidators.dp_amount(formData.dp_amount, context.formData.totalPrice);
             if (error) {
@@ -77,15 +77,15 @@ export const PaymentInfo = ({
                     setFieldError('proofFile', 'File terlalu besar (maksimal 5MB)');
                     return;
                 }
-                
+
                 setProofFile(file);
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const result = e.target?.result as string;
                     setProofPreview(result);
-                    updateFormData({ 
+                    updateFormData({
                         proofFile: file,
-                        proofPreview: result 
+                        proofPreview: result
                     });
                 };
                 reader.readAsDataURL(file);
@@ -100,12 +100,12 @@ export const PaymentInfo = ({
     const dpError = isContextMode ? errors[5]?.find(e => e.field === 'dp_amount') : null;
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-            <div className="flex items-center gap-2 font-bold text-gray-800">
-                <MessageSquare className="text-blue-600" size={20} />
-                <h3>Pembayaran DP</h3>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-olive-200 space-y-6">
+            <div className="flex items-center gap-2 font-bold text-olive-800">
+                <MessageSquare className="text-gold-600" size={20} />
+                <h3 className="font-display text-xl">Pembayaran DP</h3>
             </div>
-            
+
             {/* Payment Methods Display */}
             <PaymentDetails
                 paymentSettings={paymentSettings}
@@ -115,7 +115,7 @@ export const PaymentInfo = ({
             {/* DP Amount Input */}
             {isContextMode ? (
                 <div className="space-y-1">
-                    <label className="text-xs text-gray-500 font-medium">Jumlah DP (Rp)</label>
+                    <label className="text-xs text-olive-500 font-medium font-serif">Jumlah DP (Rp)</label>
                     <input
                         required
                         type="number"
@@ -124,7 +124,7 @@ export const PaymentInfo = ({
                         onChange={handleDpAmountChange}
                         onBlur={() => setTouched(prev => ({ ...prev, dp_amount: true }))}
                         placeholder="Masukkan Jumlah DP (Rp)"
-                        className="w-full p-3 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700"
+                        className="w-full p-3 bg-white border border-olive-200 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none font-bold text-olive-800"
                         aria-describedby={dpError ? 'dp_amount-error' : undefined}
                         aria-invalid={!!dpError}
                     />
@@ -138,12 +138,12 @@ export const PaymentInfo = ({
                     value={formData.dp_amount}
                     onChange={handleDpAmountChange}
                     placeholder="Masukkan Jumlah DP (Rp)"
-                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-700"
+                    className="w-full p-3 bg-cream-50 border border-olive-200 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none font-bold text-olive-800"
                 />
             )}
 
             {/* File Upload */}
-            <div className="relative group overflow-hidden bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-4 transition-all hover:bg-white hover:border-blue-300">
+            <div className="relative group overflow-hidden bg-cream-50 border-2 border-dashed border-olive-200 rounded-xl p-4 transition-all hover:bg-white hover:border-gold-300">
                 <input
                     required={!proofPreview}
                     type="file"
@@ -152,8 +152,8 @@ export const PaymentInfo = ({
                     className="absolute inset-0 opacity-0 cursor-pointer z-10"
                 />
                 {!proofPreview ? (
-                    <div className="flex flex-col items-center gap-2 text-gray-500">
-                        <Upload size={32} strokeWidth={1.5} className="group-hover:text-blue-500 transition-colors" />
+                    <div className="flex flex-col items-center gap-2 text-olive-500">
+                        <Upload size={32} strokeWidth={1.5} className="group-hover:text-gold-500 transition-colors" />
                         <p className="text-sm">Klik untuk upload bukti transfer</p>
                         <p className="text-[10px]">JPG, PNG, GIF, WEBP max 5MB</p>
                     </div>
@@ -167,7 +167,7 @@ export const PaymentInfo = ({
                             className="h-32 mx-auto rounded-lg object-contain shadow-sm border bg-white"
                             unoptimized
                         />
-                        <p className="text-xs text-blue-600 mt-2 font-bold italic">Bukti terpilih (klik untuk ganti)</p>
+                        <p className="text-xs text-gold-600 mt-2 font-bold italic">Bukti terpilih (klik untuk ganti)</p>
                     </div>
                 )}
             </div>

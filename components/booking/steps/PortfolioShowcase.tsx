@@ -15,10 +15,10 @@ export const PortfolioShowcase = ({
     if (!selectedService || portfolioImages.length === 0) return null;
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 animate-in slide-in-from-top-4 duration-300">
-            <div className="flex items-center gap-2 mb-4 text-gray-800 font-bold">
-                <Camera className="text-blue-600" size={20} />
-                <h3>Portfolio {selectedService.name}</h3>
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-olive-200 animate-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-2 mb-4 text-olive-800 font-bold">
+                <Camera className="text-gold-600" size={20} />
+                <h3 className="font-display text-xl">Portfolio {selectedService.name}</h3>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {portfolioImages.map((imageUrl, index) => (
@@ -39,7 +39,7 @@ export const PortfolioShowcase = ({
                     </div>
                 ))}
             </div>
-            <p className="text-xs text-gray-500 mt-3">Klik gambar untuk memperbesar</p>
+            <p className="text-xs text-olive-500 mt-3">Klik gambar untuk memperbesar</p>
         </div>
     );
 };

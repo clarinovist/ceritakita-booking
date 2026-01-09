@@ -108,17 +108,17 @@ function MultiStepBookingFormContent() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl md:text-4xl font-extrabold text-primary-900 mb-2">
+        <h1 className="text-3xl md:text-4xl font-display text-olive-900 mb-2">
           Booking Sesi Foto
         </h1>
-        <p className="text-gray-600 text-sm md:text-base">
-          Proses 5 langkah mudah untuk booking sesi foto Anda bersama Cerita Kita
+        <p className="text-olive-600 text-sm md:text-base">
+          Proses 5 langkah mudah untuk booking sesi foto Anda bersama CeritaKita
         </p>
       </div>
 
       {/* Progress Indicator */}
       <div className="mb-8">
-        <ProgressIndicator 
+        <ProgressIndicator
           currentStep={currentStep}
           totalSteps={totalSteps}
           stepLabels={stepLabels}
@@ -133,7 +133,7 @@ function MultiStepBookingFormContent() {
       >
         {/* Main Content */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 animate-slide-up">
+          <div className="bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-olive-200 animate-slide-up">
             <StepContent />
           </div>
 
@@ -149,16 +149,16 @@ function MultiStepBookingFormContent() {
         <div className="lg:col-span-5 space-y-6">
           {/* Mobile: Show summary only on payment step */}
           {(!isMobile || currentStep === 5) && (
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl shadow-sm border-2 border-blue-100 sticky top-4">
-              <h3 className="font-black text-lg text-gray-800 mb-4">Ringkasan Sementara</h3>
-              
+            <div className="bg-gradient-to-br from-cream-100 to-cream-200 p-6 rounded-2xl shadow-sm border-2 border-olive-200 sticky top-4">
+              <h3 className="font-display text-lg text-olive-800 mb-4">Ringkasan Sementara</h3>
+
               {/* Dynamic Summary */}
               <div className="space-y-3 text-sm">
                 {/* Service */}
                 {currentStep >= 1 && (
                   <div className="flex justify-between items-start">
-                    <span className="text-gray-600">Layanan:</span>
-                    <span className="font-bold text-gray-800 text-right">
+                    <span className="text-olive-600">Layanan:</span>
+                    <span className="font-bold text-olive-800 text-right">
                       {formData.serviceName || '-'}
                     </span>
                   </div>
@@ -167,8 +167,8 @@ function MultiStepBookingFormContent() {
                 {/* Add-ons */}
                 {currentStep >= 2 && formData.addons.length > 0 && (
                   <div className="flex justify-between items-start">
-                    <span className="text-gray-600">Tambahan:</span>
-                    <span className="font-bold text-gray-800 text-right">
+                    <span className="text-olive-600">Tambahan:</span>
+                    <span className="font-bold text-olive-800 text-right">
                       {formData.addons.length} item
                     </span>
                   </div>
@@ -177,8 +177,8 @@ function MultiStepBookingFormContent() {
                 {/* Schedule */}
                 {currentStep >= 3 && (formData.date || formData.time) && (
                   <div className="flex justify-between items-start">
-                    <span className="text-gray-600">Jadwal:</span>
-                    <span className="font-bold text-gray-800 text-right">
+                    <span className="text-olive-600">Jadwal:</span>
+                    <span className="font-bold text-olive-800 text-right">
                       {formData.date} {formData.time}
                     </span>
                   </div>
@@ -187,8 +187,8 @@ function MultiStepBookingFormContent() {
                 {/* Customer */}
                 {currentStep >= 4 && formData.name && (
                   <div className="flex justify-between items-start">
-                    <span className="text-gray-600">Nama:</span>
-                    <span className="font-bold text-gray-800 text-right">
+                    <span className="text-olive-600">Nama:</span>
+                    <span className="font-bold text-olive-800 text-right">
                       {formData.name}
                     </span>
                   </div>
@@ -196,10 +196,10 @@ function MultiStepBookingFormContent() {
 
                 {/* Total */}
                 {currentStep >= 1 && formData.totalPrice > 0 && (
-                  <div className="border-t-2 border-blue-200 pt-2 mt-2">
+                  <div className="border-t-2 border-olive-300 pt-2 mt-2">
                     <div className="flex justify-between items-center">
-                      <span className="font-black text-gray-900">Total:</span>
-                      <span className="font-black text-primary-600 text-lg">
+                      <span className="font-display text-olive-900">Total:</span>
+                      <span className="font-display text-gold-600 text-lg">
                         Rp {formData.totalPrice.toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -208,9 +208,9 @@ function MultiStepBookingFormContent() {
               </div>
 
               {/* Progress Tips */}
-              <div className="mt-4 p-3 bg-white rounded-lg border border-blue-100">
-                <p className="text-xs text-gray-600">
-                  <strong className="text-primary-700">Tips:</strong> {getStepTip(currentStep)}
+              <div className="mt-4 p-3 bg-white rounded-lg border border-olive-200">
+                <p className="text-xs text-olive-600">
+                  <strong className="text-gold-600">Tips:</strong> {getStepTip(currentStep)}
                 </p>
               </div>
             </div>
@@ -230,11 +230,11 @@ function MultiStepBookingFormContent() {
       </form>
 
       {/* Keyboard Shortcuts Info */}
-      <div className="hidden md:block mt-8 text-center text-xs text-gray-500">
+      <div className="hidden md:block mt-8 text-center text-xs text-olive-500">
         <p>
-          <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded">←</kbd> 
+          <kbd className="px-2 py-1 bg-cream-200 border border-olive-300 rounded">←</kbd>
           <span className="mx-1">Kembali</span>
-          <kbd className="px-2 py-1 bg-gray-100 border border-gray-300 rounded">→</kbd> 
+          <kbd className="px-2 py-1 bg-cream-200 border border-olive-300 rounded">→</kbd>
           <span className="mx-1">Lanjut</span>
           <span className="ml-4">Gunakan tombol panah keyboard untuk navigasi</span>
         </p>

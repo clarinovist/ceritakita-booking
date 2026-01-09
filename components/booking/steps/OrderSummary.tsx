@@ -47,23 +47,23 @@ export const OrderSummary = ({
     if (!selectedService) return null;
 
     return (
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl shadow-sm border-2 border-blue-100">
-            <h3 className="font-black text-lg text-gray-800 mb-4">Ringkasan Pesanan</h3>
+        <div className="bg-gradient-to-br from-cream-50 to-olive-50 p-6 rounded-2xl shadow-sm border-2 border-olive-100">
+            <h3 className="font-display text-xl font-bold text-olive-900 mb-4">Ringkasan Pesanan</h3>
 
             {/* Selected Service */}
             <div className="space-y-3 mb-4">
-                <div className="bg-white p-4 rounded-xl border border-blue-100">
+                <div className="bg-white p-4 rounded-xl border border-olive-100">
                     <div className="flex justify-between items-start">
                         <div className="flex-1">
-                            <p className="font-bold text-gray-800">{selectedService.name}</p>
+                            <p className="font-serif text-lg font-bold text-olive-800">{selectedService.name}</p>
                             {selectedService.badgeText && (
-                                <span className="inline-block mt-1 bg-blue-100 text-blue-600 text-[9px] uppercase font-black px-2 py-0.5 rounded">
+                                <span className="inline-block mt-1 bg-gold-100 text-olive-800 text-[9px] uppercase font-black px-2 py-0.5 rounded">
                                     {selectedService.badgeText}
                                 </span>
                             )}
                             {selectedService.discountValue > 0 && (
-                                <div className="mt-2 inline-flex items-center gap-1 bg-green-50 text-green-700 text-[10px] font-bold px-2 py-1 rounded-full border border-green-200">
-                                    <span>💰 Hemat Rp {selectedService.discountValue.toLocaleString('id-ID')}</span>
+                                <div className="mt-2 inline-flex items-center gap-1 bg-olive-50 text-olive-700 text-[10px] font-bold px-2 py-1 rounded-full border border-olive-200">
+                                    <span className="font-serif">💰 Hemat Rp {selectedService.discountValue.toLocaleString('id-ID')}</span>
                                 </div>
                             )}
                         </div>
@@ -72,18 +72,18 @@ export const OrderSummary = ({
 
                 {/* Add-ons */}
                 {selectedAddons.size > 0 && (
-                    <div className="bg-white p-4 rounded-xl border border-blue-100">
-                        <p className="font-bold text-gray-700 text-sm mb-2">Tambahan:</p>
+                    <div className="bg-white p-4 rounded-xl border border-olive-100">
+                        <p className="font-bold text-olive-700 text-sm mb-2">Tambahan:</p>
                         <div className="space-y-2">
                             {Array.from(selectedAddons.entries()).map(([addonId, quantity]) => {
                                 const addon = availableAddons.find(a => a.id === addonId);
                                 if (!addon) return null;
                                 return (
                                     <div key={addonId} className="flex justify-between text-sm">
-                                        <span className="text-gray-600">
+                                        <span className="text-olive-600 font-serif">
                                             {addon.name} x{quantity}
                                         </span>
-                                        <span className="font-semibold text-gray-800">
+                                        <span className="font-semibold text-olive-800 font-serif">
                                             Rp {(addon.price * quantity).toLocaleString('id-ID')}
                                         </span>
                                     </div>
@@ -98,20 +98,20 @@ export const OrderSummary = ({
             <div className="mb-4">
                 {!appliedCoupon ? (
                     <div className="space-y-3">
-                        <label className="text-xs font-bold text-gray-700">Punya Kode Kupon?</label>
+                        <label className="text-xs font-bold text-olive-700">Punya Kode Kupon?</label>
                         <div className="flex gap-2">
                             <input
                                 type="text"
                                 value={couponCode}
                                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                                 placeholder="Masukkan kode"
-                                className="flex-1 p-2.5 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none uppercase font-mono"
+                                className="flex-1 p-2.5 text-sm border border-olive-200 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none uppercase font-mono bg-white"
                             />
                             <button
                                 type="button"
                                 onClick={handleApplyCoupon}
                                 disabled={couponLoading}
-                                className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 transition-all"
+                                className="px-4 py-2.5 bg-olive-600 hover:bg-olive-700 text-white text-sm font-bold rounded-lg disabled:opacity-50 transition-all"
                             >
                                 {couponLoading ? '...' : 'Terapkan'}
                             </button>
@@ -197,11 +197,11 @@ export const OrderSummary = ({
             </div>
 
             {/* Price Summary - Detailed Breakdown */}
-            <div className="border-t-2 border-blue-200 pt-4 space-y-2">
+            <div className="border-t-2 border-olive-200 pt-4 space-y-2">
                 {/* Service Base Price */}
-                <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Harga Layanan:</span>
-                    <span className="font-semibold text-gray-800">
+                <div className="flex justify-between text-sm text-olive-700">
+                    <span className="text-olive-600">Harga Layanan:</span>
+                    <span className="font-semibold text-olive-800 font-serif">
                         Rp {calculateServiceBasePrice().toLocaleString('id-ID')}
                     </span>
                 </div>
@@ -209,8 +209,8 @@ export const OrderSummary = ({
                 {/* Add-ons Total */}
                 {calculateAddonsTotal() > 0 && (
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Total Tambahan:</span>
-                        <span className="font-semibold text-green-600">
+                        <span className="text-olive-600">Total Tambahan:</span>
+                        <span className="font-semibold text-olive-800 font-serif">
                             + Rp {calculateAddonsTotal().toLocaleString('id-ID')}
                         </span>
                     </div>
@@ -219,8 +219,8 @@ export const OrderSummary = ({
                 {/* Base Discount */}
                 {calculateBaseDiscount() > 0 && (
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Diskon Paket:</span>
-                        <span className="font-semibold text-red-600">
+                        <span className="text-olive-600">Diskon Paket:</span>
+                        <span className="font-semibold text-red-600 font-serif">
                             - Rp {calculateBaseDiscount().toLocaleString('id-ID')}
                         </span>
                     </div>
@@ -229,33 +229,33 @@ export const OrderSummary = ({
                 {/* Coupon Discount */}
                 {calculateCouponDiscount() > 0 && (
                     <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Diskon Kupon:</span>
-                        <span className="font-semibold text-red-600">
+                        <span className="text-olive-600">Diskon Kupon:</span>
+                        <span className="font-semibold text-red-600 font-serif">
                             - Rp {calculateCouponDiscount().toLocaleString('id-ID')}
                         </span>
                     </div>
                 )}
 
                 {/* Grand Total */}
-                <div className="flex justify-between items-center pt-2 border-t-2 border-blue-200">
-                    <span className="font-black text-lg text-gray-900">TOTAL:</span>
-                    <span className="font-black text-2xl text-blue-600">
+                <div className="flex justify-between items-center pt-2 border-t-2 border-olive-200">
+                    <span className="font-display font-black text-lg text-olive-900">TOTAL:</span>
+                    <span className="font-serif font-black text-2xl text-gold-600">
                         Rp {calculateTotal().toLocaleString('id-ID')}
                     </span>
                 </div>
 
                 {/* Down Payment & Remaining Balance */}
                 {formData.dp_amount && Number(formData.dp_amount) > 0 && (
-                    <div className="mt-4 pt-4 border-t-2 border-blue-200 space-y-2">
+                    <div className="mt-4 pt-4 border-t-2 border-olive-200 space-y-2">
                         <div className="flex justify-between text-sm">
-                            <span className="text-gray-600">Down Payment (DP):</span>
-                            <span className="font-semibold text-green-600">
+                            <span className="text-olive-600">Down Payment (DP):</span>
+                            <span className="font-semibold text-olive-800 font-serif">
                                 Rp {Number(formData.dp_amount).toLocaleString('id-ID')}
                             </span>
                         </div>
                         <div className="flex justify-between items-center">
-                            <span className="font-bold text-gray-800">Sisa Pembayaran:</span>
-                            <span className="font-bold text-lg text-orange-600">
+                            <span className="font-bold text-olive-800">Sisa Pembayaran:</span>
+                            <span className="font-bold text-lg text-olive-600 font-serif">
                                 Rp {(calculateTotal() - Number(formData.dp_amount)).toLocaleString('id-ID')}
                             </span>
                         </div>

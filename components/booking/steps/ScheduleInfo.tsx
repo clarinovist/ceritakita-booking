@@ -20,12 +20,12 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
     // Use context if no props provided (for MultiStepBookingForm)
     const context = useMultiStepForm();
     const isContextMode = !propFormData;
-    
+
     const formData = isContextMode ? context.formData : propFormData!;
-    const updateFormData = isContextMode ? context.updateFormData : () => {};
+    const updateFormData = isContextMode ? context.updateFormData : () => { };
     const errors = isContextMode ? context.errors : {};
-    const setFieldError = isContextMode ? context.setFieldError : () => {};
-    const clearFieldError = isContextMode ? context.clearFieldError : () => {};
+    const setFieldError = isContextMode ? context.setFieldError : () => { };
+    const clearFieldError = isContextMode ? context.clearFieldError : () => { };
 
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [settings, setSettings] = useState<{
@@ -61,7 +61,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
     // Real-time validation (only in context mode)
     useEffect(() => {
         if (!isContextMode) return;
-        
+
         if (touched.date && formData.date) {
             const error = fieldValidators.date(formData.date);
             if (error) {
@@ -74,7 +74,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
 
     useEffect(() => {
         if (!isContextMode) return;
-        
+
         if (touched.time && formData.time) {
             const error = fieldValidators.time(formData.time);
             if (error) {
@@ -87,7 +87,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
 
     useEffect(() => {
         if (!isContextMode) return;
-        
+
         if (touched.location_link && formData.location_link) {
             const error = fieldValidators.location_link(formData.location_link);
             if (error) {
@@ -100,7 +100,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newDate = e.target.value;
-        
+
         // Validate against booking rules
         if (settings && isContextMode) {
             const validationError = validateBookingDate(newDate);
@@ -143,7 +143,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
 
         const selectedDate = new Date(date);
         const today = new Date();
-        
+
         // Reset time to midnight for accurate date comparison
         selectedDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
@@ -169,7 +169,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
 
         const checkDate = new Date(dateString);
         const today = new Date();
-        
+
         checkDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
 
@@ -184,7 +184,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
 
     const category = isContextMode ? context.formData.serviceName : (propFormData?.category || '');
     const isOutdoorService = category.toLowerCase().includes('outdoor');
-    
+
     // Generate time slots (30-minute intervals)
     const timeSlots = Array.from({ length: 48 }, (_, i) => {
         const hour = Math.floor(i / 2);
@@ -197,7 +197,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
         if (!isContextMode || !settings) return;
         const tomorrow = new Date();
         tomorrow.setDate(tomorrow.getDate() + settings.min_booking_notice);
-        
+
         const dateString = tomorrow.toISOString().split('T')[0] || '';
         if (!isDateDisabled(dateString)) {
             updateFormData({ date: dateString });
@@ -209,7 +209,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
         if (!isContextMode || !settings) return;
         const nextWeek = new Date();
         nextWeek.setDate(nextWeek.getDate() + 7);
-        
+
         const dateString = nextWeek.toISOString().split('T')[0] || '';
         if (!isDateDisabled(dateString)) {
             updateFormData({ date: dateString });
@@ -247,15 +247,15 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center gap-2 text-lg font-bold text-gray-800">
-                <Calendar className="text-primary-600" size={24} />
-                <h2>Jadwal & Lokasi</h2>
+            <div className="flex items-center gap-2 text-lg font-bold text-olive-800">
+                <Calendar className="text-olive-600" size={24} />
+                <h2 className="font-display text-xl">Jadwal & Lokasi</h2>
             </div>
 
             {/* Booking Rules Info */}
             {settings && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                    <strong>Petunjuk Pemesanan:</strong> Minimal {settings.min_booking_notice} hari sebelumnya, maksimal {settings.max_booking_ahead} hari ke depan.
+                <div className="bg-cream-100 border border-olive-200 rounded-lg p-3 text-sm text-olive-700">
+                    <strong className="text-gold-600">Petunjuk Pemesanan:</strong> Minimal {settings.min_booking_notice} hari sebelumnya, maksimal {settings.max_booking_ahead} hari ke depan.
                 </div>
             )}
 
@@ -276,14 +276,13 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                             onBlur={() => setTouched(prev => ({ ...prev, date: true }))}
                             min={getMinDate()}
                             max={getMaxDate()}
-                            className="w-full p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 transition-all touch-target"
-                            aria-describedby={dateError ? 'date-error' : undefined}
                             aria-invalid={!!dateError}
+                            className="w-full p-3 bg-white border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 transition-all touch-target"
                         />
                     </FieldValidationWrapper>
                 ) : (
                     <div className="space-y-1">
-                        <label className="text-xs text-gray-500 font-medium">Tanggal</label>
+                        <label className="text-xs text-olive-500 font-medium">Tanggal</label>
                         <input
                             required
                             type="date"
@@ -292,7 +291,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                             onChange={handleDateChange}
                             min={getMinDate()}
                             max={getMaxDate()}
-                            className="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+                            className="w-full p-2.5 bg-cream-50 border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
                         />
                     </div>
                 )}
@@ -311,7 +310,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                                 value={formData.time}
                                 onChange={handleTimeChange}
                                 onBlur={() => setTouched(prev => ({ ...prev, time: true }))}
-                                className="w-full pl-10 pr-3 p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer touch-target"
+                                className="w-full pl-10 pr-3 p-3 bg-white border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 appearance-none cursor-pointer touch-target"
                                 aria-describedby={timeError ? 'time-error' : undefined}
                                 aria-invalid={!!timeError}
                             >
@@ -327,15 +326,15 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                     </FieldValidationWrapper>
                 ) : (
                     <div className="space-y-1">
-                        <label className="text-xs text-gray-500 font-medium">Jam (interval 30 menit)</label>
+                        <label className="text-xs text-olive-500 font-medium">Jam (interval 30 menit)</label>
                         <div className="relative">
-                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" size={16} />
+                            <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-olive-400 pointer-events-none z-10" size={16} />
                             <select
                                 required
                                 name="time"
                                 value={formData.time}
                                 onChange={handleTimeChange}
-                                className="w-full pl-10 pr-3 p-2.5 bg-gray-50 border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                                className="w-full pl-10 pr-3 p-2.5 bg-cream-50 border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 appearance-none cursor-pointer"
                             >
                                 <option value="">Pilih waktu</option>
                                 {timeSlots.map(timeValue => (
@@ -358,7 +357,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                         label="Lokasi Photoshoot"
                     >
                         <div className="relative">
-                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10" size={16} />
+                            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-olive-400 pointer-events-none z-10" size={16} />
                             <input
                                 required
                                 type="url"
@@ -367,7 +366,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                                 onChange={handleLocationChange}
                                 onBlur={() => setTouched(prev => ({ ...prev, location_link: true }))}
                                 placeholder="Masukkan link Google Maps lokasi"
-                                className="w-full pl-10 pr-3 p-3 bg-white border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-primary-500 touch-target"
+                                className="w-full pl-10 pr-3 p-3 bg-white border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 touch-target"
                                 aria-describedby={locationError ? 'location-error' : undefined}
                                 aria-invalid={!!locationError}
                             />
@@ -375,7 +374,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                     </FieldValidationWrapper>
                 ) : (
                     <div className="space-y-1">
-                        <label className="text-xs text-gray-500 font-medium flex items-center gap-1">
+                        <label className="text-xs text-olive-500 font-medium flex items-center gap-1">
                             <MapPin size={12} /> Lokasi Photoshoot
                         </label>
                         <input
@@ -385,7 +384,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                             value={formData.location_link}
                             onChange={handleLocationChange}
                             placeholder="Masukkan link Google Maps lokasi"
-                            className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                            className="w-full p-3 bg-cream-50 border border-olive-200 rounded-xl focus:ring-2 focus:ring-gold-500 focus:border-transparent transition-all outline-none"
                         />
                     </div>
                 )
@@ -401,9 +400,9 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
             )}
 
             {/* Help Text */}
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-800">
-                <strong>Petunjuk:</strong> 
-                {isOutdoorService 
+            <div className="bg-cream-100 border border-olive-200 rounded-lg p-3 text-sm text-olive-700">
+                <strong className="text-gold-600">Petunjuk:</strong>
+                {isOutdoorService
                     ? 'Untuk layanan outdoor, lokasi wajib diisi dengan link Google Maps yang valid.'
                     : 'Pilih tanggal dan jam yang sesuai untuk sesi foto Anda.'}
             </div>
@@ -415,16 +414,16 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                         type="button"
                         onClick={setTomorrow}
                         disabled={isDateDisabled(new Date(Date.now() + settings.min_booking_notice * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '')}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-cream-200 hover:bg-cream-300 text-olive-800 rounded-lg text-sm font-medium transition-colors touch-target disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {settings.min_booking_notice === 0 ? 'Hari Ini' : `Besok (+${settings.min_booking_notice} hari)`}
                     </button>
-                    
+
                     <button
                         type="button"
                         onClick={setNextWeek}
                         disabled={isDateDisabled(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] || '')}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors touch-target disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-cream-200 hover:bg-cream-300 text-olive-800 rounded-lg text-sm font-medium transition-colors touch-target disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         1 Minggu Lagi
                     </button>
@@ -432,7 +431,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                     <button
                         type="button"
                         onClick={setMorning}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors touch-target"
+                        className="px-4 py-2 bg-cream-200 hover:bg-cream-300 text-olive-800 rounded-lg text-sm font-medium transition-colors touch-target"
                     >
                         Pagi (09:00)
                     </button>
@@ -440,7 +439,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                     <button
                         type="button"
                         onClick={setAfternoon}
-                        className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors touch-target"
+                        className="px-4 py-2 bg-cream-200 hover:bg-cream-300 text-olive-800 rounded-lg text-sm font-medium transition-colors touch-target"
                     >
                         Siang (14:00)
                     </button>

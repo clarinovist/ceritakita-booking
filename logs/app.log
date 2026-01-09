@@ -1219,3 +1219,11 @@
 [2026-01-06T02:41:41.969Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
 [2026-01-06T02:41:41.987Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
 [2026-01-06T02:41:41.986Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T05:13:26.133Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T05:13:26.138Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T05:13:27.505Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T05:13:27.509Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T05:13:28.363Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T05:13:28.358Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T05:13:28.415Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T05:13:28.416Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
