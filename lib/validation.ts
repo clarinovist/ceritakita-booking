@@ -7,21 +7,7 @@ export const customerSchema = z.object({
     .min(8, 'WhatsApp number too short')
     .max(20, 'WhatsApp number too long')
     .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format'),
-  category: z.enum([
-    'Indoor',
-    'Indoor Studio',
-    'Outdoor',
-    'Outdoor / On Location',
-    'Wedding',
-    'Prewedding Bronze',
-    'Prewedding Gold',
-    'Prewedding Silver',
-    'Wisuda',
-    'Family',
-    'Birthday',
-    'Pas Foto',
-    'Self Photo'
-  ]),
+  category: z.string().min(1, 'Category is required'),
   serviceId: z.string().optional(),
 });
 

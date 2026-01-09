@@ -27,7 +27,7 @@ export interface FinanceData {
 export interface CustomerData {
   name: string;
   whatsapp: string;
-  category: 'Indoor' | 'Indoor Studio' | 'Outdoor' | 'Outdoor / On Location' | 'Wedding' | 'Prewedding Bronze' | 'Prewedding Gold' | 'Prewedding Silver' | 'Wisuda' | 'Family' | 'Birthday' | 'Pas Foto' | 'Self Photo';
+  category: string;
   serviceId?: string;
 }
 
@@ -104,7 +104,7 @@ export function readData(): Booking[] {
     return data.map((b): Booking => {
       let status: 'Active' | 'Cancelled' | 'Rescheduled' | 'Completed';
       const rawStatus = b.status;
-      
+
       if (rawStatus === 'Canceled') {
         status = 'Cancelled';
       } else if (rawStatus === 'Active' || rawStatus === 'Rescheduled' || rawStatus === 'Completed' || rawStatus === 'Cancelled') {
@@ -112,7 +112,7 @@ export function readData(): Booking[] {
       } else {
         status = 'Active';
       }
-      
+
       return {
         ...b,
         status: status
@@ -257,9 +257,9 @@ export function updatePaymentSettings(data: {
   qris_image_url?: string;
 }): void {
   const db = getDb();
-  
+
   const existing = db.prepare('SELECT id FROM payment_settings LIMIT 1').get();
-  
+
   if (existing) {
     db.prepare(`
       UPDATE payment_settings
