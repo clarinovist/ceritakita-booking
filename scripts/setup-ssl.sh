@@ -5,7 +5,7 @@
 
 set -e
 
-DOMAIN="booking.ceritakitastudio.site"
+DOMAIN="ceritakitastudio.site"
 EMAIL="admin@ceritakitastudio.site"
 SSL_DIR="/etc/letsencrypt/live/$DOMAIN"
 NGINX_CONF_DIR="/home/nugroho/Documents/ceritakita-booking/nginx"

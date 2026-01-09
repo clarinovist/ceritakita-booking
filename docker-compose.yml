@@ -14,7 +14,7 @@ services:
       - booking-uploads:/app/uploads
     environment:
       - NODE_ENV=production
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://booking.ceritakitastudio.site}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-https://ceritakitastudio.site}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - ADMIN_USERNAME=${ADMIN_USERNAME}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}

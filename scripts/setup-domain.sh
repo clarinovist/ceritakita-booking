@@ -5,7 +5,7 @@
 
 set -e
 
-DOMAIN="booking.ceritakitastudio.site"
+DOMAIN="ceritakitastudio.site"
 PROJECT_DIR="/home/nugroho/Documents/ceritakita-booking"
 SSL_DIR="/etc/letsencrypt/live/$DOMAIN"
 
