@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import useSWR, { mutate } from 'swr';
 import { HomepageContent } from '@/types/homepage';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -25,14 +26,11 @@ interface FormValues {
 
 export function HeroAboutTab() {
     const { data: content, isLoading } = useSWR<HomepageContent[]>('/api/admin/homepage/content', fetcher);
-    // Note: The path might be /api/admin... checking previous setup. 
-    // Wait, the API route file is app/api/admin/homepage/content/route.ts, so the URL is /api/admin/homepage/content
-    // I will correct the URL in the useSWR call.
 
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-    const { register, handleSubmit, reset } = useForm<FormValues>();
+    const { register, handleSubmit, reset, control } = useForm<FormValues>();
 
     useEffect(() => {
         if (content) {
@@ -121,11 +119,18 @@ export function HeroAboutTab() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Background Image URL</label>
-                            <input
-                                {...register('hero.background_image')}
-                                className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="/images/hero_photography.png"
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Background Image</label>
+                            <Controller
+                                name="hero.background_image"
+                                control={control}
+                                render={({ field }) => (
+                                    <ImageUpload
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        folder="hero"
+                                        label=""
+                                    />
+                                )}
                             />
                         </div>
                     </div>
@@ -146,11 +151,18 @@ export function HeroAboutTab() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                            <input
-                                {...register('about.image')}
-                                className="w-full px-3 py-2 border rounded-md focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="/images/studio_interior.png"
+                            <label className="block text-sm font-medium text-gray-700 mb-1">About Image</label>
+                            <Controller
+                                name="about.image"
+                                control={control}
+                                render={({ field }) => (
+                                    <ImageUpload
+                                        value={field.value}
+                                        onChange={field.onChange}
+                                        folder="about"
+                                        label=""
+                                    />
+                                )}
                             />
                         </div>
                     </div>

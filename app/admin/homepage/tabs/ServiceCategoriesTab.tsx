@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { ServiceCategory } from '@/types/homepage';
 import { Plus, Trash2, Pencil, GripVertical } from 'lucide-react';
+import { ImageUpload } from '@/components/ui/ImageUpload';
 import {
     DndContext,
     closestCenter,
@@ -73,7 +74,7 @@ export function ServiceCategoriesTab() {
         })
     );
 
-    const { register, handleSubmit, reset } = useForm<Partial<ServiceCategory>>();
+    const { register, handleSubmit, reset, control } = useForm<Partial<ServiceCategory>>();
 
     const handleEdit = (item: ServiceCategory) => {
         setEditingItem(item);
@@ -130,16 +131,12 @@ export function ServiceCategoriesTab() {
             // Optimistic update
             mutate('/api/admin/service-categories', newItems, false);
 
-            // Prepare updates with new display_order
+            // Prepare updates
             const updates = newItems.map((item, index) => ({
                 id: item.id,
                 display_order: index + 1
             }));
 
-            // Send to server (need a batch update endpoint or just loop PUT requests)
-            // For simplicity I'll loop PUT requests or create a reorder endpoint.
-            // Given the existing API, I'll update each one. Ideally, we should have a bulk update.
-            // I'll assume for now I can loop.
             try {
                 await Promise.all(updates.map(update =>
                     fetch(`/api/admin/service-categories/${update.id}`, {
@@ -224,8 +221,18 @@ export function ServiceCategoriesTab() {
                                 <input {...register('slug')} className="w-full px-3 py-2 border rounded-md" required />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail URL</label>
-                                <input {...register('thumbnail_url')} className="w-full px-3 py-2 border rounded-md" />
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Thumbnail</label>
+                                <Controller
+                                    name="thumbnail_url"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <ImageUpload
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            folder="services"
+                                        />
+                                    )}
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -240,7 +247,7 @@ export function ServiceCategoriesTab() {
                                 </select>
                             </div>
 
-                            <div className="flex justify-end gap-3 mt-6">
+                            <div className="flex-justify-end gap-3 mt-6">
                                 <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md">Cancel</button>
                                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save</button>
                             </div>

@@ -1,15 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Target, TrendingUp, Users, DollarSign, 
-  ArrowUpRight, ArrowDownRight, RefreshCw, AlertCircle 
+import {
+  Target, TrendingUp, Users, DollarSign, AlertCircle
 } from 'lucide-react';
-import { 
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip 
-} from 'recharts';
+
 import { type Booking } from '@/lib/types';
-import DateFilterToolbar from '@/components/admin/DateFilterToolbar';
 
 export interface MetaInsightsData {
   spend: number;
@@ -26,7 +22,6 @@ export interface MetaInsightsData {
 interface AdsPerformanceProps {
   bookings: Booking[];
   dateRange: { start: string; end: string };
-  onDateRangeChange: (range: { start: string; end: string }) => void;
 }
 
 interface AdsData extends MetaInsightsData {
@@ -34,7 +29,7 @@ interface AdsData extends MetaInsightsData {
   error: string | null;
 }
 
-export default function AdsPerformance({ bookings, dateRange, onDateRangeChange }: AdsPerformanceProps) {
+export default function AdsPerformance({ bookings, dateRange }: AdsPerformanceProps) {
   const [adsData, setAdsData] = useState<AdsData>({
     spend: 0,
     impressions: 0,
@@ -101,56 +96,12 @@ export default function AdsPerformance({ bookings, dateRange, onDateRangeChange 
   const cpm = adsData.impressions > 0 ? (adsSpend / adsData.impressions) * 1000 : 0;
   const ctr = adsData.impressions > 0 ? (adsData.inlineLinkClicks / adsData.impressions) * 100 : 0;
 
-  // Chart Data
-  const chartData = bookings
-    .filter(b => b.status !== 'Cancelled')
-    .reduce((acc, curr) => {
-      const date = new Date(curr.booking_date).toLocaleDateString('id-ID', { 
-        day: 'numeric', 
-        month: 'short' 
-      });
-      
-      const existing = acc.find(item => item.name === date);
-      if (existing) {
-        existing.value += curr.finance?.total_price || 0;
-      } else {
-        acc.push({ name: date, value: curr.finance?.total_price || 0 });
-      }
-      return acc;
-    }, [] as { name: string; value: number }[])
-    .slice(-7);
+
 
   return (
     <div className="space-y-6">
-      {/* Header with Date Filter */}
-      <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-              <Target size={28} className="text-purple-600" />
-              Ads Performance Dashboard
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Meta Ads Insights - {adsData.date_start || '...'} to {adsData.date_end || '...'}
-            </p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-             <DateFilterToolbar 
-                 dateRange={dateRange} 
-                 onDateRangeChange={onDateRangeChange} 
-             />
-             <button
-                onClick={fetchAdsData}
-                disabled={adsData.isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed h-[42px]"
-             >
-                <RefreshCw size={16} className={adsData.isLoading ? 'animate-spin' : ''} />
-                <span className="hidden sm:inline">Refresh</span>
-             </button>
-          </div>
-        </div>
-      </div>
+      {/* Header with Date Filter - Removed, moved to global header */}
+
 
       {/* Error Alert */}
       {adsData.error && (
@@ -218,48 +169,14 @@ export default function AdsPerformance({ bookings, dateRange, onDateRangeChange 
         </div>
       </div>
 
-      {/* CHART SECTION */}
-      {chartData.length > 0 && (
-        <div className="bg-white p-6 rounded-lg shadow border border-gray-100">
-          <h2 className="text-lg font-bold mb-4 text-gray-700">Revenue Trend (Last 7 Entries)</h2>
-          <div className="w-full h-[300px] min-h-[300px]"> 
-            <ResponsiveContainer width="100%" minHeight={300}>
-              <AreaChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{fontSize: 12}} 
-                  tickLine={false}
-                  axisLine={false} 
-                />
-                <YAxis 
-                  tickFormatter={(value) => `Rp${(value/1000).toFixed(0)}k`} 
-                  tick={{fontSize: 12}} 
-                  tickLine={false} 
-                  axisLine={false} 
-                />
-                <Tooltip 
-                  formatter={(value: number) => [`Rp ${value.toLocaleString()}`, 'Revenue']}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#8b5cf6" 
-                  fill="#8b5cf6" 
-                  fillOpacity={0.1} 
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
+
 
       {/* ROI & Financial Analysis */}
       <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
         <h3 className="text-lg font-bold mb-4 text-gray-700 flex items-center gap-2">
           <DollarSign size={20} /> Financial Performance & ROI
         </h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <p className="text-sm text-gray-600 mb-1">Ads Spend</p>

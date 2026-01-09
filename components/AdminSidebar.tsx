@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import {
   LayoutDashboard, Calendar, List, Tag, Camera, ShoppingBag,
-  Users, Image as ImageIcon, CreditCard, LogOut, Menu, X, Target, Settings
+  Users, Image as ImageIcon, CreditCard, LogOut, Menu, X, Target, Settings, Home
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { getFilteredMenuItems } from '@/lib/permissions-types';
@@ -28,7 +29,7 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
   // Get filtered menu items based on user permissions
   const userPermissions = (session?.user as any)?.permissions;
   const userRole = (session?.user as any)?.role;
-  
+
   // Filter out Users and Payment Methods as they are now consolidated into Settings
   // Note: We filter by checking for standard ID names like 'users', 'payment-methods', etc.
   const menuItems = getFilteredMenuItems(userPermissions, userRole)
@@ -47,7 +48,8 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
       Camera,
       Users,
       CreditCard,
-      Settings
+      Settings,
+      Home
     };
     return icons[iconName] || LayoutDashboard;
   };
@@ -61,9 +63,27 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {menuItems.map((item) => {
+        {menuItems.map((item: any) => {
           const Icon = getIconComponent(item.icon);
           const isActive = viewMode === item.id;
+
+          // Handle link-based menu items (like Homepage CMS)
+          if (item.isLink && item.href) {
+            return (
+              <Link
+                key={item.id}
+                href={item.href}
+                onClick={() => {
+                  if (isMobile) setIsOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-colors text-gray-300 hover:bg-gray-800 hover:text-white border-l-4 border-transparent`}
+              >
+                <Icon size={18} />
+                {item.label}
+              </Link>
+            );
+          }
+
           return (
             <button
               key={item.id}
@@ -71,11 +91,10 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
                 setViewMode(item.id);
                 if (isMobile) setIsOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-colors ${
-                isActive
+              className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-colors ${isActive
                   ? 'bg-blue-600 text-white border-l-4 border-blue-400'
                   : 'text-gray-300 hover:bg-gray-800 hover:text-white border-l-4 border-transparent'
-              }`}
+                }`}
             >
               <Icon size={18} />
               {item.label}
@@ -113,17 +132,16 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
 
         {/* Mobile Overlay */}
         {isOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-[90]" 
+          <div
+            className="fixed inset-0 bg-black/50 z-[90]"
             onClick={() => setIsOpen(false)}
           />
         )}
 
         {/* Mobile Sidebar */}
         <div
-          className={`fixed top-0 left-0 h-full w-64 z-[95] transform transition-transform duration-300 ${
-            isOpen ? 'translate-x-0' : '-translate-x-full'
-          }`}
+          className={`fixed top-0 left-0 h-full w-64 z-[95] transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+            }`}
         >
           <SidebarContent />
         </div>

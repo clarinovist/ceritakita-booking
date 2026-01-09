@@ -1,7 +1,6 @@
 import { Booking, FilterStatus } from '@/lib/types';
 import { useExport } from '../hooks/useExport';
 import { formatDate, formatTime } from '@/utils/dateFormatter';
-import DateFilterToolbar from '@/components/admin/DateFilterToolbar';
 
 interface BookingsTableProps {
     bookings: Booking[];
@@ -13,8 +12,7 @@ interface BookingsTableProps {
     handleOpenCreateBookingModal: () => void;
     calculateFinance: (b: Booking) => { total: number; paid: number; balance: number; isPaidOff: boolean };
     exportHook: ReturnType<typeof useExport>;
-    dateRange: { start: string; end: string };
-    onDateRangeChange: (range: { start: string; end: string }) => void;
+    exportHook: ReturnType<typeof useExport>;
 }
 
 export const BookingsTable = ({
@@ -26,15 +24,8 @@ export const BookingsTable = ({
     handleDeleteBooking,
     handleOpenCreateBookingModal,
     calculateFinance,
-    exportHook,
-    dateRange,
-    onDateRangeChange
+    exportHook
 }: BookingsTableProps) => {
-    // Helper function to determine if booking is paid off
-    const isBookingPaid = (booking: Booking): boolean => {
-        const finance = calculateFinance(booking);
-        return finance.isPaidOff;
-    };
 
     // Helper function to handle "Mark as Completed"
     const handleMarkCompleted = (bookingId: string) => {
@@ -67,14 +58,8 @@ export const BookingsTable = ({
                         ))}
                     </div>
                 </div>
-                
+
                 <div className="flex gap-3 items-center flex-wrap justify-end">
-                    {/* Date Filter Toolbar embedded in table header */}
-                    <DateFilterToolbar 
-                        dateRange={dateRange} 
-                        onDateRangeChange={onDateRangeChange}
-                        className="mr-2"
-                    />
 
                     <button
                         onClick={() => exportHook.handleExportBookings(filterStatus, dateRange)}
@@ -141,8 +126,8 @@ export const BookingsTable = ({
                                                 onChange={(e) => handleUpdateStatus(b.id, e.target.value as Booking['status'])}
                                                 className={`border-none bg-transparent text-xs font-bold focus:ring-0 cursor-pointer
                                           ${b.status === 'Cancelled' ? 'text-red-600' :
-                                            b.status === 'Rescheduled' ? 'text-orange-600' :
-                                            'text-green-600'}`}
+                                                        b.status === 'Rescheduled' ? 'text-orange-600' :
+                                                            'text-green-600'}`}
                                             >
                                                 <option value="Active">Active</option>
                                                 <option value="Rescheduled">Rescheduled</option>
@@ -163,11 +148,11 @@ export const BookingsTable = ({
                                             <button onClick={() => setSelectedBooking(b)} className="text-blue-600 hover:text-blue-800 font-medium text-xs border border-blue-200 px-3 py-1 rounded hover:bg-blue-50">
                                                 Details
                                             </button>
-                                            
+
                                             {/* Mark as Completed button - visible when status is Active/Rescheduled and paid */}
                                             {(b.status === 'Active' || b.status === 'Rescheduled') && isPaidOff && (
-                                                <button 
-                                                    onClick={() => handleMarkCompleted(b.id)} 
+                                                <button
+                                                    onClick={() => handleMarkCompleted(b.id)}
                                                     className="text-green-600 hover:text-green-800 font-medium text-xs border border-green-200 px-3 py-1 rounded hover:bg-green-50"
                                                 >
                                                     Mark Completed
@@ -176,8 +161,8 @@ export const BookingsTable = ({
 
                                             {/* View Invoice button - visible when paid or completed */}
                                             {(isPaidOff || b.status === 'Completed') && (
-                                                <button 
-                                                    onClick={() => handleViewInvoice(b.id)} 
+                                                <button
+                                                    onClick={() => handleViewInvoice(b.id)}
                                                     className="text-purple-600 hover:text-purple-800 font-medium text-xs border border-purple-200 px-3 py-1 rounded hover:bg-purple-50"
                                                 >
                                                     Invoice

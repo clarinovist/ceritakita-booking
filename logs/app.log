@@ -1267,3 +1267,131 @@
 [2026-01-09T06:59:59.217Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
 [2026-01-09T06:59:59.233Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
 [2026-01-09T06:59:59.232Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:39:00.623Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:39:00.625Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T11:39:00.725Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:39:00.726Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T11:39:00.766Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:39:00.767Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T11:39:00.788Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:39:00.788Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T11:39:04.952Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:39:04.972Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:39:07.551Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:39:07.573Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:44:12.603Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:44:12.630Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:44:14.128Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:44:14.153Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":672432,"impressions":92993,"clicks":279,"reach":46828}
+[2026-01-09T11:54:13.003Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:54:13.007Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T11:54:14.055Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:54:14.057Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T11:54:14.103Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T11:54:14.103Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:54:14.186Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T11:54:14.187Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:02:56.687Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:02:56.685Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:02:56.763Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:02:56.762Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:02:56.793Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:02:56.794Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:02:56.818Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:02:56.819Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:03:10.428Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:03:10.431Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:03:10.535Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:03:10.536Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:03:10.596Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:03:10.598Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:03:10.625Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:03:10.626Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:03:11.533Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673307,"impressions":93139,"clicks":279,"reach":46896}
+[2026-01-09T12:03:11.550Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673307,"impressions":93139,"clicks":279,"reach":46896}
+[2026-01-09T12:03:49.806Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673307,"impressions":93139,"clicks":279,"reach":46896}
+[2026-01-09T12:03:49.844Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673307,"impressions":93139,"clicks":279,"reach":46896}
+[2026-01-09T12:03:53.479Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673307,"impressions":93139,"clicks":279,"reach":46896}
+[2026-01-09T12:03:53.501Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673307,"impressions":93139,"clicks":279,"reach":46896}
+[2026-01-09T12:03:59.046Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:04:05.845Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:04:05.865Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:04:07.325Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:04:07.341Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:04:13.479Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:04:17.083Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:10:36.732Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:10:36.734Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:10:37.928Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:10:37.933Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:10:37.982Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:10:37.981Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:10:38.021Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:10:38.022Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:11:18.344Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:18.373Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:18.570Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:22.016Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":866920,"impressions":95275,"clicks":381,"reach":35183}
+[2026-01-09T12:11:33.773Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":866920,"impressions":95275,"clicks":381,"reach":35183}
+[2026-01-09T12:11:38.938Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-30","spend":866920,"impressions":95275,"clicks":381,"reach":35183}
+[2026-01-09T12:11:41.173Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:42.785Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:43.574Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:44.882Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:49.376Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:49.401Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:51.520Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:11:52.493Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-31","spend":673584,"impressions":93180,"clicks":279,"reach":46896}
+[2026-01-09T12:12:44.433Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:12:44.429Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:12:44.619Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:12:44.618Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:12:44.651Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:12:44.650Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:12:44.676Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:12:44.677Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:13:06.795Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-01","spend":212410,"impressions":20104,"clicks":57,"reach":12767}
+[2026-01-09T12:13:06.830Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-11-01","spend":212410,"impressions":20104,"clicks":57,"reach":12767}
+[2026-01-09T12:13:08.789Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:13:11.893Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-01","spend":930767,"impressions":103344,"clicks":403,"reach":37679}
+[2026-01-09T12:13:14.542Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:13:16.465Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2025-12-01","spend":930767,"impressions":103344,"clicks":403,"reach":37679}
+[2026-01-09T12:13:19.105Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609460,"impressions":85070,"clicks":257,"reach":44626}
+[2026-01-09T12:13:53.166Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:13:53.563Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:13:53.566Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:13:53.622Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:13:53.795Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:13:53.796Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:13:53.849Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:13:53.850Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:13:53.874Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:13:53.875Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:31.904Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:31.902Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:32.549Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:32.551Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:32.584Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:32.584Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:32.633Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:32.632Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:37.318Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:37.321Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:37.353Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:37.388Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:37.389Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:37.407Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:37.422Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:37.422Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:37.440Z] [INFO] Retrieved bookings from database | Context: {"count":3}
+[2026-01-09T12:31:37.441Z] [INFO] Bookings retrieved successfully | Context: {"count":3}
+[2026-01-09T12:31:47.038Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:47.050Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:51.487Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:51.496Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:52.316Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:52.328Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:54.873Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:31:54.884Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:41:54.996Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}
+[2026-01-09T12:41:55.014Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":609860,"impressions":85132,"clicks":257,"reach":44698}

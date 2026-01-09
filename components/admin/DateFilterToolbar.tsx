@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon } from 'lucide-react';
+import React from 'react';
+import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 
 interface DateRange {
   start: string;
@@ -10,94 +10,115 @@ interface DateRange {
 
 interface Props {
   dateRange: DateRange;
-  onDateRangeChange: (range: DateRange) => void; // Function to update parent state
+  onDateRangeChange: (range: DateRange) => void;
   className?: string;
 }
 
 export default function DateFilterToolbar({ dateRange, onDateRangeChange, className = '' }: Props) {
-  const [showPresets, setShowPresets] = useState(false);
+  // Helper to get start and end of month based on a reference date
+  const getMonthRange = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
 
-  const applyPreset = (preset: string) => {
+    // Format to YYYY-MM-DD manually to avoid UTC shifts
+    const formatDate = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    return {
+      start: formatDate(firstDay),
+      end: formatDate(lastDay)
+    };
+  };
+
+  // Safe date construction from YYYY-MM-DD to local time
+  const parseLocalDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year!, month! - 1, day!);
+  };
+
+  // Get current month label (e.g., "Januari 2026")
+  const getCurrentMonthLabel = () => {
+    if (!dateRange.start) return '...';
+    try {
+      const date = parseLocalDate(dateRange.start);
+      return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    } catch (e) {
+      return '...';
+    }
+  };
+
+  const handlePrevMonth = () => {
+    const current = parseLocalDate(dateRange.start);
+    current.setMonth(current.getMonth() - 1);
+    onDateRangeChange(getMonthRange(current));
+  };
+
+  const handleNextMonth = () => {
+    const current = parseLocalDate(dateRange.start);
+    current.setMonth(current.getMonth() + 1);
+    onDateRangeChange(getMonthRange(current));
+  };
+
+  const handleThisMonth = () => {
+    onDateRangeChange(getMonthRange(new Date()));
+  };
+
+  // Determine if it's currently showing "this month"
+  const isThisMonth = () => {
+    if (!dateRange.start) return false;
     const today = new Date();
-    let start = '';
-    let end = '';
-
-    switch (preset) {
-      case 'today':
-        start = today.toISOString().split('T')[0];
-        end = start;
-        break;
-      case 'yesterday':
-        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-        start = yesterday;
-        end = yesterday;
-        break;
-      case 'last7days':
-        const last7 = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-        start = last7;
-        end = today.toISOString().split('T')[0];
-        break;
-      case 'last30days':
-        const last30 = new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0];
-        start = last30;
-        end = today.toISOString().split('T')[0];
-        break;
-      case 'thisMonth':
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const lastDay = new Date(year, today.getMonth() + 1, 0).getDate();
-        start = `${year}-${month}-01`;
-        end = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
-        break;
-    }
-
-    if (start && end) {
-      onDateRangeChange({ start, end });
-      setShowPresets(false);
-    }
+    const current = parseLocalDate(dateRange.start);
+    return today.getMonth() === current.getMonth() && today.getFullYear() === current.getFullYear();
   };
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      {/* Presets Dropdown */}
-      <div className="relative">
+      <div className="flex items-center bg-white border border-gray-300 rounded-lg shadow-sm overflow-hidden">
+        {/* Prev Month */}
         <button
-          type="button"
-          onClick={() => setShowPresets(!showPresets)}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors shadow-sm"
+          onClick={handlePrevMonth}
+          className="p-2 hover:bg-gray-50 border-r border-gray-300 transition-colors text-gray-600"
+          title="Bulan Sebelumnya"
         >
-          <span>📅</span>
-          <span className="hidden sm:inline">Presets</span>
-          <span className="text-xs">▼</span>
+          <ChevronLeft size={18} />
         </button>
-        {showPresets && (
-          <div className="absolute top-full left-0 mt-1 bg-white border rounded-lg shadow-xl p-1 min-w-[150px] z-[50]">
-            <button onClick={() => applyPreset('today')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-gray-700">Today</button>
-            <button onClick={() => applyPreset('yesterday')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-gray-700">Yesterday</button>
-            <button onClick={() => applyPreset('last7days')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-gray-700">Last 7 Days</button>
-            <button onClick={() => applyPreset('last30days')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-gray-700">Last 30 Days</button>
-            <button onClick={() => applyPreset('thisMonth')} className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded text-gray-700">This Month</button>
-          </div>
-        )}
+
+        {/* Current Month Label */}
+        <div className="px-4 py-2 flex items-center gap-2 min-w-[160px] justify-center bg-white">
+          <Calendar size={16} className="text-blue-600" />
+          <span className="text-sm font-bold text-gray-700 whitespace-nowrap">
+            {getCurrentMonthLabel()}
+          </span>
+        </div>
+
+        {/* Next Month */}
+        <button
+          onClick={handleNextMonth}
+          className="p-2 hover:bg-gray-50 border-l border-gray-300 transition-colors text-gray-600"
+          title="Bulan Berikutnya"
+        >
+          <ChevronRight size={18} />
+        </button>
       </div>
 
-      {/* Date Inputs */}
-      <div className="flex items-center gap-2 bg-white border border-gray-300 rounded-lg px-3 py-2 shadow-sm">
-        <CalendarIcon size={14} className="text-gray-500" />
-        <input
-          type="date"
-          value={dateRange.start}
-          onChange={(e) => onDateRangeChange({ ...dateRange, start: e.target.value })}
-          className="bg-transparent outline-none text-xs font-medium text-gray-700 w-24"
-        />
-        <span className="text-gray-400 text-xs">-</span>
-        <input
-          type="date"
-          value={dateRange.end}
-          onChange={(e) => onDateRangeChange({ ...dateRange, end: e.target.value })}
-          className="bg-transparent outline-none text-xs font-medium text-gray-700 w-24"
-        />
-      </div>
+      {/* This Month Reset Button */}
+      <button
+        onClick={handleThisMonth}
+        disabled={isThisMonth()}
+        className={`px-3 py-2 text-sm font-semibold rounded-lg transition-all border shadow-sm
+          ${isThisMonth()
+            ? 'bg-gray-50 text-gray-400 border-gray-200 cursor-not-allowed'
+            : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'}`}
+      >
+        <span className="sm:hidden">Current</span>
+        <span className="hidden sm:inline">Bulan Ini</span>
+      </button>
     </div>
   );
 }

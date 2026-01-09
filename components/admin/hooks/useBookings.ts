@@ -7,10 +7,20 @@ export const useBookings = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>('Active');
-    // Default date range: First day of current month to last day of NEXT month (to include future bookings)
-    const [dateRange, setDateRange] = useState<DateRange>({
-        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] ?? '',
-        end: new Date(new Date().getFullYear(), new Date().getMonth() + 2, 0).toISOString().split('T')[0] ?? '' // Changed +1 to +2 to include next month
+    // Default date range: First day of current month to last day of current month
+    const [dateRange, setDateRange] = useState<DateRange>(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        const formatDate = (y: number, m: number, d: number) => {
+            return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        };
+
+        const start = formatDate(year, month, 1);
+        const end = formatDate(year, month + 1, 0); // Last day of month
+
+        return { start, end };
     });
 
     // Reschedule state
@@ -108,7 +118,7 @@ export const useBookings = () => {
 
     const getOrReconstructBreakdown = (booking: Booking | null) => {
         if (!booking) return null;
-        
+
         // If breakdown already exists, return it
         if (booking.finance.service_base_price !== undefined) {
             return {
