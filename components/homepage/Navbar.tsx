@@ -34,7 +34,7 @@ export function Navbar() {
                             href="#packages"
                             className="text-cream-200 hover:text-gold-400 transition-colors text-sm tracking-[0.2em] uppercase"
                         >
-                            Investment
+                            Services
                         </Link>
                         <Link
                             href="#gallery"
@@ -98,7 +98,7 @@ export function Navbar() {
                                 className="text-cream-200 hover:text-gold-400 transition-colors text-sm tracking-[0.2em] uppercase"
                                 onClick={() => setIsMobileMenuOpen(false)}
                             >
-                                Investment
+                                Services
                             </Link>
                             <Link
                                 href="#gallery"

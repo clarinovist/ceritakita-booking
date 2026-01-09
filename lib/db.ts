@@ -506,18 +506,18 @@ function initializeSchema() {
   const categoryCount = db.prepare('SELECT COUNT(*) as count FROM service_categories').get() as { count: number };
   if (categoryCount.count === 0) {
     const seedCategories = [
-      { name: 'Prewedding', slug: 'prewedding', description: 'Abadikan kisah cinta Anda sebelum hari bahagia.', thumbnail_url: '/images/services/prewedding.jpg' },
-      { name: 'Wedding', slug: 'wedding', description: 'Dokumentasi lengkap hari pernikahan Anda.', thumbnail_url: '/images/services/wedding.jpg' },
-      { name: 'Wisuda', slug: 'wisuda', description: 'Kenangan manis kelulusan bersama orang terkasih.', thumbnail_url: '/images/services/graduation.jpg' },
-      { name: 'Birthday', slug: 'birthday', description: 'Perayaan ulang tahun yang penuh warnan.', thumbnail_url: '/images/services/birthday.jpg' },
-      { name: 'Family', slug: 'family', description: 'Foto keluarga hangat di studio kami.', thumbnail_url: '/images/services/family.jpg' },
-      { name: 'Tematik', slug: 'tematik', description: 'Sesi foto dengan tema khusus sesuai keinginan.', thumbnail_url: '/images/services/thematic.jpg' },
+      { name: 'Prewedding', slug: 'prewedding', description: 'Abadikan kemesraan sebelum hari bahagia.', thumbnail_url: '/images/prewedding.png', display_order: 1 },
+      { name: 'Wedding', slug: 'wedding', description: 'Dokumentasi lengkap hari pernikahan Anda.', thumbnail_url: '/images/wedding.png', display_order: 2 },
+      { name: 'Wisuda', slug: 'graduation', description: 'Rayakan kelulusan dengan foto profesional.', thumbnail_url: '/images/graduation.png', display_order: 3 },
+      { name: 'Birthday', slug: 'birthday', description: 'Kenangan manis pesta ulang tahun.', thumbnail_url: '/images/birthday.png', display_order: 4 },
+      { name: 'Family', slug: 'family', description: 'Foto keluarga di studio yang nyaman.', thumbnail_url: '/images/family.png', display_order: 5 },
+      { name: 'Tematik', slug: 'themed', description: 'Foto dengan tema khusus sesuai keinginan.', thumbnail_url: '/images/themed.png', display_order: 6 },
     ];
 
     const insertStmt = db.prepare('INSERT INTO service_categories (id, name, slug, description, thumbnail_url, display_order) VALUES (?, ?, ?, ?, ?, ?)');
     const insertMany = db.transaction(() => {
       seedCategories.forEach((cat, index) => {
-        insertStmt.run(randomUUID(), cat.name, cat.slug, cat.description, cat.thumbnail_url, index);
+        insertStmt.run(randomUUID(), cat.name, cat.slug, cat.description, cat.thumbnail_url, cat.display_order);
       });
     });
     insertMany();
