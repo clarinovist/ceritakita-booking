@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SERVICE_CATEGORIES } from './constants';
 
 // Customer validation schema
 export const customerSchema = z.object({
@@ -7,7 +8,7 @@ export const customerSchema = z.object({
     .min(8, 'WhatsApp number too short')
     .max(20, 'WhatsApp number too long')
     .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format'),
-  category: z.string().min(1, 'Category is required'),
+  category: z.enum(SERVICE_CATEGORIES),
   serviceId: z.string().optional(),
 });
 
