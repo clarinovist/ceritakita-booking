@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 export async function POST(req: NextRequest) {
   try {
     // Rate limiting
-    const rateLimitResult = rateLimiters.strict(req);
+    const rateLimitResult = rateLimiters.authlogin(req);
     if (rateLimitResult) {
       logger.warn('Rate limit exceeded for auth verify', {
         ip: req.headers.get('x-forwarded-for')

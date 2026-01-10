@@ -35,13 +35,13 @@ setInterval(() => {
  */
 function getRateLimitKey(req: NextRequest, customKey?: string): string {
   if (customKey) return customKey;
-  
-  const ip = req.headers.get('x-forwarded-for') || 
-             req.headers.get('x-real-ip') || 
-             'unknown-ip';
-  
+
+  const ip = req.headers.get('x-forwarded-for') ||
+    req.headers.get('x-real-ip') ||
+    'unknown-ip';
+
   const path = new URL(req.url).pathname;
-  
+
   return `rl:${ip}:${path}`;
 }
 
@@ -55,16 +55,16 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
 } {
   const key = getRateLimitKey(req, config.key);
   const now = Date.now();
-  
+
   const existing = store.get(key);
-  
+
   if (!existing || existing.resetTime < now) {
     // New window
     store.set(key, {
       count: 1,
       resetTime: now + config.windowMs
     });
-    
+
     return {
       allowed: true,
       headers: {
@@ -74,7 +74,7 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
       }
     };
   }
-  
+
   if (existing.count >= config.maxRequests) {
     // Rate limited
     return {
@@ -87,11 +87,11 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
       }
     };
   }
-  
+
   // Increment count
   existing.count++;
   store.set(key, existing);
-  
+
   return {
     allowed: true,
     headers: {
@@ -108,7 +108,7 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
 export function rateLimitMiddleware(config: RateLimitConfig) {
   return (req: NextRequest): NextResponse | null => {
     const result = checkRateLimit(req, config);
-    
+
     if (!result.allowed) {
       return NextResponse.json(
         {
@@ -122,7 +122,7 @@ export function rateLimitMiddleware(config: RateLimitConfig) {
         }
       );
     }
-    
+
     return null; // Continue processing
   };
 }
@@ -131,15 +131,15 @@ export function rateLimitMiddleware(config: RateLimitConfig) {
  * Pre-configured rate limiters for common scenarios
  */
 export const rateLimiters = {
-  // Strict: For login attempts
-  strict: (req: NextRequest) => {
+  // Auth Login: For login attempts
+  authlogin: (req: NextRequest) => {
     return rateLimitMiddleware({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      maxRequests: 20,
-      key: 'rl:strict:login'
+      windowMs: 60 * 1000, // 1 minute
+      maxRequests: 60,
+      key: 'rl:auth:login'
     })(req);
   },
-  
+
   // Moderate: For API endpoints
   moderate: (req: NextRequest) => {
     return rateLimitMiddleware({
@@ -147,7 +147,7 @@ export const rateLimiters = {
       maxRequests: 100
     })(req);
   },
-  
+
   // Lenient: For general requests
   lenient: (req: NextRequest) => {
     return rateLimitMiddleware({
@@ -155,7 +155,7 @@ export const rateLimiters = {
       maxRequests: 300
     })(req);
   },
-  
+
   // File uploads: More restrictive due to size
   fileUpload: (req: NextRequest) => {
     return rateLimitMiddleware({

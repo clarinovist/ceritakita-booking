@@ -21,27 +21,27 @@ initializeAdmin();
 const originalHandler = NextAuth(authOptions);
 
 export async function GET(req: NextRequest, context: { params: { nextauth: string[] } }) {
-    // Apply rate limiting to auth endpoints
-    const rateLimitResult = rateLimiters.strict(req);
-    if (rateLimitResult) {
-        logger.warn('Rate limit exceeded for auth endpoint', {
-            ip: req.headers.get('x-forwarded-for')
-        });
-        return rateLimitResult;
-    }
+  // Apply rate limiting to auth endpoints
+  const rateLimitResult = rateLimiters.authlogin(req);
+  if (rateLimitResult) {
+    logger.warn('Rate limit exceeded for auth endpoint', {
+      ip: req.headers.get('x-forwarded-for')
+    });
+    return rateLimitResult;
+  }
 
-    return originalHandler(req, context);
+  return originalHandler(req, context);
 }
 
 export async function POST(req: NextRequest, context: { params: { nextauth: string[] } }) {
-    // Apply rate limiting to auth endpoints
-    const rateLimitResult = rateLimiters.strict(req);
-    if (rateLimitResult) {
-        logger.warn('Rate limit exceeded for auth endpoint', {
-            ip: req.headers.get('x-forwarded-for')
-        });
-        return rateLimitResult;
-    }
+  // Apply rate limiting to auth endpoints
+  const rateLimitResult = rateLimiters.authlogin(req);
+  if (rateLimitResult) {
+    logger.warn('Rate limit exceeded for auth endpoint', {
+      ip: req.headers.get('x-forwarded-for')
+    });
+    return rateLimitResult;
+  }
 
-    return originalHandler(req, context);
+  return originalHandler(req, context);
 }
