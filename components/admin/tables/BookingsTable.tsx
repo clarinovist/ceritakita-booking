@@ -1,4 +1,4 @@
-import { Booking, FilterStatus } from '@/lib/types';
+import { Booking, FilterStatus, DateRange } from '@/lib/types';
 import { useExport } from '../hooks/useExport';
 import { formatDate, formatTime } from '@/utils/dateFormatter';
 
@@ -12,7 +12,7 @@ interface BookingsTableProps {
     handleOpenCreateBookingModal: () => void;
     calculateFinance: (b: Booking) => { total: number; paid: number; balance: number; isPaidOff: boolean };
     exportHook: ReturnType<typeof useExport>;
-    exportHook: ReturnType<typeof useExport>;
+    dateRange: DateRange;
 }
 
 export const BookingsTable = ({
@@ -24,7 +24,8 @@ export const BookingsTable = ({
     handleDeleteBooking,
     handleOpenCreateBookingModal,
     calculateFinance,
-    exportHook
+    exportHook,
+    dateRange
 }: BookingsTableProps) => {
 
     // Helper function to handle "Mark as Completed"

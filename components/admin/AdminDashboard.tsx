@@ -411,6 +411,7 @@ export default function AdminDashboard() {
                             handleOpenCreateBookingModal={handleOpenCreateBookingModal}
                             calculateFinance={bookingsHook.calculateFinance}
                             exportHook={exportHook}
+                            dateRange={bookingsHook.dateRange}
                         />
                     )}
 
