@@ -261,22 +261,20 @@ export default function UserManagement() {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        user.role === 'admin' 
-                          ? 'bg-purple-100 text-purple-700' 
-                          : 'bg-blue-100 text-blue-700'
-                      }`}>
+                      <span className={`px-2 py-1 rounded-full text-xs font-bold ${user.role === 'admin'
+                        ? 'bg-purple-100 text-purple-700'
+                        : 'bg-blue-100 text-blue-700'
+                        }`}>
                         {user.role.toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleToggleActive(user)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-colors ${
-                          user.is_active 
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-colors ${user.is_active
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
                         title="Click to toggle status"
                       >
                         {user.is_active ? (
@@ -324,8 +322,8 @@ export default function UserManagement() {
       {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b flex justify-between items-center bg-gray-50">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b flex justify-between items-center bg-gray-50 flex-shrink-0">
               <h3 className="text-xl font-bold text-gray-800">
                 {editingUser ? 'Edit User' : 'Add New User'}
               </h3>
@@ -333,8 +331,8 @@ export default function UserManagement() {
                 ✕
               </button>
             </div>
-            
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1">
                   Username *
@@ -394,43 +392,110 @@ export default function UserManagement() {
                 <label className="block text-sm font-bold text-gray-700 mb-3">
                   Permissions (Customize Staff Access)
                 </label>
-                
+
                 <div className="space-y-3 bg-gray-50 p-3 rounded-lg border">
                   {/* Booking Permissions */}
                   <div>
                     <p className="font-semibold text-xs text-gray-600 mb-2">Booking Management</p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.booking.view}
                           onChange={(e) => handlePermissionChange('booking', 'view', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> View
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.booking.create}
                           onChange={(e) => handlePermissionChange('booking', 'create', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Create
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.booking.update}
                           onChange={(e) => handlePermissionChange('booking', 'update', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Update
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.booking.reschedule}
                           onChange={(e) => handlePermissionChange('booking', 'reschedule', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Reschedule
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Leads & Marketing Permissions */}
+                  <div>
+                    <p className="font-semibold text-xs text-gray-600 mb-2">Leads & Marketing</p>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+                      <p className="col-span-2 text-xs font-medium text-gray-500">Leads</p>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.leads.view}
+                          onChange={(e) => handlePermissionChange('leads', 'view', e.target.checked)}
+                          className="rounded"
+                        /> View
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.leads.create}
+                          onChange={(e) => handlePermissionChange('leads', 'create', e.target.checked)}
+                          className="rounded"
+                        /> Create
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.leads.update}
+                          onChange={(e) => handlePermissionChange('leads', 'update', e.target.checked)}
+                          className="rounded"
+                        /> Update
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.leads.delete}
+                          onChange={(e) => handlePermissionChange('leads', 'delete', e.target.checked)}
+                          className="rounded"
+                        /> Delete
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <p className="col-span-2 text-xs font-medium text-gray-500">Coupons</p>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.coupons.view}
+                          onChange={(e) => handlePermissionChange('coupons', 'view', e.target.checked)}
+                          className="rounded"
+                        /> View
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.coupons.create}
+                          onChange={(e) => handlePermissionChange('coupons', 'create', e.target.checked)}
+                          className="rounded"
+                        /> Create
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.coupons.update}
+                          onChange={(e) => handlePermissionChange('coupons', 'update', e.target.checked)}
+                          className="rounded"
+                        /> Update
                       </label>
                     </div>
                   </div>
@@ -440,35 +505,35 @@ export default function UserManagement() {
                     <p className="font-semibold text-xs text-gray-600 mb-2">Master Data</p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.services.create}
                           onChange={(e) => handlePermissionChange('services', 'create', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Services
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.photographers.create}
                           onChange={(e) => handlePermissionChange('photographers', 'create', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Photographers
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.addons.create}
                           onChange={(e) => handlePermissionChange('addons', 'create', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Add-ons
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.portfolio.create}
                           onChange={(e) => handlePermissionChange('portfolio', 'create', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Portfolio
                       </label>
                     </div>
@@ -479,36 +544,52 @@ export default function UserManagement() {
                     <p className="font-semibold text-xs text-gray-600 mb-2">Admin Only</p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.dashboard}
                           onChange={(e) => handleSimplePermissionChange('dashboard', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Dashboard
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.ads}
                           onChange={(e) => handleSimplePermissionChange('ads', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Ads
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.settings}
                           onChange={(e) => handleSimplePermissionChange('settings', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Settings
                       </label>
                       <label className="flex items-center gap-2">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={formData.permissions.users}
                           onChange={(e) => handleSimplePermissionChange('users', e.target.checked)}
-                          className="rounded" 
+                          className="rounded"
                         /> Users
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.payment}
+                          onChange={(e) => handleSimplePermissionChange('payment', e.target.checked)}
+                          className="rounded"
+                        /> Payment
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={formData.permissions.homepage_cms}
+                          onChange={(e) => handleSimplePermissionChange('homepage_cms', e.target.checked)}
+                          className="rounded"
+                        /> Homepage CMS
                       </label>
                     </div>
                   </div>

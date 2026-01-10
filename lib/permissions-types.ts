@@ -17,7 +17,8 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   settings: true,
   payment: true,
   users: true,
-  leads: { view: true, create: true, update: true, delete: true }
+  leads: { view: true, create: true, update: true, delete: true },
+  homepage_cms: true
 };
 
 /**
@@ -36,7 +37,8 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   settings: false,
   payment: false,
   users: false,
-  leads: { view: true, create: true, update: true, delete: false }
+  leads: { view: true, create: true, update: true, delete: false },
+  homepage_cms: false
 };
 
 /**
@@ -95,7 +97,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
     { id: 'users', icon: 'Users', label: 'Users', permission: 'users' },
     { id: 'payment-settings', icon: 'CreditCard', label: 'Payment Settings', permission: 'payment' },
     { id: 'settings', icon: 'Settings', label: 'Settings', permission: 'settings' },
-    { id: 'homepage-cms', icon: 'Home', label: 'Homepage CMS', permission: 'settings', isLink: true, href: '/admin/homepage' },
+    { id: 'homepage-cms', icon: 'Home', label: 'Homepage CMS', permission: 'homepage_cms', isLink: true, href: '/admin/homepage' },
   ];
 
   // Admin sees everything
@@ -105,7 +107,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
 
   // Filter by permissions
   return allMenuItems.filter(item => {
-    if (item.permission === 'dashboard' || item.permission === 'ads') {
+    if (item.permission === 'dashboard' || item.permission === 'ads' || item.permission === 'homepage_cms') {
       return permissions?.[item.permission];
     }
     return hasPermission(permissions, item.permission);

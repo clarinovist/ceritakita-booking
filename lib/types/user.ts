@@ -48,6 +48,7 @@ export interface UserPermissions {
     update: boolean;
     delete: boolean;
   };
+  homepage_cms: boolean;
 }
 
 export interface User {
