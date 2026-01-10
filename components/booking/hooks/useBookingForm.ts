@@ -1,8 +1,10 @@
 import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
 import { Service, Addon, PaymentSettings, CouponValidation, BookingFormData, BookingPayload } from '@/lib/types';
 import { generateWhatsAppMessage, generateWhatsAppLink } from '@/lib/whatsapp-template';
+import { useSettings } from '@/lib/settings-context';
 
 export const useBookingForm = () => {
+    const { settings } = useSettings();
     const [loading, setLoading] = useState(false);
     const [services, setServices] = useState<Service[]>([]);
     const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -10,11 +12,11 @@ export const useBookingForm = () => {
     const [proofPreview, setProofPreview] = useState<string>('');
     const [availableAddons, setAvailableAddons] = useState<Addon[]>([]);
     const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
-    
+
     // Portfolio state
     const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
     const [selectedPortfolioImage, setSelectedPortfolioImage] = useState<string | null>(null);
-    
+
     // Payment settings state
     const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
 
@@ -52,7 +54,7 @@ export const useBookingForm = () => {
                 }
             })
             .catch(err => console.error("Failed to fetch services", err));
-            
+
         // Fetch payment settings
         fetch('/api/payment-settings')
             .then(res => res.json())
@@ -116,7 +118,7 @@ export const useBookingForm = () => {
             .then(res => res.json())
             .then((data: Addon[]) => setAvailableAddons(data))
             .catch(err => console.error("Failed to fetch add-ons", err));
-            
+
         fetchPortfolioImages(service.id);
     };
 
@@ -342,8 +344,7 @@ export const useBookingForm = () => {
 
             // Generate WhatsApp message after successful booking
             try {
-                const settings = getSystemSettings();
-                if (settings.whatsapp_admin_number && settings.whatsapp_message_template) {
+                if (settings && settings.whatsapp_admin_number && settings.whatsapp_message_template) {
                     const whatsappMessage = generateWhatsAppMessage(
                         settings.whatsapp_message_template,
                         {
@@ -363,12 +364,12 @@ export const useBookingForm = () => {
 
                     // Show WhatsApp link to user
                     const message = `Booking berhasil! ID: ${createdBooking.id}\n\nKlik link WhatsApp berikut untuk konfirmasi:\n${whatsappLink}`;
-                    
+
                     // Copy to clipboard
                     await navigator.clipboard.writeText(whatsappLink);
-                    
+
                     alert(message + '\n\nLink WhatsApp sudah disalin ke clipboard!');
-                    
+
                     // Open WhatsApp in new tab
                     window.open(whatsappLink, '_blank');
                 } else {
@@ -408,11 +409,11 @@ export const useBookingForm = () => {
         couponLoading,
         suggestedCoupons,
         formData,
-        
+
         // Setters
         setCouponCode,
         setFormData,
-        
+
         // Handlers
         handleChange,
         handleServiceSelect,
@@ -425,7 +426,7 @@ export const useBookingForm = () => {
         closeLightbox,
         copyToClipboard,
         handleSubmit,
-        
+
         // Calculations
         calculateServiceBasePrice,
         calculateAddonsTotal,

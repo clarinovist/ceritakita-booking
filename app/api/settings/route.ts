@@ -30,7 +30,7 @@ function isValidImageUrl(url: string): boolean {
  * GET /api/settings
  * Fetch all system settings
  */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const settings = getSystemSettings();
 
@@ -79,8 +79,8 @@ export async function POST(req: NextRequest) {
     for (const [key, value] of Object.entries(body)) {
       // Izinkan string, number, dan boolean
       if (
-        typeof value !== 'string' && 
-        typeof value !== 'number' && 
+        typeof value !== 'string' &&
+        typeof value !== 'number' &&
         typeof value !== 'boolean'
       ) {
         return NextResponse.json(
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-      
+
       // Konversi semua nilai ke string untuk penyimpanan
       settingsToUpdate[key] = String(value);
     }

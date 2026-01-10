@@ -3,24 +3,20 @@
  * Organized by category for better maintainability
  */
 
-// 1. General & SEO Settings
+// 1. Branding & SEO Settings
 export interface GeneralSettings {
   site_name: string;
   site_logo: string;
-  hero_title: string;
   meta_title: string;
   meta_description: string;
 }
 
-// 2. Contact & Socials Settings
+// 2. Core Contact Settings (Business Identity / Invoices)
 export interface ContactSettings {
-  business_phone: string;
-  business_address: string;
   whatsapp_admin_number: string;
   business_email: string;
-  instagram_url?: string;
-  tiktok_url?: string;
-  maps_link?: string;
+  business_phone: string;
+  business_address: string;
 }
 
 // 3. Finance Settings
@@ -46,12 +42,12 @@ export interface TemplatesSettings {
 }
 
 // Combined System Settings Interface
-export interface SystemSettings 
-  extends GeneralSettings, 
-          ContactSettings, 
-          FinanceSettings, 
-          BookingRulesSettings, 
-          TemplatesSettings {}
+export interface SystemSettings
+  extends GeneralSettings,
+  ContactSettings,
+  FinanceSettings,
+  BookingRulesSettings,
+  TemplatesSettings { }
 
 // Context Type
 export interface SettingsContextType {
@@ -78,4 +74,4 @@ export interface SettingsApiResponse {
 }
 
 // Partial settings for updates
-export interface SettingsUpdatePayload extends Partial<SystemSettings> {}
+export interface SettingsUpdatePayload extends Partial<SystemSettings> { }

@@ -30,8 +30,8 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
   };
 
   const siteName = settings?.site_name || 'Cerita Kita';
-
-  const hasLogo = !!settings?.site_logo;
+  // Use a fallback for admin context where settings might be strict
+  const hasLogo = settings?.site_logo && settings.site_logo.length > 0;
 
   if (loading) {
     // Show skeleton while loading
@@ -41,7 +41,6 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
         {showText && (
           <div className="flex flex-col leading-tight gap-1">
             <div className="bg-gray-200 h-4 w-20 rounded animate-pulse"></div>
-            <div className="bg-gray-200 h-3 w-12 rounded animate-pulse"></div>
           </div>
         )}
       </div>
@@ -108,7 +107,6 @@ export function MobileLogo() {
     return (
       <div className="flex items-center gap-2">
         <div className="bg-gray-200 rounded-lg p-1.5 animate-pulse" style={{ width: 18, height: 18 }} />
-        <div className="bg-gray-200 h-3 w-20 rounded animate-pulse"></div>
       </div>
     );
   }
@@ -136,12 +134,7 @@ export function HeroLogo() {
       <div className="text-center space-y-3">
         <div className="inline-flex items-center gap-3">
           <div className="bg-gray-200 rounded-xl p-3 animate-pulse" style={{ width: 40, height: 40 }} />
-          <div className="flex flex-col text-left gap-2">
-            <div className="bg-gray-200 h-8 w-32 rounded animate-pulse"></div>
-            <div className="bg-gray-200 h-4 w-20 rounded animate-pulse"></div>
-          </div>
         </div>
-        <div className="bg-gray-200 h-4 w-64 rounded animate-pulse mx-auto"></div>
       </div>
     );
   }
@@ -170,9 +163,6 @@ export function HeroLogo() {
           <span className="text-lg font-semibold text-primary-600 tracking-wide">STUDIO</span>
         </div>
       </div>
-      <p className="text-gray-600 text-sm md:text-base max-w-md mx-auto">
-        Abadikan momen terbaik Anda dengan profesional
-      </p>
     </div>
   );
 }

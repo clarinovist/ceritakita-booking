@@ -97,7 +97,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
     { id: 'users', icon: 'Users', label: 'Users', permission: 'users' },
     { id: 'payment-settings', icon: 'CreditCard', label: 'Payment Settings', permission: 'payment' },
     { id: 'settings', icon: 'Settings', label: 'Settings', permission: 'settings' },
-    { id: 'homepage-cms', icon: 'Home', label: 'Homepage CMS', permission: 'homepage_cms', isLink: true, href: '/admin/homepage' },
+    { id: 'homepage', icon: 'Home', label: 'Homepage CMS', permission: 'homepage_cms' },
   ];
 
   // Admin sees everything

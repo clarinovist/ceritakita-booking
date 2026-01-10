@@ -10,10 +10,33 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
  * Default settings fallback
  */
 const DEFAULT_SETTINGS: SystemSettings = {
+  // Branding & SEO
   site_name: 'Cerita Kita',
   site_logo: '/images/default-logo.png',
+  meta_title: 'Cerita Kita - Professional Photography Services',
+  meta_description: 'Professional photography services in Jakarta.',
+
+  // Core Identity
+  whatsapp_admin_number: '+62 812 3456 7890',
+  business_email: 'info@ceritakita.studio',
   business_phone: '+62 812 3456 7890',
-  business_address: 'Jalan Raya No. 123, Jakarta'
+  business_address: 'Jalan Raya No. 123, Jakarta',
+
+  // Finance
+  bank_name: 'BCA',
+  bank_number: '1234567890',
+  bank_holder: 'CERITA KITA',
+  invoice_notes: '',
+  requires_deposit: false,
+  deposit_amount: 0,
+  tax_rate: 0,
+
+  // Rules
+  min_booking_notice: 1,
+  max_booking_ahead: 90,
+
+  // Templates
+  whatsapp_message_template: ''
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {

@@ -2,56 +2,54 @@
 
 import { useEffect, useState } from 'react';
 import { SystemSettings } from '@/lib/types/settings';
-import { FILE_CONSTRAINTS, UPLOAD_FOLDERS } from '@/lib/constants';
-import { Info } from 'lucide-react'; // Import icon untuk banner
+import { UPLOAD_FOLDERS } from '@/lib/constants';
+import {
+  Info, Home, DollarSign, Calendar,
+  MessageSquare, CreditCard, Users, Eye
+} from 'lucide-react';
 
 // Import tab components
-import GeneralTab from './settings/GeneralTab';
-import ContactTab from './settings/ContactTab';
+import BrandingTab from './settings/BrandingTab';
 import FinanceTab from './settings/FinanceTab';
 import RulesTab from './settings/RulesTab';
 import TemplatesTab from './settings/TemplatesTab';
 import UserManagement from './UserManagement';
 import PaymentMethodsManagement from './PaymentMethodsManagement';
+import { SettingsPreviewModal } from './modals/SettingsPreviewModal';
 
-// Tab type definition - Updated
+// Tab type definition
 type TabType = 'general' | 'contact' | 'finance' | 'rules' | 'templates' | 'payment_methods' | 'users';
 
 interface TabConfig {
   id: TabType;
   label: string;
-  icon: string;
+  icon: any; // Lucide icon component
 }
 
-// Updated TABS configuration
+// Updated TABS configuration with Lucide icons
 const TABS: TabConfig[] = [
-  { id: 'general', label: 'General & SEO', icon: '🏠' },
-  { id: 'contact', label: 'Contact & Socials', icon: '📞' },
-  { id: 'finance', label: 'Finance', icon: '💰' },
-  { id: 'rules', label: 'Booking Rules', icon: '📅' },
-  { id: 'templates', label: 'Templates', icon: '💬' },
-  { id: 'payment_methods', label: 'Payment Methods', icon: '💳' },
-  { id: 'users', label: 'Team Access', icon: '👥' }
+  { id: 'general', label: 'Branding & SEO', icon: Home },
+  { id: 'finance', label: 'Finance', icon: DollarSign },
+  { id: 'rules', label: 'Booking Rules', icon: Calendar },
+  { id: 'templates', label: 'Templates', icon: MessageSquare },
+  { id: 'payment_methods', label: 'Payment Methods', icon: CreditCard },
+  { id: 'users', label: 'Team Access', icon: Users }
 ];
 
 export default function SettingsManagement() {
   const [settings, setSettings] = useState<SystemSettings>({
-    // General & SEO
+    // Branding & SEO
     site_name: 'Cerita Kita',
     site_logo: '/images/default-logo.png',
-    hero_title: 'Capture Your Special Moments',
     meta_title: 'Cerita Kita - Professional Photography Services',
     meta_description: 'Professional photography services in Jakarta. Book your special moments with Cerita Kita.',
-    
-    // Contact & Socials
-    business_phone: '+62 812 3456 7890',
-    business_address: 'Jalan Raya No. 123, Jakarta',
+
+    // Core Identity (used for Invoice/Notif)
     whatsapp_admin_number: '+62 812 3456 7890',
     business_email: 'info@ceritakita.studio',
-    instagram_url: '',
-    tiktok_url: '',
-    maps_link: '',
-    
+    business_phone: '+62 812 3456 7890',
+    business_address: 'Jalan Raya No. 123, Jakarta',
+
     // Finance
     bank_name: 'BCA',
     bank_number: '1234567890',
@@ -60,11 +58,11 @@ export default function SettingsManagement() {
     requires_deposit: false,
     deposit_amount: 50,
     tax_rate: 0,
-    
+
     // Booking Rules
     min_booking_notice: 1,
     max_booking_ahead: 90,
-    
+
     // Templates
     whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!'
   });
@@ -74,6 +72,7 @@ export default function SettingsManagement() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('general');
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -84,7 +83,7 @@ export default function SettingsManagement() {
       const res = await fetch('/api/settings');
       if (!res.ok) throw new Error('Failed to fetch settings');
       const data = await res.json();
-      
+
       // Merge with defaults to ensure all fields exist
       setSettings(prev => ({ ...prev, ...data }));
     } catch (error) {
@@ -176,10 +175,10 @@ export default function SettingsManagement() {
 
   if (loading) {
     return (
-      <div className="bg-white border rounded-xl p-6">
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="ml-3 text-gray-600">Loading settings...</span>
+      <div className="bg-white border border-slate-200 rounded-2xl p-8">
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
+          <span className="ml-3 text-slate-600 font-medium">Loading settings...</span>
         </div>
       </div>
     );
@@ -187,51 +186,49 @@ export default function SettingsManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="bg-white border rounded-xl p-6">
-        <h2 className="text-2xl font-bold text-gray-900">System Settings</h2>
-        <p className="text-gray-600 mt-1">Manage your website configuration, team, and payment methods</p>
-      </div>
-
       {/* Messages - Only show for general settings tabs */}
       {message && !isSelfManagedTab && (
-        <div className={`p-4 rounded-lg border ${
-          message.type === 'success' 
-            ? 'bg-green-50 border-green-200 text-green-800' 
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
-          {message.text}
+        <div className={`p-4 rounded-xl border flex items-center gap-2 ${message.type === 'success'
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+          <Info size={18} className="flex-shrink-0" />
+          <span className="font-medium">{message.text}</span>
         </div>
       )}
 
-      {/* Tab Navigation */}
-      <div className="bg-white border rounded-xl overflow-hidden">
-        <div className="border-b overflow-x-auto">
-          <nav className="flex min-w-max" aria-label="Settings tabs">
-            {TABS.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => {
-                  setActiveTab(tab.id);
-                  setMessage(null); // Clear messages when switching tabs
-                }}
-                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 border-b-2 border-transparent'
-                }`}
-              >
-                <span className="text-lg">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+      {/* Tab Navigation - Modern Pill Style */}
+      <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50/50">
+          <nav className="flex gap-2 p-3 overflow-x-auto scrollbar-thin" aria-label="Settings tabs">
+            {TABS.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setMessage(null); // Clear messages when switching tabs
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold whitespace-nowrap transition-all ${isActive
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`}
+                >
+                  <Icon size={16} className={isActive ? 'text-white' : 'text-slate-400'} />
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
         </div>
 
         {/* Tab Content */}
         <div className="p-6">
           {activeTab === 'general' && (
-            <GeneralTab
+            <BrandingTab
               settings={settings}
               onChange={handleInputChange}
               onLogoUpload={handleLogoUpload}
@@ -239,12 +236,7 @@ export default function SettingsManagement() {
             />
           )}
 
-          {activeTab === 'contact' && (
-            <ContactTab
-              settings={settings}
-              onChange={handleInputChange}
-            />
-          )}
+
 
           {activeTab === 'finance' && (
             <FinanceTab
@@ -271,9 +263,9 @@ export default function SettingsManagement() {
 
           {activeTab === 'payment_methods' && (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
+              <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-4 py-3 rounded-xl flex items-center gap-2 text-sm">
                 <Info size={18} className="flex-shrink-0" />
-                <span>Changes in Payment Methods are saved automatically and applied immediately.</span>
+                <span className="font-medium">Changes in Payment Methods are saved automatically and applied immediately.</span>
               </div>
               <PaymentMethodsManagement />
             </div>
@@ -281,9 +273,9 @@ export default function SettingsManagement() {
 
           {activeTab === 'users' && (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg flex items-center gap-2 text-sm">
+              <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 px-4 py-3 rounded-xl flex items-center gap-2 text-sm">
                 <Info size={18} className="flex-shrink-0" />
-                <span>User management actions (create, update, delete) are effective immediately.</span>
+                <span className="font-medium">User management actions (create, update, delete) are effective immediately.</span>
               </div>
               <UserManagement />
             </div>
@@ -293,90 +285,45 @@ export default function SettingsManagement() {
 
       {/* Form Actions - Hide for self-managed tabs */}
       {!isSelfManagedTab && (
-        <div className="bg-white border rounded-xl p-6 flex justify-end gap-3">
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex justify-between items-center shadow-sm">
           <button
             type="button"
-            onClick={handleReset}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium transition-colors"
+            onClick={() => setIsPreviewOpen(true)}
+            className="px-5 py-2.5 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 font-semibold transition-colors flex items-center gap-2"
           >
-            Reset
+            <Eye size={18} />
+            Preview Settings
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-              saving 
-                ? 'bg-gray-400 text-gray-200 cursor-not-allowed' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            {saving ? 'Saving...' : 'Save All Settings'}
-          </button>
-        </div>
-      )}
 
-      {/* Global Preview - Hide when in admin management tabs to reduce noise */}
-      {!isSelfManagedTab && (
-        <div className="bg-white border rounded-xl p-6">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Preview</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Branding Preview */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">Branding</h3>
-              <div className="flex items-center gap-3">
-                {settings.site_logo && (
-                  <img 
-                    src={settings.site_logo} 
-                    alt="Logo" 
-                    className="h-8 w-auto object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/default-logo.png';
-                    }}
-                  />
-                )}
-                <div>
-                  <div className="font-bold">{settings.site_name}</div>
-                  <div className="text-xs text-gray-500">{settings.hero_title}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Contact Preview */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">Contact</h3>
-              <div className="text-sm space-y-1">
-                <div>📞 {settings.business_phone}</div>
-                <div>📧 {settings.business_email}</div>
-                <div>📍 {settings.business_address}</div>
-              </div>
-            </div>
-
-            {/* Finance Preview */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">Finance</h3>
-              <div className="text-sm space-y-1">
-                <div>🏦 {settings.bank_name} - {settings.bank_number}</div>
-                <div>👤 {settings.bank_holder}</div>
-                {settings.requires_deposit && <div>💰 Deposit: {settings.deposit_amount}%</div>}
-                {settings.tax_rate > 0 && <div>📊 Tax: {settings.tax_rate}%</div>}
-              </div>
-            </div>
-
-            {/* Rules Preview */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-700 mb-2">Booking Rules</h3>
-              <div className="text-sm space-y-1">
-                <div>📅 Min Notice: {settings.min_booking_notice} day(s)</div>
-                <div>📅 Max Ahead: {settings.max_booking_ahead} days</div>
-                <div className="text-xs text-gray-500 mt-1">
-                  Window: {settings.min_booking_notice}-{settings.max_booking_ahead} days from today
-                </div>
-              </div>
-            </div>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="px-5 py-2.5 bg-slate-100 text-slate-700 rounded-xl hover:bg-slate-200 font-semibold transition-colors"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className={`px-6 py-2.5 rounded-xl font-semibold transition-colors ${saving
+                ? 'bg-slate-400 text-slate-200 cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200'
+                }`}
+            >
+              {saving ? 'Saving...' : 'Save All Settings'}
+            </button>
           </div>
         </div>
       )}
+
+      {/* Settings Preview Modal */}
+      <SettingsPreviewModal
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        settings={settings}
+      />
     </div>
   );
 }

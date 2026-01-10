@@ -5,7 +5,6 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { useSession } from "next-auth/react";
-import { User } from 'lucide-react';
 
 // Components
 import AdminSidebar from '../AdminSidebar';
@@ -13,6 +12,7 @@ import DashboardMetrics from '../DashboardMetrics';
 import CouponManagement from '../CouponManagement';
 import PortfolioManagement from '../PortfolioManagement';
 import SettingsManagement from './SettingsManagement';
+import HomepageCMS from './HomepageCMS';
 import AdsPerformance from './AdsPerformance';
 import DateFilterToolbar from './DateFilterToolbar';
 
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
     const getAvailableViewModes = (): ViewMode[] => {
         // Note: 'users' and 'payment-settings' are now handled within SettingsManagement, 
         // but kept in type definition for compatibility if needed elsewhere.
-        const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'services', 'portfolio', 'photographers', 'addons', 'coupons', 'settings'];
+        const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'services', 'portfolio', 'photographers', 'addons', 'coupons', 'settings', 'homepage'];
 
         if (userRole === 'admin') {
             return allModes;
@@ -81,6 +81,7 @@ export default function AdminDashboard() {
         if (userPermissions?.addons?.view) allowedModes.push('addons');
         if (userPermissions?.coupons?.view) allowedModes.push('coupons');
         if (userPermissions?.settings) allowedModes.push('settings');
+        if (userPermissions?.homepage_cms) allowedModes.push('homepage');
 
         // If user has permissions for modules inside settings, allow settings access
         if ((userPermissions?.users || userPermissions?.payment) && !allowedModes.includes('settings')) {
@@ -328,36 +329,50 @@ export default function AdminDashboard() {
         <div className="min-h-screen bg-gray-50 flex">
             <AdminSidebar viewMode={viewMode as string} setViewMode={(mode: string) => setViewMode(mode as ViewMode)} />
 
-            <div className="flex-1 ml-0 md:ml-64 p-6 overflow-auto">
+            <div className="flex-1 ml-0 md:ml-72 p-8 overflow-auto bg-slate-50">
 
-                {/* Command Bar - Simplified */}
-                <div className="bg-white border rounded-xl p-4 mb-6 sticky top-0 z-10 flex flex-col md:flex-row justify-between items-center shadow-sm gap-4">
+                {/* Command Bar - Modernized */}
+                <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-40 -mx-8 -mt-8 px-8 py-4 mb-8 flex flex-col md:flex-row justify-between items-center gap-4 transition-all">
                     {/* Left Side: View Title and Date Filter */}
-                    <div className="flex flex-1 items-center justify-between w-full md:w-auto gap-4">
-                        <h2 className="text-xl font-bold text-gray-800 capitalize whitespace-nowrap">
-                            {viewMode === 'dashboard' ? 'Overview' : viewMode.replace(/_/g, ' ')}
-                        </h2>
+                    <div className="flex flex-1 items-center justify-between w-full md:w-auto gap-6">
+                        <div>
+                            <h2 className="text-2xl font-display font-bold text-slate-800 capitalize tracking-tight">
+                                {viewMode === 'dashboard' ? 'Overview' : viewMode.replace(/_/g, ' ')}
+                            </h2>
+                            <p className="text-xs text-slate-500 font-medium mt-0.5">
+                                {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                        </div>
 
                         {/* Global Date Filter for relevant views */}
                         {(viewMode === 'dashboard' || viewMode === 'ads' || viewMode === 'table') && (
-                            <div className="flex-1 flex justify-center md:justify-end">
+                            <div className="hidden md:flex flex-1 justify-end max-w-md">
                                 <DateFilterToolbar
                                     dateRange={bookingsHook.dateRange}
                                     onDateRangeChange={bookingsHook.setDateRange}
-                                    className="shadow-sm"
+                                    className="shadow-sm border-slate-200"
                                 />
                             </div>
                         )}
                     </div>
 
                     {/* Right Side: Admin Profile */}
-                    <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-50 rounded-full border border-gray-200">
-                        <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center">
-                            <User size={14} />
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
+                            <div className="text-right hidden md:block">
+                                <div className="text-sm font-semibold text-slate-700 leading-none mb-1">
+                                    {session?.user?.name || 'Administrator'}
+                                </div>
+                                <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">
+                                    {userRole || 'Admin'}
+                                </div>
+                            </div>
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-500/20 ring-2 ring-white">
+                                <span className="font-bold text-sm">
+                                    {session?.user?.name?.charAt(0).toUpperCase() || 'A'}
+                                </span>
+                            </div>
                         </div>
-                        <span className="text-sm font-medium text-gray-700">
-                            {session?.user?.name || 'Admin'}
-                        </span>
                     </div>
                 </div>
 
@@ -470,6 +485,13 @@ export default function AdminDashboard() {
                         </div>
                     )}
 
+                    {/* HOMEPAGE CMS VIEW */}
+                    {viewMode === 'homepage' && (
+                        <div className="animate-in fade-in">
+                            <HomepageCMS />
+                        </div>
+                    )}
+
                     {/* LEADS VIEW */}
                     {viewMode === 'leads' && (
                         <LeadsTable
@@ -565,7 +587,7 @@ export default function AdminDashboard() {
                     calculateTotal={calculateBookingTotal}
                 />
 
-                {/* Addon Modal */}
+                {/* AddonModal */}
                 <AddonModal
                     isOpen={addonsHook.isAddonModalOpen}
                     onClose={() => addonsHook.setIsAddonModalOpen(false)}
@@ -573,6 +595,7 @@ export default function AdminDashboard() {
                     editingAddon={addonsHook.editingAddon}
                     formData={addonsHook.addonFormData}
                     setFormData={addonsHook.setAddonFormData}
+                    services={servicesHook.services}
                 />
 
                 {/* Photographer Modal */}

@@ -6,19 +6,16 @@ import { redirect } from 'next/navigation';
 import { Booking } from '@/lib/storage';
 
 interface Settings {
-  site_name: string;
-  site_logo: string;
-  business_phone: string;
-  business_address: string;
-  business_email: string;
-  bank_name: string;
-  bank_number: string;
-  bank_holder: string;
-  invoice_notes: string;
-  instagram_url?: string;
-  tiktok_url?: string;
-  maps_link?: string;
-  tax_rate: number;
+    site_name: string;
+    site_logo: string;
+    business_phone: string;
+    business_address: string;
+    business_email: string;
+    bank_name: string;
+    bank_number: string;
+    bank_holder: string;
+    invoice_notes: string;
+    tax_rate: number;
 }
 
 export default function InvoicePage({ params }: { params: { id: string } }) {
@@ -415,29 +412,7 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
                         </div>
                     )}
 
-                    {/* Social Links */}
-                    {(settings?.instagram_url || settings?.tiktok_url || settings?.maps_link) && (
-                        <div className="border rounded p-3">
-                            <h3 className="font-bold text-gray-900 mb-2 text-xs">FIND US ONLINE</h3>
-                            <div className="flex flex-col gap-1 text-xs">
-                                {settings.instagram_url && (
-                                    <a href={settings.instagram_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                                        IG: @{settings.instagram_url.split('/').pop()}
-                                    </a>
-                                )}
-                                {settings.tiktok_url && (
-                                    <a href={settings.tiktok_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                                        TikTok: @{settings.tiktok_url.split('/').pop()}
-                                    </a>
-                                )}
-                                {settings.maps_link && (
-                                    <a href={settings.maps_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">
-                                        Google Maps
-                                    </a>
-                                )}
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* Footer - Compact */}

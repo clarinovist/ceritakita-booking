@@ -2,7 +2,7 @@
 
 import { Booking } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { DollarSign, Users, CalendarX, CheckCircle } from 'lucide-react';
+import { DollarSign, Users, CalendarX, CheckCircle, TrendingUp, TrendingDown, Clock, Wallet } from 'lucide-react';
 
 interface Props {
     sessionBookings: Booking[];
@@ -11,9 +11,6 @@ interface Props {
 }
 
 export default function DashboardMetrics({ sessionBookings, createdBookings, dateRange }: Props) {
-
-    // History modal state kept temporarily if needed for other history, otherwise remove if ads specific. 
-    // Wait, the history modal IS ads specific. Removing it too.
 
     // Metrics calculations
     const pipelineTotalBookings = createdBookings.length;
@@ -44,132 +41,205 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, dat
         count: sessionBookings.filter(b => b.customer.category === cat).length
     })).filter(d => d.count > 0);
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#A28DFF', '#FF6699'];
+    const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1'];
+
+    // Helper for rendering trend indicator (mock logic for now as we don't have prev period)
+    const renderTrend = (isPositive: boolean = true) => (
+        <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${isPositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            <span>{isPositive ? '+12%' : '-2%'}</span>
+        </div>
+    );
 
     return (
         <div className="space-y-8">
-            {/* ========== SALES PIPELINE SECTION ========== */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sales Pipeline</h3>
-                    <div className="h-px bg-gray-200 flex-1"></div>
-                    <span className="text-xs text-gray-400">
-                        Created in range
-                    </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                        <div className="p-3 bg-purple-100 text-purple-600 rounded-full">
-                            <Users size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">New Bookings</p>
-                            <p className="text-2xl font-bold">{pipelineTotalBookings}</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                        <div className="p-3 bg-green-100 text-green-600 rounded-full">
-                            <DollarSign size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Pipeline Revenue</p>
-                            <p className="text-2xl font-bold">Rp {pipelineRevenue.toLocaleString()}</p>
-                            <p className="text-xs text-gray-400">Future revenue potential</p>
-                        </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                        <div className="p-3 bg-red-100 text-red-600 rounded-full">
-                            <CalendarX size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Cancelled</p>
-                            <p className="text-2xl font-bold">{pipelineCancelled}</p>
-                        </div>
-                    </div>
-                </div>
+            {/* ========== OVERVIEW CARDS ========== */}
+            <div className="flex items-center gap-2 mb-4">
+                <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Metrics Overview</h3>
+                <div className="h-px bg-slate-200 flex-1"></div>
+                <span className="text-xs text-slate-400 font-medium">
+                    {new Date(dateRange.start).toLocaleDateString('id-ID', { month: 'short', day: 'numeric' })}
+                    {' - '}
+                    {new Date(dateRange.end).toLocaleDateString('id-ID', { month: 'short', day: 'numeric' })}
+                </span>
             </div>
 
-            {/* ========== REVENUE REALIZATION SECTION ========== */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2 pt-4">
-                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Revenue Realization</h3>
-                    <div className="h-px bg-gray-200 flex-1"></div>
-                    <span className="text-xs text-gray-400">
-                        Sessions in range
-                    </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Total Bookings */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <Users size={24} />
+                        </div>
+                        {renderTrend(true)}
+                    </div>
+                    <div>
+                        <p className="text-slate-500 text-sm font-medium mb-1">Total Bookings</p>
+                        <h3 className="text-3xl font-bold text-slate-800">{pipelineTotalBookings}</h3>
+                        <p className="text-xs text-slate-400 mt-2">New leads & orders</p>
+                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                        <div className="p-3 bg-blue-100 text-blue-600 rounded-full">
+                {/* Pipeline Revenue */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <DollarSign size={24} />
+                        </div>
+                        {renderTrend(true)}
+                    </div>
+                    <div>
+                        <p className="text-slate-500 text-sm font-medium mb-1">Est. Revenue</p>
+                        <h3 className="text-3xl font-bold text-slate-800">
+                            {(pipelineRevenue / 1000000).toFixed(1)}M
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-2">Rp {pipelineRevenue.toLocaleString()}</p>
+                    </div>
+                </div>
+
+                {/* Pending Sessions */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-amber-50 text-amber-600 rounded-xl group-hover:scale-110 transition-transform">
+                            <Clock size={24} />
+                        </div>
+                        <div className="bg-amber-50 text-amber-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                            Active
+                        </div>
+                    </div>
+                    <div>
+                        <p className="text-slate-500 text-sm font-medium mb-1">Pending Sessions</p>
+                        <h3 className="text-3xl font-bold text-slate-800">
+                            {sessionsTotal - sessionsCompleted - sessionsCancelled}
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-2">Upcoming schedules</p>
+                    </div>
+                </div>
+
+                {/* Completed Rate */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow group">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
                             <CheckCircle size={24} />
                         </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Completed</p>
-                            <p className="text-2xl font-bold">{sessionsCompleted}</p>
-                            <p className="text-xs text-gray-400">of {sessionsTotal} sessions</p>
+                        <div className="bg-blue-50 text-blue-600 text-xs font-medium px-2 py-0.5 rounded-full">
+                            Rate
                         </div>
                     </div>
-
-                    <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-6 rounded-xl shadow-lg border-2 border-teal-300 flex items-center gap-4">
-                        <div className="p-3 bg-teal-600 text-white rounded-full shadow-md">
-                            <DollarSign size={24} />
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 mb-1">
-                                <p className="text-sm text-teal-900 font-bold">Cash Received</p>
-                                <span className="text-xs bg-teal-600 text-white px-2 py-0.5 rounded-full">ROI Metric</span>
-                            </div>
-                            <p className="text-2xl font-black text-teal-700">Rp {actualCashReceived.toLocaleString()}</p>
-                            <p className="text-xs text-teal-600 font-semibold">Real money in</p>
-                        </div>
-                    </div>
-
-                    {outstandingBalance > 0 && (
-                        <div className="bg-white p-6 rounded-xl shadow border border-orange-200 flex items-center gap-4">
-                            <div className="p-3 bg-orange-100 text-orange-600 rounded-full">
-                                <DollarSign size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm text-orange-700 font-semibold">Outstanding</p>
-                                <p className="text-2xl font-bold text-orange-600">Rp {outstandingBalance.toLocaleString()}</p>
-                                <p className="text-xs text-orange-500">Receivables / Piutang</p>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="bg-white p-6 rounded-xl shadow border border-gray-100 flex items-center gap-4">
-                        <div className="p-3 bg-gray-100 text-gray-600 rounded-full">
-                            <Users size={24} />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-500">Pending</p>
-                            <p className="text-2xl font-bold">{sessionsTotal - sessionsCompleted - sessionsCancelled}</p>
-                            <p className="text-xs text-gray-400">Active/Rescheduled</p>
-                        </div>
+                    <div>
+                        <p className="text-slate-500 text-sm font-medium mb-1">Completion</p>
+                        <h3 className="text-3xl font-bold text-slate-800">
+                            {sessionsTotal > 0 ? Math.round((sessionsCompleted / sessionsTotal) * 100) : 0}%
+                        </h3>
+                        <p className="text-xs text-slate-400 mt-2">{sessionsCompleted} sessions done</p>
                     </div>
                 </div>
             </div>
 
-            {/* Chart */}
-            <div className="bg-white p-6 rounded-xl shadow border border-gray-100">
-                <h3 className="text-lg font-bold mb-4 text-gray-700">Services Distribution</h3>
-                <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData}>
-                            <XAxis dataKey="name" fontSize={12} tickMargin={10} />
-                            <YAxis allowDecimals={false} />
-                            <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px' }} />
-                            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                                {chartData.map((_, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Financial Summary */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl"></div>
+
+                        <div className="flex items-center gap-3 mb-6 relative z-10">
+                            <div className="p-2 bg-white/10 rounded-lg backdrop-blur-sm">
+                                <Wallet className="text-blue-300" size={20} />
+                            </div>
+                            <h3 className="font-semibold text-lg">Cash Flow</h3>
+                        </div>
+
+                        <div className="space-y-6 relative z-10">
+                            <div>
+                                <p className="text-slate-400 text-sm mb-1">Total Cash Received</p>
+                                <p className="text-3xl font-bold tracking-tight">Rp {actualCashReceived.toLocaleString()}</p>
+                            </div>
+
+                            <div className="pt-4 border-t border-white/10">
+                                <div className="flex justify-between items-center mb-1">
+                                    <p className="text-slate-400 text-sm">Outstanding</p>
+                                    <span className="text-xs bg-orange-500/20 text-orange-300 px-2 py-0.5 rounded-full border border-orange-500/30">
+                                        Unpaid
+                                    </span>
+                                </div>
+                                <p className="text-xl font-semibold text-orange-200">Rp {outstandingBalance.toLocaleString()}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Mini Stats Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-red-50 p-4 rounded-2xl border border-red-100">
+                            <div className="flex items-center gap-2 text-red-600 mb-2">
+                                <CalendarX size={16} />
+                                <span className="text-xs font-bold uppercase">Cancelled</span>
+                            </div>
+                            <p className="text-xl font-bold text-slate-800">{pipelineCancelled}</p>
+                        </div>
+                        <div className="bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                            <div className="flex items-center gap-2 text-purple-600 mb-2">
+                                <TrendingUp size={16} />
+                                <span className="text-xs font-bold uppercase">Conversion</span>
+                            </div>
+                            <p className="text-xl font-bold text-slate-800">
+                                {pipelineTotalBookings > 0 ? Math.round(((pipelineTotalBookings - pipelineCancelled) / pipelineTotalBookings) * 100) : 0}%
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Chart */}
+                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col">
+                    <div className="flex items-center justify-between mb-6">
+                        <h3 className="font-bold text-lg text-slate-800">Service Distribution</h3>
+                        <select className="bg-slate-50 border-none text-xs font-medium text-slate-500 rounded-lg py-2 px-3 focus:ring-0">
+                            <option>This Month</option>
+                            <option>Last Month</option>
+                        </select>
+                    </div>
+                    <div className="flex-1 w-full min-h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <XAxis
+                                    dataKey="name"
+                                    className="text-xs text-slate-400 font-medium"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    dy={10}
+                                    interval={0}
+                                    tick={props => {
+                                        const { x, y, payload } = props;
+                                        return (
+                                            <g transform={`translate(${x},${y})`}>
+                                                <text x={0} y={0} dy={16} textAnchor="middle" fill="#94a3b8" fontSize={10}>
+                                                    {payload.value.split(' ')[0]}
+                                                </text>
+                                            </g>
+                                        );
+                                    }}
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    className="text-xs text-slate-400"
+                                    allowDecimals={false}
+                                />
+                                <Tooltip
+                                    cursor={{ fill: '#f8fafc' }}
+                                    contentStyle={{
+                                        borderRadius: '12px',
+                                        border: 'none',
+                                        boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'
+                                    }}
+                                />
+                                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
+                                    {chartData.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
             </div>
         </div>

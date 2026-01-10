@@ -18,7 +18,7 @@ export const authOptions: AuthOptions = {
                 // Import server-side function dynamically to avoid server-only imports in this config
                 const { verifyUserCredentials } = await import('@/lib/auth-server');
                 const user = verifyUserCredentials(credentials.username, credentials.password);
-                
+
                 if (user) {
                     if (user.is_active === 0) {
                         logger.warn('Login attempt to inactive account', {
@@ -31,7 +31,7 @@ export const authOptions: AuthOptions = {
                         username: user.username,
                         role: user.role
                     });
-                    
+
                     return {
                         id: user.id,
                         name: user.username,
@@ -40,7 +40,7 @@ export const authOptions: AuthOptions = {
                         permissions: user.permissions
                     };
                 }
-                
+
                 logger.warn('Failed login attempt', {
                     username: credentials.username,
                     ip: 'unknown'
@@ -54,6 +54,7 @@ export const authOptions: AuthOptions = {
     },
     session: {
         strategy: "jwt",
+        maxAge: 24 * 60 * 60, // 24 hours
     },
     secret: process.env.NEXTAUTH_SECRET,
     callbacks: {

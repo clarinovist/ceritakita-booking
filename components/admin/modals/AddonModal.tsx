@@ -1,5 +1,5 @@
 import { XCircle, Save } from 'lucide-react';
-import { AddonFormData, Addon } from '@/lib/types';
+import { AddonFormData, Addon, Service } from '@/lib/types';
 
 interface AddonModalProps {
     isOpen: boolean;
@@ -8,6 +8,7 @@ interface AddonModalProps {
     editingAddon: Addon | null;
     formData: AddonFormData;
     setFormData: (data: AddonFormData) => void;
+    services: Service[];
 }
 
 export const AddonModal = ({
@@ -16,7 +17,8 @@ export const AddonModal = ({
     onSubmit,
     editingAddon,
     formData,
-    setFormData
+    setFormData,
+    services
 }: AddonModalProps) => {
     if (!isOpen) return null;
 
@@ -52,11 +54,43 @@ export const AddonModal = ({
                             className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                         />
                     </div>
-                    {/* Note: Applicable categories logic can be complex for a simple modal, keeping it simple for now or could add a multi-select if needed. 
-                        For now, following the pattern of simple fields. Detailed category selection might need more UI work.
-                        Assuming undefined/empty means "All Categories" as per table logic.
-                     */}
-                    
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Applicable To (Select Services)</label>
+                        <div className="border rounded-lg p-3 max-h-40 overflow-y-auto space-y-2 bg-gray-50">
+                            {services.length === 0 ? (
+                                <p className="text-sm text-gray-500 italic">No services available.</p>
+                            ) : (
+                                services.map(service => (
+                                    <div key={service.id} className="flex items-center gap-2">
+                                        <input
+                                            type="checkbox"
+                                            id={`service-${service.id}`}
+                                            checked={formData.applicable_categories.includes(service.name)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setFormData({
+                                                        ...formData,
+                                                        applicable_categories: [...formData.applicable_categories, service.name]
+                                                    });
+                                                } else {
+                                                    setFormData({
+                                                        ...formData,
+                                                        applicable_categories: formData.applicable_categories.filter(cat => cat !== service.name)
+                                                    });
+                                                }
+                                            }}
+                                            className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                                        />
+                                        <label htmlFor={`service-${service.id}`} className="text-sm text-gray-700 cursor-pointer select-none">
+                                            {service.name}
+                                        </label>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">If none selected, it may apply to all.</p>
+                    </div>
+
                     <div className="flex items-center gap-2 pt-2">
                         <input
                             type="checkbox"

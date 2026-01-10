@@ -4,10 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   LayoutDashboard, Calendar, List, Tag, Camera, ShoppingBag,
-  Users, Image as ImageIcon, CreditCard, LogOut, Menu, X, Target, Settings, Home
+  Users, Image as ImageIcon, CreditCard, LogOut, Menu, X, Target, Settings, Home,
+  ChevronRight
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { getFilteredMenuItems } from '@/lib/permissions-types';
+import { useSettings } from '@/lib/settings-context';
 
 interface AdminSidebarProps {
   viewMode: string;
@@ -18,6 +20,7 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
   const [isOpen, setIsOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const { data: session } = useSession();
+  const { settings, loading } = useSettings();
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -55,31 +58,65 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
   };
 
   const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-gray-900 text-white">
+    <div className="flex flex-col h-full bg-slate-900 text-slate-300 shadow-xl relative overflow-hidden">
+      {/* Background decoration */}
+      <div className="absolute top-0 right-0 w-64 h-64 bg-blue-900/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
       {/* Logo/Header */}
-      <div className="p-6 border-b border-gray-700">
-        <h1 className="text-xl font-bold text-blue-400">Admin Panel</h1>
+      <div className="p-8 pb-6 relative z-10">
+        <div className="flex items-center gap-3 mb-1">
+          {settings?.site_logo ? (
+            <div className="relative w-10 h-10 rounded-lg overflow-hidden shadow-lg shadow-blue-900/50 bg-white">
+              <img
+                src={settings.site_logo}
+                alt="Logo"
+                className="w-full h-full object-contain p-1"
+              />
+            </div>
+          ) : (
+            <div className="bg-gradient-to-br from-blue-600 to-purple-600 p-2 rounded-lg shadow-lg shadow-blue-900/50">
+              <Camera size={20} className="text-white" />
+            </div>
+          )}
+          <div>
+            <h1 className="text-xl font-display font-bold text-white tracking-wide truncate max-w-[160px]">
+              {loading ? 'Loading...' : (settings?.site_name || 'CeritaKita')}
+            </h1>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-medium">Studio Admin</p>
+          </div>
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
+      <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
         {menuItems.map((item: any) => {
           const Icon = getIconComponent(item.icon);
           const isActive = viewMode === item.id;
 
-          // Handle link-based menu items (like Homepage CMS)
+          const content = (
+            <div className={`w-full flex items-center justify-between gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 group relative
+              ${isActive
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/30'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Icon size={18} className={`transition-colors ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'}`} />
+                <span>{item.label}</span>
+              </div>
+              {isActive && <ChevronRight size={14} className="opacity-80" />}
+            </div>
+          );
+
           if (item.isLink && item.href) {
             return (
               <Link
                 key={item.id}
                 href={item.href}
-                onClick={() => {
-                  if (isMobile) setIsOpen(false);
-                }}
-                className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-colors text-gray-300 hover:bg-gray-800 hover:text-white border-l-4 border-transparent`}
+                onClick={() => isMobile && setIsOpen(false)}
+                className="block"
               >
-                <Icon size={18} />
-                {item.label}
+                {content}
               </Link>
             );
           }
@@ -91,28 +128,24 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
                 setViewMode(item.id);
                 if (isMobile) setIsOpen(false);
               }}
-              className={`w-full flex items-center gap-3 px-6 py-3 text-sm font-semibold transition-colors ${isActive
-                  ? 'bg-blue-600 text-white border-l-4 border-blue-400'
-                  : 'text-gray-300 hover:bg-gray-800 hover:text-white border-l-4 border-transparent'
-                }`}
+              className="w-full block text-left"
             >
-              <Icon size={18} />
-              {item.label}
+              {content}
             </button>
           );
         })}
       </nav>
 
       {/* Logout */}
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-slate-800/50 relative z-10 bg-slate-900/50 backdrop-blur-sm">
         <button
           onClick={async () => {
             await signOut({ callbackUrl: '/login', redirect: true });
           }}
-          className="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-red-400 hover:bg-gray-800 hover:text-red-300 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all border border-transparent hover:border-red-500/20"
         >
-          <LogOut size={18} />
-          Logout
+          <LogOut size={16} />
+          <span>Keluar</span>
         </button>
       </div>
     </div>
@@ -124,23 +157,23 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
         {/* Hamburger Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="fixed top-4 left-4 z-[100] p-2 bg-gray-900 text-white rounded-lg shadow-lg"
+          className="fixed top-4 left-4 z-[100] p-3 bg-slate-900 text-white rounded-xl shadow-lg border border-slate-700/50 active:scale-95 transition-transform"
           aria-label="Toggle menu"
         >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
+          {isOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
 
         {/* Mobile Overlay */}
         {isOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-[90]"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[90] animate-fade-in"
             onClick={() => setIsOpen(false)}
           />
         )}
 
         {/* Mobile Sidebar */}
         <div
-          className={`fixed top-0 left-0 h-full w-64 z-[95] transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          className={`fixed top-0 left-0 h-full w-72 z-[95] transform transition-transform duration-300 ease-out shadow-2xl ${isOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
         >
           <SidebarContent />
@@ -151,7 +184,7 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
 
   // Desktop Sidebar
   return (
-    <div className="fixed left-0 top-0 h-screen w-64 z-50">
+    <div className="fixed left-0 top-0 h-screen w-72 z-50 hidden md:block border-r border-slate-800">
       <SidebarContent />
     </div>
   );

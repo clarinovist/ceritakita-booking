@@ -7,10 +7,11 @@ import { logger, createErrorResponse } from '@/lib/logger';
 
 // GET - Fetch portfolio images for a service
 export async function GET(req: NextRequest) {
+  let serviceId: string | null = null;
   try {
     const { searchParams } = new URL(req.url);
-    const serviceId = searchParams.get('serviceId');
-    
+    serviceId = searchParams.get('serviceId');
+
     if (!serviceId) {
       return NextResponse.json({ error: 'serviceId required' }, { status: 400 });
     }
@@ -32,13 +33,14 @@ export async function GET(req: NextRequest) {
 
 // POST - Upload portfolio image
 export async function POST(req: NextRequest) {
+  let serviceId: string | null = null;
   try {
     const authCheck = await requireAuth(req);
     if (authCheck) return authCheck;
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
-    const serviceId = formData.get('serviceId') as string;
+    serviceId = formData.get('serviceId') as string;
 
     if (!file || !serviceId) {
       return NextResponse.json({ error: 'File and serviceId required' }, { status: 400 });
@@ -82,21 +84,23 @@ export async function POST(req: NextRequest) {
 
 // DELETE - Remove portfolio image
 export async function DELETE(req: NextRequest) {
+  let id: string | null = null;
   try {
     const authCheck = await requireAuth(req);
     if (authCheck) return authCheck;
 
-    const { id } = await req.json();
-    
+    const body = await req.json();
+    id = body.id;
+
     if (!id) {
       return NextResponse.json({ error: 'ID required' }, { status: 400 });
     }
 
     const db = getDb();
-    
+
     // Get image URL for potential deletion from B2 (optional)
     db.prepare('SELECT image_url FROM portfolio_images WHERE id = ?').get(id);
-    
+
     // Delete from database
     db.prepare('DELETE FROM portfolio_images WHERE id = ?').run(id);
 
