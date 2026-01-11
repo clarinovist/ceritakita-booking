@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { Plus, Edit, Trash2, Shield, Users, Check, X, Key, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate } from '@/utils/dateFormatter';
 import { User, UserPermissions } from '@/lib/types';
@@ -76,7 +75,18 @@ export default function UserManagement() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      // If role changes, reset permissions to default for that role
+      if (name === 'role') {
+        const roleValue = value as 'admin' | 'staff';
+        return {
+          ...prev,
+          [name]: roleValue,
+          permissions: getDefaultPermissions(roleValue)
+        };
+      }
+      return { ...prev, [name]: value };
+    });
   };
 
   const handlePermissionChange = (category: string, field: string, value: boolean) => {
@@ -120,7 +130,8 @@ export default function UserManagement() {
         return;
       }
 
-      const permissions = getDefaultPermissions(formData.role);
+      // Use the permissions from the form data
+      const permissions = formData.permissions;
 
       const payload: any = {
         username: formData.username,
@@ -400,9 +411,366 @@ export default function UserManagement() {
                 {permissionsExpanded && (
                   <div className="mt-4 space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
                     {/* Permissions content (same as before but styled) */}
-                    <p className="text-xs text-slate-500">
-                      {formData.role === 'admin' ? 'Admin has all permissions by default' : 'Customize permissions for this staff member'}
-                    </p>
+                    {/* Permissions content */}
+                    <div className="space-y-6">
+                      {/* Dashboard & Access */}
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">General Access</h5>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.dashboard}
+                              onChange={(e) => handleSimplePermissionChange('dashboard', e.target.checked)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            Access Dashboard
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.ads}
+                              onChange={(e) => handleSimplePermissionChange('ads', e.target.checked)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            Access Ads Performance
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-200" />
+
+                      {/* Catalog (Consolidated) */}
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Catalog Management</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Services */}
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.services.view}
+                                onChange={(e) => handlePermissionChange('services', 'view', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Services
+                            </label>
+                            <div className="ml-6 space-y-1.5">
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.services.create}
+                                  onChange={(e) => handlePermissionChange('services', 'create', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Create
+                              </label>
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.services.update}
+                                  onChange={(e) => handlePermissionChange('services', 'update', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Update
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Add-ons */}
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.addons.view}
+                                onChange={(e) => handlePermissionChange('addons', 'view', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Add-ons
+                            </label>
+                            <div className="ml-6 space-y-1.5">
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.addons.create}
+                                  onChange={(e) => handlePermissionChange('addons', 'create', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Create
+                              </label>
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.addons.update}
+                                  onChange={(e) => handlePermissionChange('addons', 'update', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Update
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Portfolio */}
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.portfolio.view}
+                                onChange={(e) => handlePermissionChange('portfolio', 'view', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Portfolio
+                            </label>
+                            <div className="ml-6 space-y-1.5">
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.portfolio.create}
+                                  onChange={(e) => handlePermissionChange('portfolio', 'create', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Create
+                              </label>
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.portfolio.update}
+                                  onChange={(e) => handlePermissionChange('portfolio', 'update', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Update
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Photographers */}
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.photographers.view}
+                                onChange={(e) => handlePermissionChange('photographers', 'view', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Photographers
+                            </label>
+                            <div className="ml-6 space-y-1.5">
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.photographers.create}
+                                  onChange={(e) => handlePermissionChange('photographers', 'create', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Create
+                              </label>
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.photographers.update}
+                                  onChange={(e) => handlePermissionChange('photographers', 'update', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Update
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-200" />
+
+                      {/* Booking Management */}
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Booking Management</h5>
+                        <div className="bg-white p-3 rounded-lg border border-slate-200">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.booking.view}
+                              onChange={(e) => handlePermissionChange('booking', 'view', e.target.checked)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            View Bookings & Calendar
+                          </label>
+                          <div className="ml-6 grid grid-cols-2 gap-2">
+                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.booking.create}
+                                onChange={(e) => handlePermissionChange('booking', 'create', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Create
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.booking.update}
+                                onChange={(e) => handlePermissionChange('booking', 'update', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Update
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.booking.reschedule}
+                                onChange={(e) => handlePermissionChange('booking', 'reschedule', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Reschedule
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-red-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.booking.delete}
+                                onChange={(e) => handlePermissionChange('booking', 'delete', e.target.checked)}
+                                className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                              />
+                              Delete
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-200" />
+
+                      {/* Leads */}
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Leads Management</h5>
+                        <div className="bg-white p-3 rounded-lg border border-slate-200">
+                          <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.leads.view}
+                              onChange={(e) => handlePermissionChange('leads', 'view', e.target.checked)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            View Leads
+                          </label>
+                          <div className="ml-6 grid grid-cols-2 gap-2">
+                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.leads.create}
+                                onChange={(e) => handlePermissionChange('leads', 'create', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Create
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.leads.update}
+                                onChange={(e) => handlePermissionChange('leads', 'update', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Update
+                            </label>
+                            <label className="flex items-center gap-2 text-xs text-red-600 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.leads.delete}
+                                onChange={(e) => handlePermissionChange('leads', 'delete', e.target.checked)}
+                                className="rounded border-slate-300 text-red-600 focus:ring-red-500"
+                              />
+                              Delete
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-200" />
+
+                      {/* Other Modules */}
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Other Modules</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Coupons */}
+                          <div className="bg-white p-3 rounded-lg border border-slate-200">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.coupons.view}
+                                onChange={(e) => handlePermissionChange('coupons', 'view', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Coupons
+                            </label>
+                            <div className="ml-6 space-y-1.5">
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.coupons.create}
+                                  onChange={(e) => handlePermissionChange('coupons', 'create', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Create
+                              </label>
+                              <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={formData.permissions.coupons.update}
+                                  onChange={(e) => handlePermissionChange('coupons', 'update', e.target.checked)}
+                                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                Update
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Homepage CMS */}
+                          <div className="bg-white p-3 rounded-lg border border-slate-200 flex items-center">
+                            <label className="flex items-center gap-2 text-sm font-semibold text-slate-800 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={formData.permissions.homepage_cms}
+                                onChange={(e) => handleSimplePermissionChange('homepage_cms', e.target.checked)}
+                                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                              />
+                              Homepage CMS
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-slate-200" />
+
+                      {/* Admin Only */}
+                      <div>
+                        <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Administrative</h5>
+                        <div className="space-y-2">
+                          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.settings}
+                              onChange={(e) => handleSimplePermissionChange('settings', e.target.checked)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            Settings (General)
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.payment}
+                              onChange={(e) => handleSimplePermissionChange('payment', e.target.checked)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            Payment Methods
+                          </label>
+                          <label className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={formData.permissions.users}
+                              onChange={(e) => handleSimplePermissionChange('users', e.target.checked)}
+                              className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            User Management
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
