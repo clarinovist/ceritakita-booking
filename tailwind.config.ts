@@ -12,11 +12,15 @@ const config: Config = {
       colors: {
         // Olive/Dark tones - Primary backgrounds
         olive: {
-          900: "#1a1a14",
-          800: "#2c2c20",
-          700: "#4a4a3a",
-          600: "#6b6b50",
+          100: "#f0f0e8",
+          200: "#d8d8c8",
+          300: "#b8b8a0",
+          400: "#9a9a80",
           500: "#8a8a6c",
+          600: "#6b6b50",
+          700: "#4a4a3a",
+          800: "#2c2c20",
+          900: "#1a1a14",
         },
         // Cream tones - Text and accents
         cream: {

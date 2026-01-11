@@ -2,7 +2,7 @@
 
 import { useMultiStepForm } from '../MultiStepForm';
 import { ValidationMessage } from '@/components/ui/ValidationMessage';
-import { CheckCircle2, Tag } from 'lucide-react';
+import { CheckCircle2, Tag, Crown, Sparkles, Star } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 export interface Service {
@@ -20,6 +20,45 @@ interface ServiceSelectionProps {
   handleServiceSelect?: (service: Service) => void;
 }
 
+// Price tier thresholds
+const PRICE_TIERS = {
+  BASIC: 200000,    // < 200k
+  STANDARD: 500000, // < 500k
+  // >= 500k is PREMIUM
+} as const;
+
+type PriceTier = 'basic' | 'standard' | 'premium';
+
+function getPriceTier(price: number): PriceTier {
+  if (price < PRICE_TIERS.BASIC) return 'basic';
+  if (price < PRICE_TIERS.STANDARD) return 'standard';
+  return 'premium';
+}
+
+function getTierStyles(tier: PriceTier, isSelected: boolean): string {
+  const baseStyles = 'relative p-5 rounded-xl transition-all cursor-pointer h-full flex flex-col justify-between touch-target min-h-[44px]';
+
+  if (isSelected) {
+    switch (tier) {
+      case 'basic':
+        return `${baseStyles} border-2 border-gold-500 bg-white shadow-md`;
+      case 'standard':
+        return `${baseStyles} border-2 border-gold-500 bg-gradient-to-br from-cream-50 to-white shadow-lg`;
+      case 'premium':
+        return `${baseStyles} service-card-premium shadow-xl`;
+    }
+  }
+
+  switch (tier) {
+    case 'basic':
+      return `${baseStyles} service-card-basic`;
+    case 'standard':
+      return `${baseStyles} service-card-standard`;
+    case 'premium':
+      return `${baseStyles} service-card-premium`;
+  }
+}
+
 export function ServiceSelection({
   services: propServices,
   selectedService: propSelectedService,
@@ -35,6 +74,7 @@ export function ServiceSelection({
   const setFieldError = isContextMode ? context.setFieldError : () => { };
   const clearFieldError = isContextMode ? context.clearFieldError : () => { };
   const fetchPortfolioImages = isContextMode ? context.fetchPortfolioImages : () => { };
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const openLightbox = isContextMode ? context.openLightbox : () => { };
 
   const [services, setServices] = useState<Service[]>(propServices || []);
@@ -74,6 +114,7 @@ export function ServiceSelection({
         setFieldError('serviceId', 'Gagal memuat layanan');
       })
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propServices]);
 
   const handleServiceSelect = (service: Service) => {
@@ -130,42 +171,65 @@ export function ServiceSelection({
         {services.map(service => {
           const isSelected = (isContextMode ? formData.serviceId : propSelectedService?.id) === service.id;
           const discountPrice = service.basePrice - service.discountValue;
+          const tier = getPriceTier(discountPrice);
 
           return (
             <div
               key={service.id}
               onClick={() => handleServiceSelect(service)}
-              className={`
-                relative p-5 rounded-xl border-2 transition-all cursor-pointer
-                h-full flex flex-col justify-between
-                touch-target min-h-[44px]
-                ${isSelected
-                  ? 'border-gold-500 bg-cream-50/50 shadow-sm'
-                  : 'border-olive-200 bg-white hover:border-gold-300 hover:shadow-md'
-                }
-              `}
+              className={getTierStyles(tier, isSelected)}
               role="radio"
               aria-checked={isSelected}
               aria-label={`${service.name}, harga Rp ${discountPrice.toLocaleString()}`}
             >
-              {isSelected && (
-                <div className="absolute top-3 right-3">
-                  <CheckCircle2
+              {/* Tier Icon */}
+              <div className="absolute top-3 right-3 flex items-center gap-1">
+                {tier === 'premium' && (
+                  <Crown
                     size={20}
+                    className="text-amber-500 premium-icon"
+                    fill="currentColor"
+                    aria-hidden="true"
+                  />
+                )}
+                {tier === 'standard' && (
+                  <Star
+                    size={18}
                     className="text-gold-500"
                     fill="currentColor"
                     aria-hidden="true"
                   />
-                </div>
-              )}
+                )}
+                {isSelected && (
+                  <CheckCircle2
+                    size={20}
+                    className={tier === 'premium' ? 'text-amber-600' : 'text-gold-500'}
+                    fill="currentColor"
+                    aria-hidden="true"
+                  />
+                )}
+              </div>
 
               <div>
-                <h3 className={`font-serif text-xl font-bold mb-1 ${isSelected ? 'text-olive-900' : 'text-olive-800'}`}>
-                  {service.name}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className={`font-serif text-xl font-bold mb-1 ${tier === 'premium'
+                      ? 'text-amber-900'
+                      : tier === 'standard'
+                        ? 'text-olive-900'
+                        : isSelected ? 'text-olive-900' : 'text-olive-800'
+                    }`}>
+                    {service.name}
+                  </h3>
+                  {tier === 'premium' && (
+                    <Sparkles size={16} className="text-amber-500 mb-1" />
+                  )}
+                </div>
 
                 {service.badgeText && (
-                  <span className="inline-block mt-2 bg-gold-100 text-olive-800 text-[10px] uppercase font-black px-2 py-0.5 rounded-md">
+                  <span className={`inline-block mt-2 text-[10px] uppercase font-black px-2 py-0.5 rounded-md ${tier === 'premium'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-gold-100 text-olive-800'
+                    }`}>
                     {service.badgeText}
                   </span>
                 )}
@@ -174,18 +238,30 @@ export function ServiceSelection({
               <div className="mt-3 space-y-1">
                 {service.discountValue > 0 ? (
                   <>
-                    <span className="text-xs text-olive-400 line-through font-serif">
+                    <span className={`text-xs line-through font-serif ${tier === 'premium' ? 'text-amber-400' : 'text-olive-400'
+                      }`}>
                       Rp {service.basePrice.toLocaleString('id-ID')}
                     </span>
-                    <span className="text-gold-600 font-bold font-serif text-lg">
+                    <span className={`font-bold font-serif text-lg block ${tier === 'premium'
+                        ? 'text-amber-700'
+                        : tier === 'standard'
+                          ? 'text-gold-700'
+                          : 'text-gold-600'
+                      }`}>
                       Rp {discountPrice.toLocaleString('id-ID')}
                     </span>
-                    <div className="text-xs text-olive-600 font-semibold">
+                    <div className={`text-xs font-semibold ${tier === 'premium' ? 'text-amber-600' : 'text-olive-600'
+                      }`}>
                       Hemat Rp {service.discountValue.toLocaleString('id-ID')}
                     </div>
                   </>
                 ) : (
-                  <div className="text-lg font-bold text-olive-800 font-serif">
+                  <div className={`text-lg font-bold font-serif ${tier === 'premium'
+                      ? 'text-amber-700'
+                      : tier === 'standard'
+                        ? 'text-gold-700'
+                        : 'text-olive-800'
+                    }`}>
                     Rp {service.basePrice.toLocaleString('id-ID')}
                   </div>
                 )}
