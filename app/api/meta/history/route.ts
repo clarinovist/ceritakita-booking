@@ -52,11 +52,11 @@ export async function GET(request: NextRequest): Promise<NextResponse<AdsHistory
     );
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error fetching ads history', { limit, startDate, endDate }, error as Error);
+    logger.error('Error fetching ads history', {}, error as Error);
     return NextResponse.json(
       {
         success: false,
-        error: errorResponse.error.message || 'Failed to fetch ads history',
+        error: errorResponse.message || 'Failed to fetch ads history',
       },
       { status: statusCode }
     );

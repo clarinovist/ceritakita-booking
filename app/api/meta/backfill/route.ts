@@ -83,12 +83,12 @@ export async function POST(request: NextRequest): Promise<NextResponse<BackfillR
     }
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Backfill API error', { days }, error as Error);
+    logger.error('Backfill API error', {}, error as Error);
 
     return NextResponse.json(
       {
         success: false,
-        message: errorResponse.error.message || 'Internal server error during backfill',
+        message: errorResponse.message || 'Internal server error during backfill',
       },
       { status: statusCode }
     );

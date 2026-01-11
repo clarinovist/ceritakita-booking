@@ -27,7 +27,7 @@ function escapeHtmlEntities(text: string): string {
     "'": "'",
     '/': '/'
   };
-  
+
   return text.replace(/[&<>"']/g, (char) => escapeMap[char] || char);
 }
 
@@ -44,31 +44,31 @@ export function renderTemplate(
   } = {}
 ): string {
   const { escapeHtml = true, maxLength = 500 } = options;
-  
+
   // Validate template length
   if (template.length > maxLength) {
     throw new Error(`Template exceeds maximum length of ${maxLength} characters`);
   }
-  
+
   // Perform safe variable replacement
-  const result = template.replace(/\{\{(\w+)\}\}/g, (match, variableName) => {
+  const result = template.replace(/\{\{(\w+)\}\}/g, (_, variableName) => {
     // Check if variable is allowed
     if (!ALLOWED_VARIABLES.has(variableName)) {
       logger.warn(`Unknown variable in template: ${variableName}`);
       return ''; // Return empty for unknown variables
     }
-    
+
     // Get variable value
     const value = variables[variableName] || '';
-    
+
     // Apply HTML escaping if enabled
     if (escapeHtml) {
       return escapeHtmlEntities(value);
     }
-    
+
     return value;
   });
-  
+
   return result;
 }
 
@@ -77,23 +77,23 @@ export function renderTemplate(
  */
 export function validateTemplate(template: string): string[] {
   const errors: string[] = [];
-  
+
   // Check for required variables
   const requiredVars = ['customer_name', 'service'];
   const foundVars = new Set<string>();
-  
+
   template.replace(/\{\{(\w+)\}\}/g, (match, varName) => {
     foundVars.add(varName);
     return match;
   });
-  
+
   // Check missing required variables
   for (const required of requiredVars) {
     if (!foundVars.has(required)) {
       errors.push(`Missing required variable: ${required}`);
     }
   }
-  
+
   // Check for unknown variables
   const matches = template.matchAll(/\{\{(\w+)\}\}/g);
   const matchesArray = Array.from(matches);
@@ -103,12 +103,12 @@ export function validateTemplate(template: string): string[] {
       errors.push(`Unknown variable: ${varName}`);
     }
   }
-  
+
   // Check length
   if (template.length > 500) {
     errors.push('Template exceeds 500 character limit');
   }
-  
+
   return errors;
 }
 
@@ -119,7 +119,7 @@ export function validateTemplate(template: string): string[] {
 export function normalizePhoneNumber(phone: string): string {
   // Remove all non-digit characters
   let digits = phone.replace(/\D/g, '');
-  
+
   // Handle Indonesian numbers
   if (digits.startsWith('0')) {
     digits = '62' + digits.substring(1);
@@ -129,7 +129,7 @@ export function normalizePhoneNumber(phone: string): string {
     // Remove leading +
     digits = digits.substring(1);
   }
-  
+
   return digits;
 }
 
@@ -142,10 +142,10 @@ export function generateWhatsAppLink(
 ): string {
   // Normalize phone number
   const normalizedNumber = normalizePhoneNumber(phoneNumber);
-  
+
   // URL encode the message
   const encodedMessage = encodeURIComponent(message);
-  
+
   // Construct WhatsApp link
   return `https://wa.me/${normalizedNumber}?text=${encodedMessage}`;
 }
@@ -199,7 +199,7 @@ export function generateWhatsAppMessage(
     total_price: formatPrice(bookingData.total_price),
     booking_id: bookingData.booking_id
   };
-  
+
   return renderTemplate(template, variables);
 }
 
@@ -215,7 +215,7 @@ export function testTemplate(
   errors: string[];
 } {
   const errors = validateTemplate(template);
-  
+
   if (errors.length > 0) {
     return {
       renderedMessage: '',
@@ -223,7 +223,7 @@ export function testTemplate(
       errors
     };
   }
-  
+
   // Sample data for testing
   const sampleData = {
     customer_name: 'John Doe',
@@ -233,10 +233,10 @@ export function testTemplate(
     total_price: 5000000,
     booking_id: 'BK-2024001'
   };
-  
+
   const renderedMessage = generateWhatsAppMessage(template, sampleData);
   const whatsappLink = generateWhatsAppLink(whatsappNumber, renderedMessage);
-  
+
   return {
     renderedMessage,
     whatsappLink,

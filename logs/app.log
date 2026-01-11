@@ -1586,3 +1586,11 @@
 [2026-01-11T05:20:29.994Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
 [2026-01-11T05:25:46.202Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":715338,"impressions":102548,"clicks":303,"reach":50652}
 [2026-01-11T05:25:46.220Z] [INFO] Saved daily ads performance log | Context: {"date_record":"2026-01-01","spend":715338,"impressions":102548,"clicks":303,"reach":50652}
+[2026-01-11T09:23:22.714Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-11T09:23:22.717Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-11T09:23:24.020Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-11T09:23:24.023Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-11T09:23:24.252Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-11T09:23:24.253Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-11T09:23:24.319Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-11T09:23:24.318Z] [INFO] Retrieved bookings from database | Context: {"count":13}

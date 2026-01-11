@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import useSWR, { mutate } from 'swr';
 import { useForm, Controller } from 'react-hook-form';
 import { ServiceCategory } from '@/types/homepage';
@@ -40,7 +41,7 @@ function SortableItem({ item, onEdit, onDelete }: { item: ServiceCategory; onEdi
         transform: CSS.Transform.toString(transform),
         transition,
         zIndex: isDragging ? 50 : 'auto',
-        position: 'relative' as 'relative',
+        position: 'relative' as const,
     };
 
     return (
@@ -57,8 +58,8 @@ function SortableItem({ item, onEdit, onDelete }: { item: ServiceCategory; onEdi
             <td className="px-6 py-5 whitespace-nowrap">
                 <div className="flex items-center gap-4">
                     {item.thumbnail_url && (
-                        <div className="w-10 h-10 rounded-lg overflow-hidden border border-slate-200 shadow-sm flex-shrink-0">
-                            <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden border border-slate-200 shadow-sm flex-shrink-0">
+                            <Image src={item.thumbnail_url} alt="" fill className="object-cover" />
                         </div>
                     )}
                     <div>
@@ -72,8 +73,8 @@ function SortableItem({ item, onEdit, onDelete }: { item: ServiceCategory; onEdi
             </td>
             <td className="px-6 py-5 whitespace-nowrap">
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${item.is_active
-                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-200'
                     }`}>
                     {item.is_active ? 'Active' : 'Inactive'}
                 </span>
@@ -134,7 +135,7 @@ export function ServiceCategoriesTab() {
         try {
             await fetch(`/api/admin/service-categories/${id}`, { method: 'DELETE' });
             mutate('/api/admin/service-categories');
-        } catch (error) {
+        } catch {
             alert('Failed to delete category');
         }
     };
@@ -156,8 +157,8 @@ export function ServiceCategoriesTab() {
             mutate('/api/admin/service-categories');
             setIsFormOpen(false);
             reset();
-        } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'An error occurred');
+        } catch (_error) {
+            setSubmitError(_error instanceof Error ? _error.message : 'An error occurred');
         }
     };
 
@@ -188,8 +189,8 @@ export function ServiceCategoriesTab() {
                     })
                 ));
                 mutate('/api/admin/service-categories');
-            } catch (error) {
-                console.error("Reorder failed", error);
+            } catch (_error) {
+                console.error("Reorder failed", _error);
                 mutate('/api/admin/service-categories'); // Revert
             }
         }

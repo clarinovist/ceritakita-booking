@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { 
-  getLeadById, 
-  updateLead, 
-  deleteLead 
+import {
+  getLeadById,
+  updateLead,
+  deleteLead
 } from '@/lib/leads';
 import type { LeadUpdateData } from '@/lib/types';
 
@@ -18,7 +18,7 @@ interface Context {
  * GET /api/leads/[id]
  * Get a single lead by ID
  */
-export async function GET(request: NextRequest, { params }: Context) {
+export async function GET(_request: NextRequest, { params }: Context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -77,7 +77,7 @@ export async function PUT(request: NextRequest, { params }: Context) {
  * DELETE /api/leads/[id]
  * Delete a lead
  */
-export async function DELETE(request: NextRequest, { params }: Context) {
+export async function DELETE(_request: NextRequest, { params }: Context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
@@ -93,7 +93,7 @@ export async function DELETE(request: NextRequest, { params }: Context) {
     }
 
     const success = await deleteLead(id);
-    
+
     if (!success) {
       return NextResponse.json(
         { error: 'Failed to delete lead' },

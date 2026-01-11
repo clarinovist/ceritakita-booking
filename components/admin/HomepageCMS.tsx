@@ -6,9 +6,10 @@ import { ServiceCategoriesTab } from './homepage/tabs/ServiceCategoriesTab';
 import { ValuePropsTab } from './homepage/tabs/ValuePropsTab';
 import { TestimonialsTab } from './homepage/tabs/TestimonialsTab';
 import { PromoCtaTab } from './homepage/tabs/PromoCtaTab';
-import { LayoutTemplate, Grid, Star, MessageSquare, Megaphone } from 'lucide-react';
+import { GalleryTab } from './homepage/tabs/GalleryTab';
+import { LayoutTemplate, Grid, Star, MessageSquare, Megaphone, Image as ImageIcon } from 'lucide-react';
 
-type TabType = 'hero' | 'services' | 'value-props' | 'testimonials' | 'promo';
+type TabType = 'hero' | 'services' | 'value-props' | 'testimonials' | 'promo' | 'gallery';
 
 export default function HomepageCMS() {
     const [activeTab, setActiveTab] = useState<TabType>('hero');
@@ -19,6 +20,7 @@ export default function HomepageCMS() {
         { id: 'value-props', label: 'Value Props', icon: Star },
         { id: 'testimonials', label: 'Testimonials', icon: MessageSquare },
         { id: 'promo', label: 'Promo & CTA', icon: Megaphone },
+        { id: 'gallery', label: 'Gallery', icon: ImageIcon },
     ];
 
     return (
@@ -57,6 +59,7 @@ export default function HomepageCMS() {
                     {activeTab === 'value-props' && <ValuePropsTab />}
                     {activeTab === 'testimonials' && <TestimonialsTab />}
                     {activeTab === 'promo' && <PromoCtaTab />}
+                    {activeTab === 'gallery' && <GalleryTab />}
                 </div>
             </div>
         </div>

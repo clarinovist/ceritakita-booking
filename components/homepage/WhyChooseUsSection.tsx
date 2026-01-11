@@ -1,9 +1,9 @@
 'use client';
 
-import { Camera, Clock, CreditCard, MapPin, Award, Heart, Star, Shield, Users, Zap } from 'lucide-react';
+import { Camera, Clock, CreditCard, MapPin, Award, Heart, Star, Shield, Users, Zap, type LucideIcon } from 'lucide-react';
 import { useHomepageData } from '@/hooks/useHomepageData';
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, LucideIcon> = {
     Camera, Clock, CreditCard, MapPin, Award, Heart, Star, Shield, Users, Zap
 };
 

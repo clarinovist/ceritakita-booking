@@ -1,5 +1,5 @@
-import { useState, useEffect, ChangeEvent, FormEvent } from 'react';
-import { Service, Addon, PaymentSettings, CouponValidation, BookingFormData, BookingPayload } from '@/lib/types';
+import { useState, useEffect, useCallback, ChangeEvent, FormEvent } from 'react';
+import { Service, Addon, PaymentSettings, CouponValidation, BookingFormData, BookingPayload, Coupon } from '@/lib/types';
 import { generateWhatsAppMessage, generateWhatsAppLink } from '@/lib/whatsapp-template';
 import { useSettings } from '@/lib/settings-context';
 
@@ -13,10 +13,6 @@ export const useBookingForm = () => {
     const [availableAddons, setAvailableAddons] = useState<Addon[]>([]);
     const [selectedAddons, setSelectedAddons] = useState<Map<string, number>>(new Map());
 
-    // Portfolio state
-    const [portfolioImages, setPortfolioImages] = useState<string[]>([]);
-    const [selectedPortfolioImage, setSelectedPortfolioImage] = useState<string | null>(null);
-
     // Payment settings state
     const [paymentSettings, setPaymentSettings] = useState<PaymentSettings | null>(null);
 
@@ -25,7 +21,7 @@ export const useBookingForm = () => {
     const [appliedCoupon, setAppliedCoupon] = useState<CouponValidation | null>(null);
     const [couponError, setCouponError] = useState('');
     const [couponLoading, setCouponLoading] = useState(false);
-    const [suggestedCoupons, setSuggestedCoupons] = useState<any[]>([]);
+    const [suggestedCoupons, setSuggestedCoupons] = useState<Coupon[]>([]);
 
     const [formData, setFormData] = useState<BookingFormData>({
         name: '',
@@ -37,6 +33,28 @@ export const useBookingForm = () => {
         notes: '',
         dp_amount: ''
     });
+
+    // Calculation functions
+    const calculateServiceBasePrice = useCallback(() => {
+        if (!selectedService) return 0;
+        return selectedService.basePrice;
+    }, [selectedService]);
+
+    const calculateAddonsTotal = useCallback(() => {
+        return Array.from(selectedAddons.entries()).reduce((total, [addonId, quantity]) => {
+            const addon = availableAddons.find(a => a.id === addonId);
+            return total + (addon ? addon.price * quantity : 0);
+        }, 0);
+    }, [selectedAddons, availableAddons]);
+
+    const calculateBaseDiscount = useCallback(() => {
+        if (!selectedService) return 0;
+        return selectedService.discountValue;
+    }, [selectedService]);
+
+    const calculateSubtotalForCoupon = useCallback(() => {
+        return calculateServiceBasePrice() + calculateAddonsTotal() - calculateBaseDiscount();
+    }, [calculateServiceBasePrice, calculateAddonsTotal, calculateBaseDiscount]);
 
     // Fetch initial data
     useEffect(() => {
@@ -50,7 +68,6 @@ export const useBookingForm = () => {
                 if (firstService) {
                     setFormData(prev => ({ ...prev, category: firstService.name }));
                     setSelectedService(firstService);
-                    fetchPortfolioImages(firstService.id);
                 }
             })
             .catch(err => console.error("Failed to fetch services", err));
@@ -87,21 +104,8 @@ export const useBookingForm = () => {
         fetchSuggestions();
         const interval = setInterval(fetchSuggestions, 30000);
         return () => clearInterval(interval);
-    }, [selectedService, selectedAddons, appliedCoupon]);
+    }, [appliedCoupon, calculateSubtotalForCoupon]);
 
-    const fetchPortfolioImages = async (serviceId: string) => {
-        try {
-            const res = await fetch(`/api/portfolio?serviceId=${serviceId}`);
-            if (res.ok) {
-                const data = await res.json();
-                const urls = data.map((item: any) => item.image_url);
-                setPortfolioImages(urls);
-            }
-        } catch (err) {
-            console.error("Failed to fetch portfolio images", err);
-            setPortfolioImages([]);
-        }
-    };
 
     const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -112,14 +116,11 @@ export const useBookingForm = () => {
         setFormData(prev => ({ ...prev, category: service.name }));
         setSelectedService(service);
         setSelectedAddons(new Map());
-        setSelectedPortfolioImage(null);
 
         fetch(`/api/addons?active=true&category=${encodeURIComponent(service.name)}`)
             .then(res => res.json())
             .then((data: Addon[]) => setAvailableAddons(data))
             .catch(err => console.error("Failed to fetch add-ons", err));
-
-        fetchPortfolioImages(service.id);
     };
 
     const toggleAddon = (addonId: string) => {
@@ -147,29 +148,8 @@ export const useBookingForm = () => {
     };
 
     // Calculation functions
-    const calculateServiceBasePrice = () => {
-        if (!selectedService) return 0;
-        return selectedService.basePrice;
-    };
-
-    const calculateAddonsTotal = () => {
-        return Array.from(selectedAddons.entries()).reduce((total, [addonId, quantity]) => {
-            const addon = availableAddons.find(a => a.id === addonId);
-            return total + (addon ? addon.price * quantity : 0);
-        }, 0);
-    };
-
-    const calculateBaseDiscount = () => {
-        if (!selectedService) return 0;
-        return selectedService.discountValue;
-    };
-
     const calculateCouponDiscount = () => {
         return appliedCoupon?.discount_amount || 0;
-    };
-
-    const calculateSubtotalForCoupon = () => {
-        return calculateServiceBasePrice() + calculateAddonsTotal() - calculateBaseDiscount();
     };
 
     const calculateTotal = () => {
@@ -253,15 +233,6 @@ export const useBookingForm = () => {
             setProofPreview(reader.result as string);
         };
         reader.readAsDataURL(file);
-    };
-
-    // Lightbox handlers
-    const openLightbox = (imageUrl: string) => {
-        setSelectedPortfolioImage(imageUrl);
-    };
-
-    const closeLightbox = () => {
-        setSelectedPortfolioImage(null);
     };
 
     // Copy to clipboard handler
@@ -400,8 +371,6 @@ export const useBookingForm = () => {
         proofPreview,
         availableAddons,
         selectedAddons,
-        portfolioImages,
-        selectedPortfolioImage,
         paymentSettings,
         couponCode,
         appliedCoupon,
@@ -422,8 +391,6 @@ export const useBookingForm = () => {
         handleApplyCoupon,
         handleRemoveCoupon,
         handleFileChange,
-        openLightbox,
-        closeLightbox,
         copyToClipboard,
         handleSubmit,
 

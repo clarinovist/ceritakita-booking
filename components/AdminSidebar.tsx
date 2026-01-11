@@ -8,8 +8,19 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
+import Image from 'next/image';
 import { getFilteredMenuItems } from '@/lib/permissions-types';
 import { useSettings } from '@/lib/settings-context';
+import { LucideIcon } from 'lucide-react';
+
+interface MenuItem {
+  id: string;
+  icon: string;
+  label: string;
+  permission: string;
+  isLink?: boolean;
+  href?: string;
+}
 
 interface AdminSidebarProps {
   viewMode: string;
@@ -30,8 +41,9 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
   }, []);
 
   // Get filtered menu items based on user permissions
-  const userPermissions = (session?.user as any)?.permissions;
-  const userRole = (session?.user as any)?.role;
+  const user = session?.user as { permissions?: unknown; role?: string } | undefined;
+  const userPermissions = user?.permissions;
+  const userRole = user?.role || '';
 
   // Filter out Users and Payment Methods as they are now consolidated into Settings
   // Note: We filter by checking for standard ID names like 'users', 'payment-methods', etc.
@@ -39,8 +51,8 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
     .filter(item => !['users', 'payment-methods', 'payment_methods', 'payment-settings'].includes(item.id));
 
   // Map icon strings to actual icon components
-  const getIconComponent = (iconName: string) => {
-    const icons: Record<string, any> = {
+  const getIconComponent = (iconName: string): LucideIcon => {
+    const icons: Record<string, LucideIcon> = {
       LayoutDashboard,
       Target,
       Calendar,
@@ -67,10 +79,11 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
         <div className="flex items-center gap-3 mb-1">
           {settings?.site_logo ? (
             <div className="relative w-10 h-10 rounded-lg overflow-hidden shadow-lg shadow-blue-900/50 bg-white">
-              <img
+              <Image
                 src={settings.site_logo}
                 alt="Logo"
-                className="w-full h-full object-contain p-1"
+                fill
+                className="object-contain p-1"
               />
             </div>
           ) : (
@@ -89,7 +102,7 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-6 px-4 space-y-1 custom-scrollbar">
-        {menuItems.map((item: any) => {
+        {(menuItems as MenuItem[]).map((item) => {
           const Icon = getIconComponent(item.icon);
           const isActive = viewMode === item.id;
 

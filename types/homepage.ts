@@ -1,3 +1,7 @@
+import { PortfolioImage } from '@/lib/types';
+
+export type { PortfolioImage };
+
 export interface HomepageContent {
     id: string;
     section: 'hero' | 'about' | 'cta' | 'footer' | 'promo' | 'testimonials_config';
@@ -33,13 +37,7 @@ export interface ValueProposition {
     is_active: number;
 }
 
-export interface GalleryImage {
-    id: string;
-    image_url: string;
-    service_id: string;
-    service_name: string;
-    display_order: number;
-}
+// GalleryImage removed in favor of PortfolioImage
 
 export interface HomepageData {
     hero: Record<string, string>;
@@ -51,5 +49,5 @@ export interface HomepageData {
     categories: ServiceCategory[];
     testimonials: Testimonial[];
     valueProps: ValueProposition[];
-    portfolioImages: GalleryImage[];
+    portfolioImages: (PortfolioImage & { service_name: string })[];
 }

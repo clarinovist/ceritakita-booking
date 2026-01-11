@@ -1,6 +1,5 @@
 // Server-only permissions logic (imports server-only modules)
 import 'server-only';
-import { UserPermissions } from '@/lib/types/user';
 import { getSession } from './auth';
 import {
   DEFAULT_ADMIN_PERMISSIONS,
@@ -22,15 +21,15 @@ export {
  * Permission checking middleware for API routes (server-side)
  */
 export async function requirePermission(permission: string) {
-  return async (req: any): Promise<any | null> => {
+  return async (_req: unknown): Promise<{ error: string; status: number } | null> => {
     const session = await getSession();
 
     if (!session) {
       return { error: 'Unauthorized. Authentication required.', status: 401 };
     }
 
-    const userPermissions = (session.user as any)?.permissions;
-    const role = (session.user as any)?.role;
+    const userPermissions = (session.user as { permissions?: unknown })?.permissions;
+    const role = (session.user as { role?: string })?.role;
 
     // Admin has all permissions
     if (role === 'admin') {
@@ -74,7 +73,7 @@ export function validateUserInput(input: { username?: string; password?: string;
   }
 
   if (input.role !== undefined && input.role !== '') {
-    if (!PERMISSION_VALIDATION.role.allowed.includes(input.role as any)) {
+    if (!PERMISSION_VALIDATION.role.allowed.includes(input.role as 'admin' | 'staff')) {
       errors.push(`Role must be one of: ${PERMISSION_VALIDATION.role.allowed.join(', ')}`);
     }
   }

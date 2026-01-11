@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { randomUUID } from 'crypto';
-import { ServiceCategory } from '@/types/homepage';
 
 export const dynamic = 'force-dynamic';
 

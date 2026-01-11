@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // Client-safe permission types and constants
 import { UserPermissions } from '@/lib/types/user';
 

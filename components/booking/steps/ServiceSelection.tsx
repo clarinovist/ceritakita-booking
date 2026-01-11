@@ -73,9 +73,6 @@ export function ServiceSelection({
   const errors = isContextMode ? context.errors : {};
   const setFieldError = isContextMode ? context.setFieldError : () => { };
   const clearFieldError = isContextMode ? context.clearFieldError : () => { };
-  const fetchPortfolioImages = isContextMode ? context.fetchPortfolioImages : () => { };
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const openLightbox = isContextMode ? context.openLightbox : () => { };
 
   const [services, setServices] = useState<Service[]>(propServices || []);
   const [loading, setLoading] = useState(!propServices);
@@ -104,8 +101,6 @@ export function ServiceSelection({
               serviceBasePrice: firstService.basePrice,
               baseDiscount: firstService.discountValue,
             });
-            // Fetch portfolio images for the auto-selected service
-            fetchPortfolioImages(firstService.id);
           }
         }
       })
@@ -131,7 +126,6 @@ export function ServiceSelection({
         couponDiscount: 0,
         couponCode: '',
       });
-      fetchPortfolioImages(service.id);
       clearFieldError('serviceId');
     }
   };
@@ -213,10 +207,10 @@ export function ServiceSelection({
               <div>
                 <div className="flex items-center gap-2">
                   <h3 className={`font-serif text-xl font-bold mb-1 ${tier === 'premium'
-                      ? 'text-amber-900'
-                      : tier === 'standard'
-                        ? 'text-olive-900'
-                        : isSelected ? 'text-olive-900' : 'text-olive-800'
+                    ? 'text-amber-900'
+                    : tier === 'standard'
+                      ? 'text-olive-900'
+                      : isSelected ? 'text-olive-900' : 'text-olive-800'
                     }`}>
                     {service.name}
                   </h3>
@@ -227,8 +221,8 @@ export function ServiceSelection({
 
                 {service.badgeText && (
                   <span className={`inline-block mt-2 text-[10px] uppercase font-black px-2 py-0.5 rounded-md ${tier === 'premium'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-gold-100 text-olive-800'
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'bg-gold-100 text-olive-800'
                     }`}>
                     {service.badgeText}
                   </span>
@@ -243,10 +237,10 @@ export function ServiceSelection({
                       Rp {service.basePrice.toLocaleString('id-ID')}
                     </span>
                     <span className={`font-bold font-serif text-lg block ${tier === 'premium'
-                        ? 'text-amber-700'
-                        : tier === 'standard'
-                          ? 'text-gold-700'
-                          : 'text-gold-600'
+                      ? 'text-amber-700'
+                      : tier === 'standard'
+                        ? 'text-gold-700'
+                        : 'text-gold-600'
                       }`}>
                       Rp {discountPrice.toLocaleString('id-ID')}
                     </span>
@@ -257,10 +251,10 @@ export function ServiceSelection({
                   </>
                 ) : (
                   <div className={`text-lg font-bold font-serif ${tier === 'premium'
-                      ? 'text-amber-700'
-                      : tier === 'standard'
-                        ? 'text-gold-700'
-                        : 'text-olive-800'
+                    ? 'text-amber-700'
+                    : tier === 'standard'
+                      ? 'text-gold-700'
+                      : 'text-olive-800'
                     }`}>
                     Rp {service.basePrice.toLocaleString('id-ID')}
                   </div>

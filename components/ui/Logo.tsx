@@ -2,6 +2,7 @@
 
 import { Camera } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSettings } from '@/lib/settings-context';
 
 interface LogoProps {
@@ -56,21 +57,21 @@ export function Logo({ className = '', size = 'md', showText = true }: LogoProps
       <div className="relative flex items-center justify-center">
         {hasLogo ? (
           /* Dynamic Logo Image */
-          <img
-            src={settings?.site_logo}
-            alt={siteName}
-            className="object-contain"
+          <div
+            className="relative overflow-hidden"
             style={{
-              height: iconSize[size] * 1.5, // Slightly larger than icon
-              width: "auto",
+              height: iconSize[size] * 1.5,
+              width: iconSize[size] * 3, // Approximate width, Image will object-contain
               maxWidth: 150
             }}
-            onError={(e) => {
-              // Fallback to icon if image fails
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
+          >
+            <Image
+              src={settings?.site_logo}
+              alt={siteName}
+              fill
+              className="object-contain"
+            />
+          </div>
         ) : null}
 
         {/* Camera Icon (Fallback or Default) */}
@@ -143,15 +144,14 @@ export function HeroLogo() {
     <div className="text-center space-y-3">
       <div className="inline-flex items-center gap-3 justify-center">
         {hasLogo ? (
-          <img
-            src={settings?.site_logo}
-            alt={siteName}
-            className="object-contain h-16 w-auto"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
+          <div className="relative h-16 w-32">
+            <Image
+              src={settings?.site_logo}
+              alt={siteName}
+              fill
+              className="object-contain"
+            />
+          </div>
         ) : null}
 
         <div className={`${hasLogo ? 'hidden' : ''} bg-gradient-to-br from-primary-600 to-secondary-600 rounded-xl p-3 shadow-xl`}>

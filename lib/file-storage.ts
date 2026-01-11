@@ -1,6 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { logger, AppError } from './logger';
+import { logger } from './logger';
 import { withLock } from './file-lock';
 import { uploadToB2 } from './b2-s3-client';
 

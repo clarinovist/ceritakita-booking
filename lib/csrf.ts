@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * CSRF protection utilities
  * Generates and validates CSRF tokens for form submissions

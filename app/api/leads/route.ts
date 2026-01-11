@@ -7,7 +7,7 @@ import {
   createLead,
   getLeadStats
 } from '@/lib/leads';
-import type { LeadFormData, LeadFilters } from '@/lib/types';
+import type { LeadFormData, LeadFilters, LeadStatus, LeadSource } from '@/lib/types';
 
 /**
  * GET /api/leads
@@ -26,11 +26,11 @@ export async function GET(request: NextRequest) {
     const filters: LeadFilters = {};
 
     if (searchParams.get('status')) {
-      filters.status = searchParams.get('status') as any;
+      filters.status = searchParams.get('status') as LeadStatus;
     }
 
     if (searchParams.get('source')) {
-      filters.source = searchParams.get('source') as any;
+      filters.source = searchParams.get('source') as LeadSource;
     }
 
     if (searchParams.get('assigned_to')) {

@@ -1,11 +1,20 @@
 import { XCircle, Save } from 'lucide-react';
 import { ServiceFormData } from '@/lib/types';
 
+interface Service {
+    id: string;
+    name: string;
+    badgeText?: string;
+    basePrice: number;
+    discountValue: number;
+    isActive: boolean;
+}
+
 interface ServiceModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (e: React.FormEvent) => void;
-    editingService: any;
+    editingService: Service | null;
     formData: ServiceFormData;
     setFormData: (data: ServiceFormData) => void;
 }

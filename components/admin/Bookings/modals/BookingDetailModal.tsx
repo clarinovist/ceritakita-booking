@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Image from 'next/image';
 import { formatDateTime } from '@/utils/dateFormatter';
 import type { Booking } from '@/lib/storage';
 import type { Photographer } from '@/lib/photographers';
@@ -12,7 +13,7 @@ interface BookingDetailModalProps {
   onDelete: (id: string) => void;
   onUpdateStatus: (id: string, status: Booking['status']) => void;
   onUpdate: (id: string, updates: Partial<Booking>) => void;
-  onUpdateFinance: (id: string, finance: any) => void;
+  onUpdateFinance: (id: string, finance: Booking['finance']) => void;
   onOpenRescheduleModal: (bookingId: string, currentDate: string) => void;
   calculateFinance: (booking: Booking) => { total: number; paid: number; balance: number; isPaidOff: boolean };
   getOrReconstructBreakdown: (booking: Booking | null) => {
@@ -67,11 +68,10 @@ export function BookingDetailModal({
             <div>
               <div className="flex justify-between items-center mb-2">
                 <h3 className="font-semibold text-gray-500 text-sm uppercase">Customer</h3>
-                <span className={`px-2 py-0.5 rounded text-xs font-bold border ${
-                  booking.status === 'Cancelled' ? 'bg-red-50 text-red-600 border-red-200' :
+                <span className={`px-2 py-0.5 rounded text-xs font-bold border ${booking.status === 'Cancelled' ? 'bg-red-50 text-red-600 border-red-200' :
                   booking.status === 'Completed' ? 'bg-blue-50 text-blue-600 border-blue-200' :
-                  'bg-green-50 text-green-600 border-green-200'
-                }`}>
+                    'bg-green-50 text-green-600 border-green-200'
+                  }`}>
                   {booking.status}
                 </span>
               </div>
@@ -134,11 +134,10 @@ export function BookingDetailModal({
               <button
                 onClick={() => onOpenRescheduleModal(booking.id, booking.booking.date)}
                 disabled={booking.status === 'Completed'}
-                className={`mt-3 w-full px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 ${
-                  booking.status === 'Completed'
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
+                className={`mt-3 w-full px-4 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 ${booking.status === 'Completed'
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
+                  }`}
               >
                 <span>📅</span>
                 Reschedule Date/Time
@@ -178,11 +177,10 @@ export function BookingDetailModal({
                 value={booking.photographer_id || ''}
                 onChange={(e) => onUpdate(booking.id, { photographer_id: e.target.value || undefined })}
                 disabled={booking.status === 'Completed'}
-                className={`w-full p-2 border rounded ${
-                  booking.status === 'Completed'
-                    ? 'bg-gray-100 cursor-not-allowed'
-                    : 'bg-white'
-                }`}
+                className={`w-full p-2 border rounded ${booking.status === 'Completed'
+                  ? 'bg-gray-100 cursor-not-allowed'
+                  : 'bg-white'
+                  }`}
               >
                 <option value="">-- Not Assigned --</option>
                 {photographers.filter(p => p.is_active).map(photographer => (
@@ -341,11 +339,14 @@ export function BookingDetailModal({
                     <div className="text-xs text-gray-500">{p.note}</div>
                     {(p.proof_filename || p.proof_base64) && (
                       <div className="flex flex-col gap-2">
-                        <img
-                          src={p.proof_filename ? `/api/uploads/payment-proofs/${p.proof_filename}` : p.proof_base64 ?? ''}
-                          alt="Payment Proof"
-                          className="h-32 object-contain self-start border rounded bg-white"
-                        />
+                        <div className="relative h-32 w-full max-w-[200px] self-start border rounded bg-white overflow-hidden">
+                          <Image
+                            src={p.proof_filename ? `/api/uploads/payment-proofs/${p.proof_filename}` : p.proof_base64 ?? ''}
+                            alt="Payment Proof"
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

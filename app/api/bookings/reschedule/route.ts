@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  readBooking, 
-  updateBooking, 
-  checkSlotAvailability, 
-  addRescheduleHistory 
+import {
+    readBooking,
+    updateBooking,
+    checkSlotAvailability,
+    addRescheduleHistory,
+    type Booking
 } from '@/lib/storage-sqlite';
 import { requireAuth } from '@/lib/auth';
 import { rateLimiters } from '@/lib/rate-limit';
@@ -12,7 +13,7 @@ import { safeString } from '@/lib/type-utils';
 
 export async function POST(req: NextRequest) {
     const requestId = crypto.randomUUID();
-    
+
     try {
         // Rate limiting
         const rateLimitResult = rateLimiters.moderate(req);
@@ -27,8 +28,19 @@ export async function POST(req: NextRequest) {
         // Require authentication for rescheduling bookings
         const authCheck = await requireAuth(req);
         if (authCheck) return authCheck;
-
-        const body = await req.json();
+        let body;
+        try {
+            body = await req.json();
+        } catch (jsonError) {
+            logger.warn('Invalid JSON body for reschedule', {
+                requestId,
+                error: (jsonError as Error).message
+            });
+            return NextResponse.json(
+                { error: 'Invalid JSON body', code: 'INVALID_JSON' },
+                { status: 400 }
+            );
+        }
         const { bookingId, newDate, reason } = body;
 
         if (!bookingId || !newDate) {

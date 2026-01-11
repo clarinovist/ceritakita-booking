@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllCoupons, createCoupon, updateCoupon, deleteCoupon, getCouponById } from '@/lib/coupons';
+import { getAllCoupons, createCoupon, updateCoupon, deleteCoupon, getCouponById, type Coupon } from '@/lib/coupons';
 import { requireAuth } from '@/lib/auth';
 import { logger, createErrorResponse } from '@/lib/logger';
 
@@ -23,8 +23,9 @@ export async function POST(req: NextRequest) {
     const authCheck = await requireAuth(req);
     if (authCheck) return authCheck;
 
+    let body: Partial<Coupon> = {};
     try {
-        const body = await req.json();
+        body = await req.json() as Partial<Coupon>;
 
         // Validation
         if (!body.code || !body.discount_type || body.discount_value === undefined) {
@@ -42,9 +43,9 @@ export async function POST(req: NextRequest) {
         }
 
         const id = createCoupon({
-            code: body.code,
-            discount_type: body.discount_type,
-            discount_value: body.discount_value,
+            code: body.code!,
+            discount_type: body.discount_type!,
+            discount_value: body.discount_value!,
             min_purchase: body.min_purchase,
             max_discount: body.max_discount,
             usage_limit: body.usage_limit,
@@ -59,14 +60,14 @@ export async function POST(req: NextRequest) {
     } catch (error: unknown) {
         const errorObj = error as Error;
         logger.error('Error creating coupon', { code: body.code }, errorObj);
-        
+
         if (errorObj.message?.includes('UNIQUE')) {
             return NextResponse.json(
                 { error: 'Kode kupon sudah digunakan', code: 'DUPLICATE_COUPON_CODE' },
                 { status: 409 }
             );
         }
-        
+
         const { error: errorResponse, statusCode } = createErrorResponse(errorObj);
         return NextResponse.json(errorResponse, { status: statusCode });
     }
@@ -77,14 +78,15 @@ export async function PUT(req: NextRequest) {
     const authCheck = await requireAuth(req);
     if (authCheck) return authCheck;
 
+    let body: Partial<Coupon> = {};
     try {
-        const body = await req.json();
+        body = await req.json() as Partial<Coupon>;
 
         if (!body.id) {
             return NextResponse.json({ error: 'Coupon ID is required' }, { status: 400 });
         }
 
-        updateCoupon(body.id, {
+        updateCoupon(body.id!, {
             code: body.code,
             discount_type: body.discount_type,
             discount_value: body.discount_value,
@@ -122,8 +124,12 @@ export async function DELETE(req: NextRequest) {
         deleteCoupon(id);
         return NextResponse.json({ success: true });
     } catch (error) {
+        // Safe access to id from searchParams logic above? No, we can't access 'id' from here if it was declared inside try. 
+        // But wait, 'id' comes from searchParams which is not async, so we can move it out.
+        // Actually, we can just log without the ID or parse it safely.
+        const couponId = new URL(req.url).searchParams.get('id');
         const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-        logger.error('Error deleting coupon', { couponId: id }, error as Error);
+        logger.error('Error deleting coupon', { couponId }, error as Error);
         return NextResponse.json(errorResponse, { status: statusCode });
     }
 }

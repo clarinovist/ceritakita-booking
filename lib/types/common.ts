@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Common Types
  * Shared utility types and interfaces used across the application

@@ -11,7 +11,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 // Helper to render dynamic icon safetly
 const DynamicIcon = ({ name, size = 18, className }: { name: string; size?: number; className?: string }) => {
-    // @ts-ignore
+    // @ts-expect-error - Dynamic icon lookup from lucide-react
     const Icon = LucideIcons[name];
     if (!Icon) return <LucideIcons.HelpCircle size={size} className={className} />;
     return <Icon size={size} className={className} />;
@@ -44,7 +44,7 @@ export function ValuePropsTab() {
         try {
             await fetch(`/api/admin/value-props/${id}`, { method: 'DELETE' });
             mutate('/api/admin/value-props');
-        } catch (error) {
+        } catch {
             alert('Failed to delete item');
         }
     };
@@ -66,8 +66,8 @@ export function ValuePropsTab() {
             mutate('/api/admin/value-props');
             setIsFormOpen(false);
             reset();
-        } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'Failed to save item');
+        } catch (_error) {
+            setSubmitError(_error instanceof Error ? _error.message : 'Failed to save item');
         }
     };
 

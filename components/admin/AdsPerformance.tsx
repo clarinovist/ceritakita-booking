@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Target, TrendingUp, Users, DollarSign, AlertCircle
 } from 'lucide-react';
@@ -41,7 +41,7 @@ export default function AdsPerformance({ bookings, dateRange }: AdsPerformancePr
     error: null
   });
 
-  const fetchAdsData = async () => {
+  const fetchAdsData = useCallback(async () => {
     setAdsData(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
@@ -78,11 +78,11 @@ export default function AdsPerformance({ bookings, dateRange }: AdsPerformancePr
         error: error instanceof Error ? error.message : 'Connection error'
       }));
     }
-  };
+  }, [dateRange]);
 
   useEffect(() => {
     fetchAdsData();
-  }, [dateRange]);
+  }, [fetchAdsData]);
 
   // --- CALCULATIONS ---
   const totalRevenue = bookings

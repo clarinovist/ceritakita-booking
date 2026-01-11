@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Booking, FinanceData, BookingUpdate, FilterStatus, DateRange } from '@/lib/types';
+import { Booking, FinanceData, BookingUpdate, FilterStatus, DateRange, Addon } from '@/lib/types';
 
 export const useBookings = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -47,7 +47,7 @@ export const useBookings = () => {
         payment_note: 'DP Awal'
     });
     const [selectedBookingAddons, setSelectedBookingAddons] = useState<Map<string, number>>(new Map());
-    const [availableBookingAddons, setAvailableBookingAddons] = useState<any[]>([]);
+    const [availableBookingAddons, setAvailableBookingAddons] = useState<Addon[]>([]);
 
     const fetchData = async () => {
         try {
@@ -56,8 +56,8 @@ export const useBookings = () => {
                 const data = await res.json();
                 setBookings(data);
             }
-        } catch (err) {
-            console.error(err);
+        } catch (_err) {
+            console.error(_err);
         }
     };
 

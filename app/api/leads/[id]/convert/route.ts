@@ -23,7 +23,8 @@ export async function POST(request: NextRequest, { params }: Context) {
     }
 
     const { id } = await params;
-    const { service_id } = await request.json();
+    // service_id is currently unused as per line 55
+    await request.json();
 
     // Check if lead exists
     const lead = await getLeadById(id);
@@ -88,7 +89,28 @@ export async function POST(request: NextRequest, { params }: Context) {
 
     // Fetch the created booking
     const bookingStmt = db.prepare('SELECT * FROM bookings WHERE id = ?');
-    const bookingRow = bookingStmt.get(bookingId) as any;
+
+    interface BookingRow {
+      id: string;
+      created_at: string;
+      status: string;
+      customer_name: string;
+      customer_whatsapp: string;
+      customer_category: string;
+      customer_service_id?: string;
+      booking_date: string;
+      booking_notes?: string;
+      booking_location_link?: string;
+      total_price: number;
+      service_base_price?: number;
+      base_discount?: number;
+      addons_total?: number;
+      coupon_discount?: number;
+      coupon_code?: string;
+      photographer_id?: string;
+    }
+
+    const bookingRow = bookingStmt.get(bookingId) as BookingRow;
 
     // Transform to expected format
     const booking = {

@@ -39,11 +39,13 @@ import { useLeads } from './hooks/useLeads';
 
 // Types
 import { type ViewMode } from '@/lib/types';
+import { User } from '@/lib/types/user';
 
 export default function AdminDashboard() {
     const { data: session } = useSession();
-    const userPermissions = (session?.user as any)?.permissions || {};
-    const userRole = (session?.user as any)?.role;
+    const user = session?.user as User | undefined;
+    const userPermissions = user?.permissions;
+    const userRole = user?.role;
 
     // Custom hooks
     const bookingsHook = useBookings();
@@ -424,7 +426,7 @@ export default function AdminDashboard() {
                                 plugins={[dayGridPlugin, interactionPlugin]}
                                 initialView="dayGridMonth"
                                 events={events}
-                                eventClick={(info: any) => {
+                                eventClick={(info) => {
                                     bookingsHook.setSelectedBooking(info.event.extendedProps.booking);
                                 }}
                                 height="100%"

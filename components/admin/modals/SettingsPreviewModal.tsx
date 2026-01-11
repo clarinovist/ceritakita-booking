@@ -1,4 +1,5 @@
 import { XCircle, Home, DollarSign, Calendar } from 'lucide-react';
+import Image from 'next/image';
 import { SystemSettings } from '@/lib/types/settings';
 
 interface SettingsPreviewModalProps {
@@ -37,14 +38,14 @@ export const SettingsPreviewModal = ({
                         <div className="bg-white p-4 rounded-lg border border-slate-100 shadow-sm">
                             <div className="flex items-center gap-4">
                                 {settings.site_logo && (
-                                    <img
-                                        src={settings.site_logo}
-                                        alt="Logo"
-                                        className="h-12 w-auto object-contain"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = '/images/default-logo.png';
-                                        }}
-                                    />
+                                    <div className="relative h-12 w-24">
+                                        <Image
+                                            src={settings.site_logo}
+                                            alt="Logo"
+                                            fill
+                                            className="object-contain"
+                                        />
+                                    </div>
                                 )}
                                 <div>
                                     <div className="font-bold text-slate-900 text-lg">{settings.site_name}</div>

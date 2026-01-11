@@ -80,37 +80,37 @@ function initializeSchema() {
   // Add new columns to existing tables (migration)
   try {
     db.exec(`ALTER TABLE bookings ADD COLUMN customer_service_id TEXT`);
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
   try {
     db.exec(`ALTER TABLE bookings ADD COLUMN service_base_price INTEGER`);
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
   try {
     db.exec(`ALTER TABLE bookings ADD COLUMN base_discount INTEGER`);
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
   try {
     db.exec(`ALTER TABLE bookings ADD COLUMN addons_total INTEGER`);
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
   try {
     db.exec(`ALTER TABLE bookings ADD COLUMN coupon_discount INTEGER`);
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
   try {
     db.exec(`ALTER TABLE bookings ADD COLUMN coupon_code TEXT`);
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
@@ -240,8 +240,8 @@ function initializeSchema() {
     try {
       db.exec(`ALTER TABLE users ADD COLUMN permissions TEXT`);
       console.log('✅ Database migration: Added permissions column to users table');
-    } catch (e) {
-      console.error('❌ Failed to add permissions column:', e);
+    } catch {
+      console.error('❌ Failed to add permissions column');
     }
   }
 
@@ -264,19 +264,26 @@ function initializeSchema() {
   // Add B2 support columns to payments table
   try {
     db.exec(`ALTER TABLE payments ADD COLUMN proof_url TEXT`);
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
   try {
     db.exec(`ALTER TABLE payments ADD COLUMN storage_backend TEXT DEFAULT 'local'`);
-  } catch (e) {
+  } catch {
+    // Column already exists
+  }
+
+  // Add is_active column to portfolio_images table (migration)
+  try {
+    db.exec(`ALTER TABLE portfolio_images ADD COLUMN is_active INTEGER DEFAULT 1`);
+  } catch {
     // Column already exists
   }
 
   // Migrate existing single payment_settings to payment_methods
   try {
-    const existingSettings = db.prepare('SELECT * FROM payment_settings LIMIT 1').get() as any;
+    const existingSettings = db.prepare('SELECT * FROM payment_settings LIMIT 1').get() as Record<string, unknown> | undefined;
     if (existingSettings) {
       // Check if already migrated
       const hasMethods = db.prepare('SELECT COUNT(*) as count FROM payment_methods').get() as { count: number };
@@ -295,14 +302,14 @@ function initializeSchema() {
         );
       }
     }
-  } catch (e) {
+  } catch {
     // Table doesn't exist or no data to migrate
   }
 
   // Drop old single payment_settings table if it exists
   try {
     db.exec('DROP TABLE IF EXISTS payment_settings');
-  } catch (e) {
+  } catch {
     // Table doesn't exist
   }
 
@@ -425,7 +432,7 @@ function initializeSchema() {
   try {
     db.exec(`ALTER TABLE leads ADD COLUMN interest TEXT`);
     console.log('✅ Database migration: Added interest column to leads table');
-  } catch (e) {
+  } catch {
     // Column already exists
   }
 
@@ -516,7 +523,7 @@ function initializeSchema() {
 
     const insertStmt = db.prepare('INSERT INTO service_categories (id, name, slug, description, thumbnail_url, display_order) VALUES (?, ?, ?, ?, ?, ?)');
     const insertMany = db.transaction(() => {
-      seedCategories.forEach((cat, index) => {
+      seedCategories.forEach((cat) => {
         insertStmt.run(randomUUID(), cat.name, cat.slug, cat.description, cat.thumbnail_url, cat.display_order);
       });
     });

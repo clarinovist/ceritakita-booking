@@ -169,16 +169,16 @@ export default function PaymentMethodsManagement() {
         qrImageUrl = await uploadQrImage();
       }
 
-      const payload = {
+      const url = '/api/payment-methods';
+      const method = editingMethod ? 'PUT' : 'POST';
+
+      const payload: PaymentMethodFormData & { id?: string } = {
         ...formData,
         qris_image_url: qrImageUrl
       };
 
-      const url = '/api/payment-methods';
-      const method = editingMethod ? 'PUT' : 'POST';
-      
       if (editingMethod) {
-        (payload as any).id = editingMethod.id;
+        payload.id = editingMethod.id;
       }
 
       const res = await fetch(url, {
@@ -195,8 +195,8 @@ export default function PaymentMethodsManagement() {
 
       await fetchMethods();
       handleCloseModal();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -243,8 +243,8 @@ export default function PaymentMethodsManagement() {
   };
 
   const moveOrder = async (method: PaymentMethod, direction: 'up' | 'down') => {
-    const targetMethod = methods.find(m => 
-      direction === 'up' 
+    const targetMethod = methods.find(m =>
+      direction === 'up'
         ? m.display_order === method.display_order - 1
         : m.display_order === method.display_order + 1
     );
@@ -328,7 +328,7 @@ export default function PaymentMethodsManagement() {
               {methods.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-8 text-center text-gray-400">
-                    No payment methods found. Click "Add Method" to create one.
+                    No payment methods found. Click &quot;Add Method&quot; to create one.
                   </td>
                 </tr>
               ) : (
@@ -397,11 +397,10 @@ export default function PaymentMethodsManagement() {
                     <td className="px-6 py-4">
                       <button
                         onClick={() => handleToggleActive(method)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-colors ${
-                          method.is_active 
-                            ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                        className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-bold transition-colors ${method.is_active
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          }`}
                         title="Click to toggle status"
                       >
                         {method.is_active ? (
@@ -455,7 +454,7 @@ export default function PaymentMethodsManagement() {
                 ✕
               </button>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>

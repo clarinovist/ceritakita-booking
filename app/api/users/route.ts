@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { logger, createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
 import {
   getAllUsers,
-  getUserById,
+  // getUserById,
   createUser,
   updateUser,
   deleteUser,

@@ -39,7 +39,7 @@ function LoginForm() {
                 router.push(callbackUrl);
                 router.refresh(); // Ensure session state is updated
             }
-        } catch (err) {
+        } catch {
             setError("Terjadi kesalahan saat login");
             setLoading(false);
         }

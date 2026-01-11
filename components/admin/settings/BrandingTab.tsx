@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { SystemSettings } from '@/lib/types/settings';
 import { FILE_CONSTRAINTS } from '@/lib/constants';
 import { Globe, Shield, Mail, MessageCircle } from 'lucide-react';
@@ -73,12 +74,12 @@ export default function BrandingTab({ settings, onChange, onLogoUpload, uploadin
               <label className="block text-sm font-semibold text-slate-700 mb-2">Site Logo</label>
               <div className="flex items-center gap-4">
                 {settings.site_logo && (
-                  <div className="w-12 h-12 rounded-xl border border-slate-200 p-2 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
-                    <img
+                  <div className="relative w-12 h-12 rounded-xl border border-slate-200 p-2 bg-slate-50 flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+                    <Image
                       src={settings.site_logo}
                       alt=""
-                      className="max-w-full max-h-full object-contain"
-                      onError={(e) => { (e.target as HTMLImageElement).src = '/images/default-logo.png'; }}
+                      fill
+                      className="p-1 object-contain"
                     />
                   </div>
                 )}

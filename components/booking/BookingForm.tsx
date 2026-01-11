@@ -5,14 +5,10 @@ import { useBookingForm } from './hooks/useBookingForm';
 // Steps
 import { ServiceSelection } from './steps/ServiceSelection';
 import { AddonsSelection } from './steps/AddonsSelection';
-import { PortfolioShowcase } from './steps/PortfolioShowcase';
 import { CustomerInfo } from './steps/CustomerInfo';
 import { ScheduleInfo } from './steps/ScheduleInfo';
 import { PaymentInfo } from './steps/PaymentInfo';
 import { OrderSummary } from './steps/OrderSummary';
-
-// Components
-import { Lightbox } from './components/Lightbox';
 
 export default function BookingForm() {
     const {
@@ -23,8 +19,6 @@ export default function BookingForm() {
         proofPreview,
         availableAddons,
         selectedAddons,
-        portfolioImages,
-        selectedPortfolioImage,
         paymentSettings,
         couponCode,
         appliedCoupon,
@@ -32,10 +26,10 @@ export default function BookingForm() {
         couponLoading,
         suggestedCoupons,
         formData,
-        
+
         // Setters
         setCouponCode,
-        
+
         // Handlers
         handleChange,
         handleServiceSelect,
@@ -44,17 +38,14 @@ export default function BookingForm() {
         handleApplyCoupon,
         handleRemoveCoupon,
         handleFileChange,
-        openLightbox,
-        closeLightbox,
         copyToClipboard,
         handleSubmit,
-        
+
         // Calculations
-        calculateServiceBasePrice,
+        // calculateServiceBasePrice,
         calculateAddonsTotal,
         calculateBaseDiscount,
         calculateCouponDiscount,
-        calculateSubtotalForCoupon,
         calculateTotal
     } = useBookingForm();
 
@@ -83,12 +74,6 @@ export default function BookingForm() {
                         updateAddonQuantity={updateAddonQuantity}
                     />
 
-                    {/* Portfolio Showcase */}
-                    <PortfolioShowcase
-                        selectedService={selectedService}
-                        portfolioImages={portfolioImages}
-                        openLightbox={openLightbox}
-                    />
 
                     {/* Location (Outdoor only) */}
                     {selectedService && selectedService.name.toLowerCase().includes('outdoor') && (
@@ -131,14 +116,14 @@ export default function BookingForm() {
                             handleChange={handleChange}
                             proofPreview={proofPreview}
                             handleFileChange={handleFileChange}
-                            paymentSettings={paymentSettings}
+                            paymentSettings={paymentSettings || undefined}
                             copyToClipboard={copyToClipboard}
                         />
                     </div>
 
                     {/* ORDER SUMMARY */}
                     <OrderSummary
-                        selectedService={selectedService}
+                        selectedService={selectedService || null}
                         selectedAddons={selectedAddons}
                         availableAddons={availableAddons}
                         appliedCoupon={appliedCoupon}
@@ -150,7 +135,6 @@ export default function BookingForm() {
                         couponLoading={couponLoading}
                         suggestedCoupons={suggestedCoupons}
                         formData={formData}
-                        calculateServiceBasePrice={calculateServiceBasePrice}
                         calculateAddonsTotal={calculateAddonsTotal}
                         calculateBaseDiscount={calculateBaseDiscount}
                         calculateCouponDiscount={calculateCouponDiscount}
@@ -178,11 +162,6 @@ export default function BookingForm() {
                 </div>
             </form>
 
-            {/* Lightbox Modal */}
-            <Lightbox
-                imageUrl={selectedPortfolioImage}
-                onClose={closeLightbox}
-            />
         </div>
     );
 }

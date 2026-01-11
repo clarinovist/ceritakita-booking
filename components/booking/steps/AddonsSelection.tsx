@@ -4,7 +4,6 @@ import { ShoppingBag } from 'lucide-react';
 import { Addon } from '@/lib/types';
 import { useMultiStepForm } from '../MultiStepForm';
 import { useEffect, useState } from 'react';
-import { PortfolioShowcase } from './PortfolioShowcase';
 
 interface AddonsSelectionProps {
     availableAddons?: Addon[];
@@ -96,7 +95,7 @@ export const AddonsSelection = ({
         }
     };
 
-    const updateAddons = (addons: any[]) => {
+    const updateAddons = (addons: Array<{ addonId: string; addonName: string; quantity: number; priceAtBooking: number }>) => {
         if (!formData) return;
 
         const addonsTotal = addons.reduce((sum, addon) =>
@@ -145,22 +144,8 @@ export const AddonsSelection = ({
         );
     }
 
-    // Safely get portfolio data from context
-    const portfolioImages = formData?.portfolioImages || [];
-    const selectedService = formData ? { name: formData.serviceName } : null;
-    const { openLightbox } = context;
-
     return (
         <div className="space-y-6">
-            {/* Portfolio Showcase */}
-            {isContextMode && selectedService && portfolioImages.length > 0 && (
-                <PortfolioShowcase
-                    selectedService={selectedService}
-                    portfolioImages={portfolioImages}
-                    openLightbox={openLightbox}
-                />
-            )}
-
             {/* Addons Selection */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-olive-200 animate-in slide-in-from-top-4 duration-300">
                 <div className="flex items-center gap-2 mb-4 text-olive-800 font-bold">

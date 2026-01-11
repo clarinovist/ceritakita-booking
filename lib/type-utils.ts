@@ -29,21 +29,21 @@ export const BookingStatusSchema = z.enum([
 ]);
 
 // Safe string parsing with fallback
-export function safeString(value: any, fallback: string = ''): string {
+export function safeString(value: unknown, fallback: string = ''): string {
   if (value === null || value === undefined) return fallback;
   if (typeof value === 'string') return value;
   return String(value);
 }
 
 // Safe number parsing with fallback
-export function safeNumber(value: any, fallback: number = 0): number {
+export function safeNumber(value: unknown, fallback: number = 0): number {
   if (value === null || value === undefined) return fallback;
   const parsed = Number(value);
   return isNaN(parsed) ? fallback : parsed;
 }
 
 // Safe boolean parsing
-export function safeBoolean(value: any, fallback: boolean = false): boolean {
+export function safeBoolean(value: unknown, fallback: boolean = false): boolean {
   if (value === null || value === undefined) return fallback;
   if (typeof value === 'boolean') return value;
   if (typeof value === 'number') return value !== 0;
@@ -54,11 +54,11 @@ export function safeBoolean(value: any, fallback: boolean = false): boolean {
 }
 
 // Safe date parsing (returns ISO string or null)
-export function safeDate(value: any): string | null {
+export function safeDate(value: unknown): string | null {
   if (!value) return null;
-  
+
   try {
-    const date = new Date(value);
+    const date = new Date(value as string | number | Date);
     if (isNaN(date.getTime())) return null;
     return date.toISOString();
   } catch {
@@ -69,18 +69,18 @@ export function safeDate(value: any): string | null {
 // Normalize booking status (handles both spellings)
 export function normalizeBookingStatus(status: string): BookingStatusType {
   const normalized = status.trim();
-  
+
   // Handle both spellings of cancelled
   if (normalized.toLowerCase() === 'canceled') {
     return BookingStatus.CANCELLED;
   }
-  
+
   // Validate against allowed values
   const result = BookingStatusSchema.safeParse(normalized);
   if (result.success) {
     return result.data;
   }
-  
+
   // Default to active for unknown values
   return BookingStatus.ACTIVE;
 }
@@ -91,17 +91,17 @@ export function isBookingStatus(value: string): value is BookingStatusType {
 }
 
 // Safe object property access with type checking
-export function safeProperty<T>(obj: any, path: string, fallback: T): T {
+export function safeProperty<T>(obj: unknown, path: string, fallback: T): T {
   try {
     const parts = path.split('.');
-    let current = obj;
-    
+    let current: unknown = obj;
+
     for (const part of parts) {
       if (current === null || current === undefined) return fallback;
-      current = current[part];
+      current = (current as Record<string, unknown>)[part];
     }
-    
-    return current as T ?? fallback;
+
+    return (current as T) ?? fallback;
   } catch {
     return fallback;
   }
@@ -111,9 +111,9 @@ export function safeProperty<T>(obj: any, path: string, fallback: T): T {
 export function validateDatabaseRecord<T extends z.ZodTypeAny>(
   schema: T,
   data: unknown
-): { success: boolean; data?: z.infer<T>; errors?: any[] } {
+): { success: boolean; data?: z.infer<T>; errors?: Array<{ field: string; message: string; code: string }> } {
   const result = schema.safeParse(data);
-  
+
   if (result.success) {
     return { success: true, data: result.data };
   } else {
@@ -131,17 +131,17 @@ export function validateDatabaseRecord<T extends z.ZodTypeAny>(
 // Cast database row to typed object with validation
 export function castDatabaseRow<T extends z.ZodTypeAny>(
   schema: T,
-  row: any
+  row: unknown
 ): z.infer<T> | null {
   if (!row) return null;
-  
+
   const result = schema.safeParse(row);
   return result.success ? result.data : null;
 }
 
 // Create typed database query result
 export function createQueryResult<T>(
-  data: any[],
+  data: unknown[],
   schema: z.ZodType<T>
 ): T[] {
   return data
@@ -155,7 +155,7 @@ export function createQueryResult<T>(
 // Type-safe error handling wrapper
 export async function withTypeSafety<T>(
   operation: () => Promise<T>,
-  errorHandler: (error: any) => T
+  errorHandler: (error: unknown) => T
 ): Promise<T> {
   try {
     return await operation();
@@ -171,7 +171,7 @@ export interface DatabaseResult<T> {
   error?: {
     message: string;
     code: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -190,7 +190,7 @@ export function createDatabaseResult<T>(
       }
     };
   }
-  
+
   if (data === null || data === undefined) {
     return {
       success: false,
@@ -200,7 +200,7 @@ export function createDatabaseResult<T>(
       }
     };
   }
-  
+
   return {
     success: true,
     data
@@ -215,7 +215,7 @@ export interface TransactionResult<T> {
   error?: {
     message: string;
     code: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -255,7 +255,7 @@ export async function executeTransaction<T>(
         };
       }
     }
-    
+
     return {
       success: false,
       error: {

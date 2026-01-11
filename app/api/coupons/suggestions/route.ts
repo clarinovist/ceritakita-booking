@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(suggestions);
     } catch (error) {
         const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        const totalAmount = new URL(req.url).searchParams.get('totalAmount');
         logger.error('Error getting coupon suggestions', { totalAmount }, error as Error);
         return NextResponse.json(errorResponse, { status: statusCode });
     }

@@ -5,7 +5,8 @@ import { SystemSettings } from '@/lib/types/settings';
 import { UPLOAD_FOLDERS } from '@/lib/constants';
 import {
   Info, Home, DollarSign, Calendar,
-  MessageSquare, CreditCard, Users, Eye
+  MessageSquare, CreditCard, Users, Eye,
+  type LucideIcon
 } from 'lucide-react';
 
 // Import tab components
@@ -23,7 +24,7 @@ type TabType = 'general' | 'contact' | 'finance' | 'rules' | 'templates' | 'paym
 interface TabConfig {
   id: TabType;
   label: string;
-  icon: any; // Lucide icon component
+  icon: LucideIcon; // Lucide icon component
 }
 
 // Updated TABS configuration with Lucide icons

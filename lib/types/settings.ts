@@ -74,4 +74,4 @@ export interface SettingsApiResponse {
 }
 
 // Partial settings for updates
-export interface SettingsUpdatePayload extends Partial<SystemSettings> { }
+export type SettingsUpdatePayload = Partial<SystemSettings>;

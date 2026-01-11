@@ -5,10 +5,9 @@
 
 import 'server-only';
 import getDb from './db';
-import type Database from 'better-sqlite3';
 import { getBookingAddons, setBookingAddons, type BookingAddon } from './addons';
 import { logger, AppError } from './logger';
-import { normalizeBookingStatus, safeString, safeNumber, executeTransaction, createDatabaseResult } from './type-utils';
+import { normalizeBookingStatus, safeString, safeNumber, executeTransaction } from './type-utils';
 import { withLock } from './file-lock';
 
 export interface Payment {
@@ -57,10 +56,47 @@ export interface Booking {
   reschedule_history?: RescheduleHistory[];
 }
 
+interface BookingRow {
+  id: string;
+  created_at: string;
+  status: string;
+  customer_name: string;
+  customer_whatsapp: string;
+  customer_category: string;
+  customer_service_id?: string | null;
+  booking_date: string;
+  booking_notes?: string | null;
+  booking_location_link?: string | null;
+  total_price: number;
+  service_base_price?: number | null;
+  base_discount?: number | null;
+  addons_total?: number | null;
+  coupon_discount?: number | null;
+  coupon_code?: string | null;
+  photographer_id?: string | null;
+}
+
+interface PaymentRow {
+  date: string;
+  amount: number;
+  note?: string | null;
+  proof_filename?: string | null;
+  proof_url?: string | null;
+  storage_backend?: string | null;
+}
+
+interface RescheduleHistoryRow {
+  id: number;
+  old_date: string;
+  new_date: string;
+  rescheduled_at: string;
+  reason?: string | null;
+}
+
 /**
  * Convert database row to Booking object with type safety
  */
-function rowToBooking(row: any, payments: Payment[], addons?: BookingAddon[], rescheduleHistory?: RescheduleHistory[]): Booking {
+function rowToBooking(row: BookingRow, payments: Payment[], addons?: BookingAddon[], rescheduleHistory?: RescheduleHistory[]): Booking {
   // Use type-safe status normalization
   const status = normalizeBookingStatus(row.status);
 
@@ -106,14 +142,14 @@ function getPaymentsForBooking(bookingId: string): Payment[] {
     ORDER BY date ASC, id ASC
   `);
 
-  const rows = stmt.all(bookingId) as any[];
+  const rows = stmt.all(bookingId) as PaymentRow[];
   return rows.map(row => ({
     date: row.date,
     amount: row.amount,
     note: row.note || '',
     ...(row.proof_filename && { proof_filename: row.proof_filename }),
     ...(row.proof_url && { proof_url: row.proof_url }),
-    ...(row.storage_backend && { storage_backend: row.storage_backend }),
+    ...(row.storage_backend && { storage_backend: row.storage_backend as 'local' | 'b2' }),
   }));
 }
 
@@ -129,7 +165,7 @@ function getRescheduleHistory(bookingId: string): RescheduleHistory[] {
     ORDER BY rescheduled_at ASC
   `);
 
-  const rows = stmt.all(bookingId) as any[];
+  const rows = stmt.all(bookingId) as RescheduleHistoryRow[];
   return rows.map(row => ({
     id: row.id,
     old_date: row.old_date,
@@ -163,14 +199,14 @@ export function addRescheduleHistory(
 export function readData(): Booking[] {
   const db = getDb();
   const stmt = db.prepare("SELECT * FROM bookings ORDER BY ABS(julianday(booking_date) - julianday('now')) ASC");
-  const rows = stmt.all() as any[];
+  const rows = stmt.all() as BookingRow[];
 
   logger.info('Retrieved bookings from database', { count: rows.length });
 
   return rows.map(row => {
-    const payments = getPaymentsForBooking(row.id);
-    const addons = getBookingAddons(row.id);
-    const rescheduleHistory = getRescheduleHistory(row.id);
+    const payments = getPaymentsForBooking(String(row.id));
+    const addons = getBookingAddons(String(row.id));
+    const rescheduleHistory = getRescheduleHistory(String(row.id));
     return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
@@ -181,7 +217,7 @@ export function readData(): Booking[] {
 export function readBooking(id: string): Booking | null {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM bookings WHERE id = ?');
-  const row = stmt.get(id) as any;
+  const row = stmt.get(id) as BookingRow | undefined;
 
   if (!row) return null;
 
@@ -296,7 +332,7 @@ export async function createBooking(booking: Booking): Promise<void> {
           const transaction = db.transaction(() => {
             // Validate and normalize status
             const normalizedStatus = normalizeBookingStatus(booking.status);
-            
+
             // Insert booking
             const stmt = db.prepare(`
               INSERT INTO bookings (
@@ -394,7 +430,7 @@ export async function updateBooking(booking: Booking): Promise<void> {
           const transaction = db.transaction(() => {
             // Validate and normalize status
             const normalizedStatus = normalizeBookingStatus(booking.status);
-            
+
             // Update booking
             const stmt = db.prepare(`
               UPDATE bookings SET
@@ -510,12 +546,12 @@ export function deleteBooking(id: string): void {
 export function getBookingsByStatus(status: 'Active' | 'Completed' | 'Cancelled'): Booking[] {
   const db = getDb();
   const stmt = db.prepare('SELECT * FROM bookings WHERE status = ? ORDER BY created_at DESC');
-  const rows = stmt.all(status) as any[];
+  const rows = stmt.all(status) as BookingRow[];
 
   return rows.map(row => {
-    const payments = getPaymentsForBooking(row.id);
-    const addons = getBookingAddons(row.id);
-    const rescheduleHistory = getRescheduleHistory(row.id);
+    const payments = getPaymentsForBooking(String(row.id));
+    const addons = getBookingAddons(String(row.id));
+    const rescheduleHistory = getRescheduleHistory(String(row.id));
     return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
@@ -533,12 +569,12 @@ export function searchBookings(query: string): Booking[] {
     ORDER BY created_at DESC
   `);
 
-  const rows = stmt.all(searchPattern, searchPattern) as any[];
+  const rows = stmt.all(searchPattern, searchPattern) as BookingRow[];
 
   return rows.map(row => {
-    const payments = getPaymentsForBooking(row.id);
-    const addons = getBookingAddons(row.id);
-    const rescheduleHistory = getRescheduleHistory(row.id);
+    const payments = getPaymentsForBooking(String(row.id));
+    const addons = getBookingAddons(String(row.id));
+    const rescheduleHistory = getRescheduleHistory(String(row.id));
     return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
@@ -562,7 +598,7 @@ export function checkSlotAvailability(
       AND id != ?
   `);
 
-  const result = stmt.get(date, excludeBookingId || '') as any;
+  const result = stmt.get(date, excludeBookingId || '') as { count: number };
   return result.count === 0;
 }
 
@@ -847,7 +883,7 @@ export function getSystemSettings(): SystemSettings {
   const db = getDb();
   const stmt = db.prepare('SELECT key, value FROM system_settings ORDER BY key');
   const rows = stmt.all() as Array<{ key: string; value: string }>;
-  
+
   const settings: SystemSettings = {
     site_name: 'Cerita Kita',
     site_logo: '/images/default-logo.png',

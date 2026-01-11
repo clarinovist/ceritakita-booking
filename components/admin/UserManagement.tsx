@@ -133,7 +133,13 @@ export default function UserManagement() {
       // Use the permissions from the form data
       const permissions = formData.permissions;
 
-      const payload: any = {
+      const payload: {
+        username: string;
+        role: string;
+        permissions: UserPermissions;
+        id?: string;
+        password?: string;
+      } = {
         username: formData.username,
         role: formData.role,
         permissions
@@ -168,8 +174,8 @@ export default function UserManagement() {
 
       await fetchUsers();
       handleCloseModal();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -205,8 +211,8 @@ export default function UserManagement() {
         throw new Error(error.error || 'Failed to delete user');
       }
       await fetchUsers();
-    } catch (err: any) {
-      alert(err.message || 'Failed to delete user');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to delete user');
     }
   };
 
@@ -260,7 +266,7 @@ export default function UserManagement() {
                   <td colSpan={5} className="px-6 py-12 text-center text-slate-400">
                     <Users size={40} className="mx-auto mb-3 text-slate-300" />
                     <p className="font-medium">No users found</p>
-                    <p className="text-xs mt-1">Click "Add User" to create one</p>
+                    <p className="text-xs mt-1">Click &quot;Add User&quot; to create one</p>
                   </td>
                 </tr>
               ) : (
@@ -375,7 +381,7 @@ export default function UserManagement() {
                   />
                   {editingUser && (
                     <p className="text-xs text-slate-500 mt-1.5">
-                      Leave empty if you don't want to change the password
+                      Leave empty if you don&apos;t want to change the password
                     </p>
                   )}
                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { fieldValidators } from '@/lib/validation/schemas';
 import { generateWhatsAppLink, renderTemplate } from '@/lib/whatsapp-template';
 
@@ -15,22 +15,22 @@ interface FormData {
     quantity: number;
     priceAtBooking: number;
   }>;
-  
+
   // Step 3: Schedule & Location
   date: string;
   time: string;
   location_link: string;
-  
+
   // Step 4: Customer Information
   name: string;
   whatsapp: string;
   notes: string;
-  
+
   // Step 5: Payment
   dp_amount: string;
   proofFile: File | null;
   proofPreview: string;
-  
+
   // Financial data
   totalPrice: number;
   serviceBasePrice: number;
@@ -38,7 +38,7 @@ interface FormData {
   addonsTotal: number;
   couponDiscount: number;
   couponCode: string;
-  
+
   // Payment settings
   paymentSettings: {
     bank_name: string;
@@ -46,9 +46,6 @@ interface FormData {
     account_number: string;
     qris_image_url?: string;
   } | null;
-
-  // Portfolio images
-  portfolioImages: string[];
 
   // WhatsApp settings
   whatsapp_message_template: string;
@@ -67,7 +64,7 @@ interface MultiStepFormContextType {
   errors: Record<number, StepError[]>;
   isSubmitting: boolean;
   isMobile: boolean;
-  
+
   // Actions
   nextStep: () => void;
   prevStep: () => void;
@@ -78,14 +75,13 @@ interface MultiStepFormContextType {
   validateCurrentStep: () => boolean;
   submitForm: () => Promise<void>;
   resetForm: () => void;
-  fetchPortfolioImages: (serviceId: string) => Promise<void>;
-  
+
   // UI State
   setIsSubmitting: (value: boolean) => void;
-  
-  // Lightbox state
+
+  // Lightbox
   selectedPortfolioImage: string | null;
-  openLightbox: (imageUrl: string) => void;
+  setSelectedPortfolioImage: (url: string | null) => void;
   closeLightbox: () => void;
 }
 
@@ -96,34 +92,34 @@ interface MultiStepFormProviderProps {
   initialData?: Partial<FormData>;
 }
 
-export function MultiStepFormProvider({ 
-  children, 
-  initialData 
+export function MultiStepFormProvider({
+  children,
+  initialData
 }: MultiStepFormProviderProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 5;
-  
+
   const [formData, setFormData] = useState<FormData>({
     // Step 1
     serviceId: initialData?.serviceId || '',
     serviceName: initialData?.serviceName || '',
     addons: initialData?.addons || [],
-    
+
     // Step 3
     date: initialData?.date || '',
     time: initialData?.time || '',
     location_link: initialData?.location_link || '',
-    
+
     // Step 4
     name: initialData?.name || '',
     whatsapp: initialData?.whatsapp || '',
     notes: initialData?.notes || '',
-    
+
     // Step 5
     dp_amount: initialData?.dp_amount || '',
     proofFile: initialData?.proofFile || null,
     proofPreview: initialData?.proofPreview || '',
-    
+
     // Financial
     totalPrice: initialData?.totalPrice || 0,
     serviceBasePrice: initialData?.serviceBasePrice || 0,
@@ -131,29 +127,53 @@ export function MultiStepFormProvider({
     addonsTotal: initialData?.addonsTotal || 0,
     couponDiscount: initialData?.couponDiscount || 0,
     couponCode: initialData?.couponCode || '',
-    
+
     // Payment settings
     paymentSettings: initialData?.paymentSettings || null,
-
-    // Portfolio
-    portfolioImages: initialData?.portfolioImages || [],
 
     // WhatsApp settings
     whatsapp_message_template: initialData?.whatsapp_message_template || '',
     whatsapp_admin_number: initialData?.whatsapp_admin_number || '',
   });
-  
+
   const [errors, setErrors] = useState<Record<number, StepError[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedPortfolioImage, setSelectedPortfolioImage] = useState<string | null>(null);
+
+  const closeLightbox = useCallback(() => {
+    setSelectedPortfolioImage(null);
+  }, []);
+
+  const updateFormData = useCallback((data: Partial<FormData>) => {
+    setFormData(prev => ({ ...prev, ...data }));
+  }, []);
+
+  const setFieldError = useCallback((field: string, message: string, step?: number) => {
+    const targetStep = step || currentStep;
+    setErrors(prev => ({
+      ...prev,
+      [targetStep]: [
+        ...(prev[targetStep] || []).filter(e => e.field !== field),
+        { field, message }
+      ]
+    }));
+  }, [currentStep]);
+
+  const clearFieldError = useCallback((field: string, step?: number) => {
+    const targetStep = step || currentStep;
+    setErrors(prev => ({
+      ...prev,
+      [targetStep]: (prev[targetStep] || []).filter(e => e.field !== field)
+    }));
+  }, [currentStep]);
 
   // Detect mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
@@ -185,29 +205,7 @@ export function MultiStepFormProvider({
     };
 
     fetchSettings();
-  }, []);
-
-  // Portfolio fetching function
-  const fetchPortfolioImages = async (serviceId: string) => {
-    if (!serviceId) {
-      updateFormData({ portfolioImages: [] });
-      return;
-    }
-
-    try {
-      const res = await fetch(`/api/portfolio?serviceId=${serviceId}`);
-      if (res.ok) {
-        const data = await res.json();
-        const urls = data.map((item: any) => item.image_url);
-        updateFormData({ portfolioImages: urls });
-      } else {
-        updateFormData({ portfolioImages: [] });
-      }
-    } catch (error) {
-      console.error('Failed to fetch portfolio images:', error);
-      updateFormData({ portfolioImages: [] });
-    }
-  };
+  }, [updateFormData]);
 
   // Persist form data to localStorage
   useEffect(() => {
@@ -218,14 +216,14 @@ export function MultiStepFormProvider({
         // Exclude all calculated/financial fields from restored data
         // These will be recalculated fresh based on service selection
         const {
-          totalPrice,
-          couponDiscount,
-          couponCode,
-          addonsTotal,
+          totalPrice: _totalPrice,
+          couponDiscount: _couponDiscount,
+          couponCode: _couponCode,
+          addonsTotal: _addonsTotal,
           ...safeRestoreData
         } = parsed;
         setFormData(prev => ({ ...prev, ...safeRestoreData }));
-      } catch (e) {
+      } catch {
         console.error('Failed to load saved form data');
       }
     }
@@ -233,7 +231,7 @@ export function MultiStepFormProvider({
 
   useEffect(() => {
     // Save only non-sensitive data
-    const { proofFile, proofPreview, ...safeData } = formData;
+    const { proofFile: _proofFile, proofPreview: _proofPreview, ...safeData } = formData;
     localStorage.setItem('bookingFormProgress', JSON.stringify(safeData));
   }, [formData]);
 
@@ -245,30 +243,9 @@ export function MultiStepFormProvider({
     if (calculatedTotal !== formData.totalPrice && !isNaN(calculatedTotal)) {
       setFormData(prev => ({ ...prev, totalPrice: Math.max(0, calculatedTotal) }));
     }
-  }, [formData.serviceBasePrice, formData.baseDiscount, formData.addonsTotal, formData.couponDiscount]);
+  }, [formData.serviceBasePrice, formData.baseDiscount, formData.addonsTotal, formData.couponDiscount, formData.totalPrice]);
 
-  const updateFormData = (data: Partial<FormData>) => {
-    setFormData(prev => ({ ...prev, ...data }));
-  };
 
-  const setFieldError = (field: string, message: string, step?: number) => {
-    const targetStep = step || currentStep;
-    setErrors(prev => ({
-      ...prev,
-      [targetStep]: [
-        ...(prev[targetStep] || []).filter(e => e.field !== field),
-        { field, message }
-      ]
-    }));
-  };
-
-  const clearFieldError = (field: string, step?: number) => {
-    const targetStep = step || currentStep;
-    setErrors(prev => ({
-      ...prev,
-      [targetStep]: (prev[targetStep] || []).filter(e => e.field !== field)
-    }));
-  };
 
   const validateCurrentStep = (): boolean => {
     let isValid = true;
@@ -286,7 +263,7 @@ export function MultiStepFormProvider({
     if (currentStep === 3) {
       const dateError = fieldValidators.date(formData.date);
       const timeError = fieldValidators.time(formData.time);
-      const locationError = formData.serviceName.toLowerCase().includes('outdoor') 
+      const locationError = formData.serviceName.toLowerCase().includes('outdoor')
         ? fieldValidators.location_link(formData.location_link)
         : null;
 
@@ -387,13 +364,11 @@ export function MultiStepFormProvider({
       addonsTotal: 0,
       couponDiscount: 0,
       couponCode: '',
-      portfolioImages: [],
       ...preservedSettings,
     });
     setErrors({});
     setCurrentStep(1);
     localStorage.removeItem('bookingFormProgress');
-    setSelectedPortfolioImage(null);
   };
 
   const submitForm = async () => {
@@ -423,8 +398,8 @@ export function MultiStepFormProvider({
         booking: {
           date: `${formData.date}T${formData.time}`,
           notes: formData.notes || '',
-          location_link: formData.serviceName.toLowerCase().includes('outdoor') 
-            ? formData.location_link 
+          location_link: formData.serviceName.toLowerCase().includes('outdoor')
+            ? formData.location_link
             : '',
         },
         finance: {
@@ -534,15 +509,6 @@ export function MultiStepFormProvider({
     }
   };
 
-  // Lightbox handlers
-  const openLightbox = (imageUrl: string) => {
-    setSelectedPortfolioImage(imageUrl);
-  };
-
-  const closeLightbox = () => {
-    setSelectedPortfolioImage(null);
-  };
-
   const contextValue: MultiStepFormContextType = {
     currentStep,
     totalSteps,
@@ -559,10 +525,9 @@ export function MultiStepFormProvider({
     validateCurrentStep,
     submitForm,
     resetForm,
-    fetchPortfolioImages,
     setIsSubmitting,
     selectedPortfolioImage,
-    openLightbox,
+    setSelectedPortfolioImage,
     closeLightbox,
   };
 

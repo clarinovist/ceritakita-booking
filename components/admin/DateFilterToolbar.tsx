@@ -48,7 +48,7 @@ export default function DateFilterToolbar({ dateRange, onDateRangeChange, classN
     try {
       const date = parseLocalDate(dateRange.start);
       return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
-    } catch (e) {
+    } catch {
       return '...';
     }
   };

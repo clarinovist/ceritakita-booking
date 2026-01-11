@@ -17,7 +17,7 @@ import { rateLimiters } from '@/lib/rate-limit';
 export async function GET(req: NextRequest) {
   try {
     seedDefaultPaymentMethods();
-    
+
     // Rate limiting
     const rateLimitResult = rateLimiters.moderate(req);
     if (rateLimitResult) {
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       if (authCheck) return authCheck;
 
       const methods = getAllPaymentMethods();
-      
+
       logger.info('Payment methods retrieved successfully', {
         count: methods.length
       });
@@ -144,8 +144,8 @@ export async function PUT(req: NextRequest) {
     });
 
     return NextResponse.json(updatedMethod);
-  } catch (error: any) {
-    if (error.message === 'Payment method not found') {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Payment method not found') {
       return NextResponse.json(
         { error: 'Payment method not found', code: 'NOT_FOUND' },
         { status: 404 }
@@ -189,8 +189,8 @@ export async function DELETE(req: NextRequest) {
     });
 
     return NextResponse.json({ success: true, paymentMethodId: id });
-  } catch (error: any) {
-    if (error.message === 'Payment method not found') {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Payment method not found') {
       return NextResponse.json(
         { error: 'Payment method not found', code: 'NOT_FOUND' },
         { status: 404 }

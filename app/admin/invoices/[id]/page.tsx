@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useSession } from 'next-auth/react';
 import { redirect } from 'next/navigation';
 import { Booking } from '@/lib/storage';
@@ -180,14 +181,15 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
                     <div className="flex justify-between items-start">
                         <div className="flex items-center gap-3">
                             {settings?.site_logo && (
-                                <img
-                                    src={settings.site_logo}
-                                    alt="Logo"
-                                    className="h-10 w-auto object-contain"
-                                    onError={(e) => {
-                                        (e.target as HTMLImageElement).src = '/images/default-logo.png';
-                                    }}
-                                />
+                                <div className="relative h-10 w-32">
+                                    <Image
+                                        src={settings.site_logo}
+                                        alt="Logo"
+                                        fill
+                                        className="object-contain object-left"
+                                        priority
+                                    />
+                                </div>
                             )}
                             <div>
                                 <h2 className="text-xl font-bold text-gray-900 mb-0.5">
@@ -435,7 +437,7 @@ export default function InvoicePage({ params }: { params: { id: string } }) {
             {/* Screen-only Print Reminder */}
             <div className="print:hidden mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
                 <p className="text-yellow-800 text-xs">
-                    <strong>Tip:</strong> Click "Print / Save PDF" to save this invoice as a PDF file
+                    <strong>Tip:</strong> Click &quot;Print / Save PDF&quot; to save this invoice as a PDF file
                 </p>
             </div>
 

@@ -34,7 +34,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }, {} as Record<string, string>);
 
   const siteName = settingsMap.site_name || "CeritaKita Studio";
-  const siteLogo = settingsMap.site_logo || "/site-logo.png";
   const title = settingsMap.meta_title || `${siteName} - Booking Sesi Foto`;
   const description = settingsMap.meta_description || "Booking sesi foto profesional bersama CeritaKita Studio. Pilih layanan, tentukan jadwal, dan abadikan momen terbaik Anda.";
 

@@ -3,8 +3,7 @@
  * Centralized type definitions for booking system
  */
 
-import { Service } from './service';
-import { Addon, BookingAddon } from './addon';
+import { BookingAddon } from './addon';
 
 // Payment Types
 export interface Payment {

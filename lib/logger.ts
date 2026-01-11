@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Structured logging system for the application
  * Provides consistent log formats and levels
@@ -26,7 +27,7 @@ const ERROR_FILE = path.join(LOG_DIR, 'error.log');
 async function ensureLogDir() {
   try {
     await fs.mkdir(LOG_DIR, { recursive: true });
-  } catch (error) {
+  } catch {
     // Directory might already exist
   }
 }
@@ -34,28 +35,28 @@ async function ensureLogDir() {
 // Format log entry for console output
 function formatLogEntry(entry: LogEntry): string {
   const base = `[${entry.timestamp}] [${entry.level.toUpperCase()}] ${entry.message}`;
-  
+
   const parts = [base];
-  
+
   if (entry.context) {
     parts.push(`Context: ${JSON.stringify(entry.context)}`);
   }
-  
+
   if (entry.userId) {
     parts.push(`User: ${entry.userId}`);
   }
-  
+
   if (entry.requestId) {
     parts.push(`Request: ${entry.requestId}`);
   }
-  
+
   if (entry.error) {
     parts.push(`Error: ${entry.error.message}`);
     if (entry.error.stack) {
       parts.push(entry.error.stack);
     }
   }
-  
+
   return parts.join(' | ');
 }
 
@@ -63,13 +64,13 @@ function formatLogEntry(entry: LogEntry): string {
 async function writeToFile(level: LogLevel, formatted: string) {
   try {
     await ensureLogDir();
-    
+
     const timestamp = new Date().toISOString().split('T')[0];
     const logFile = level === 'error' ? ERROR_FILE : LOG_FILE;
-    
+
     // Append to file
     await fs.appendFile(logFile, `${formatted}\n`);
-    
+
     // Rotate if file is too large (10MB)
     try {
       const stats = await fs.stat(logFile);
@@ -77,12 +78,12 @@ async function writeToFile(level: LogLevel, formatted: string) {
         const backupFile = `${logFile}.${timestamp}`;
         await fs.rename(logFile, backupFile);
       }
-    } catch (e) {
+    } catch {
       // File might not exist yet
     }
-  } catch (error) {
+  } catch (err) {
     // If file logging fails, fall back to console only
-    console.error('Failed to write to log file:', error);
+    console.error('Failed to write to log file:', err);
   }
 }
 
@@ -99,7 +100,7 @@ async function log(level: LogLevel, message: string, context?: Record<string, an
   };
 
   const formatted = formatLogEntry(entry);
-  
+
   // Always log to console
   if (level === 'error') {
     console.error(formatted);
@@ -110,25 +111,25 @@ async function log(level: LogLevel, message: string, context?: Record<string, an
   } else {
     console.log(formatted);
   }
-  
+
   // Write to file (async, fire and forget)
-  writeToFile(level, formatted).catch(() => {});
+  writeToFile(level, formatted).catch(() => { });
 }
 
 // Convenience methods
 export const logger = {
-  error: (message: string, context?: Record<string, any>, error?: Error, userId?: string, requestId?: string) => 
+  error: (message: string, context?: Record<string, any>, error?: Error, userId?: string, requestId?: string) =>
     log('error', message, context, error, userId, requestId),
-  
-  warn: (message: string, context?: Record<string, any>, userId?: string, requestId?: string) => 
+
+  warn: (message: string, context?: Record<string, any>, userId?: string, requestId?: string) =>
     log('warn', message, context, undefined, userId, requestId),
-  
-  info: (message: string, context?: Record<string, any>, userId?: string, requestId?: string) => 
+
+  info: (message: string, context?: Record<string, any>, userId?: string, requestId?: string) =>
     log('info', message, context, undefined, userId, requestId),
-  
-  debug: (message: string, context?: Record<string, any>, userId?: string, requestId?: string) => 
+
+  debug: (message: string, context?: Record<string, any>, userId?: string, requestId?: string) =>
     log('debug', message, context, undefined, userId, requestId),
-  
+
   // Audit logging for security events
   audit: (action: string, resource: string, userId: string, details?: Record<string, any>) => {
     log('info', `AUDIT: ${action} on ${resource}`, {
@@ -154,14 +155,14 @@ export class AppError extends Error {
 
 export function createErrorResponse(error: Error | AppError, requestId?: string, userId?: string) {
   const isAppError = error instanceof AppError;
-  
+
   // Log the error
   logger.error(error.message, {
     code: isAppError ? error.code : undefined,
     details: isAppError ? error.details : undefined,
     stack: error.stack
   }, error, userId, requestId);
-  
+
   // Return standardized response
   return {
     error: {

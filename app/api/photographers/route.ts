@@ -107,7 +107,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error updating photographer', { photographerId: body.id }, error as Error);
+    logger.error('Error updating photographer', {}, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
@@ -137,7 +137,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error deleting photographer', { photographerId: id }, error as Error);
+    logger.error('Error deleting photographer', {}, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

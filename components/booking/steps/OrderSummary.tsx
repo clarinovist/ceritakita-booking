@@ -1,24 +1,44 @@
 'use client';
 
-import { useState } from 'react';
 import { CountdownTimer } from '../components/CountdownTimer';
 
+import { type Service } from '@/lib/types/service';
+
+interface Addon {
+    id: string;
+    name: string;
+    price: number;
+}
+
+interface Coupon {
+    id: string;
+    code: string;
+    discount_type: 'percentage' | 'fixed';
+    discount_value: number;
+    max_discount?: number;
+    description?: string;
+    valid_until?: string;
+}
+
+interface AppliedCoupon {
+    coupon?: Coupon;
+}
+
 interface OrderSummaryProps {
-    selectedService: any;
+    selectedService: Service | null;
     selectedAddons: Map<string, number>;
-    availableAddons: any[];
-    appliedCoupon: any;
+    availableAddons: Addon[];
+    appliedCoupon: AppliedCoupon | null;
     couponCode: string;
     setCouponCode: (code: string) => void;
     handleApplyCoupon: () => void;
     handleRemoveCoupon: () => void;
     couponError: string;
     couponLoading: boolean;
-    suggestedCoupons: any[];
+    suggestedCoupons: Coupon[];
     formData: {
         dp_amount: string;
     };
-    calculateServiceBasePrice: () => number;
     calculateAddonsTotal: () => number;
     calculateBaseDiscount: () => number;
     calculateCouponDiscount: () => number;
@@ -38,7 +58,6 @@ export const OrderSummary = ({
     couponLoading,
     suggestedCoupons,
     formData,
-    calculateServiceBasePrice,
     calculateAddonsTotal,
     calculateBaseDiscount,
     calculateCouponDiscount,
@@ -96,7 +115,7 @@ export const OrderSummary = ({
 
             {/* Coupon Section */}
             <div className="mb-4">
-                {!appliedCoupon ? (
+                {!appliedCoupon?.coupon ? (
                     <div className="space-y-3">
                         <label className="text-xs font-bold text-olive-700">Punya Kode Kupon?</label>
                         <div className="flex gap-2">
@@ -176,11 +195,11 @@ export const OrderSummary = ({
                         <div className="flex justify-between items-center">
                             <div className="flex-1">
                                 <p className="text-xs text-green-600 font-medium">Kupon Terapkan:</p>
-                                <p className="font-black text-green-700 font-mono">{appliedCoupon.coupon.code}</p>
+                                <p className="font-black text-green-700 font-mono">{appliedCoupon?.coupon?.code}</p>
                                 <p className="text-xs text-green-600 mt-1">
-                                    {appliedCoupon.coupon.discount_type === 'percentage'
-                                        ? `Diskon ${appliedCoupon.coupon.discount_value}%`
-                                        : `Diskon Rp ${appliedCoupon.coupon.discount_value.toLocaleString('id-ID')}`
+                                    {appliedCoupon?.coupon?.discount_type === 'percentage'
+                                        ? `Diskon ${appliedCoupon?.coupon?.discount_value}%`
+                                        : `Diskon Rp ${appliedCoupon?.coupon?.discount_value?.toLocaleString('id-ID')}`
                                     }
                                 </p>
                             </div>
@@ -202,7 +221,7 @@ export const OrderSummary = ({
                 <div className="flex justify-between text-sm text-olive-700">
                     <span className="text-olive-600">Harga Layanan:</span>
                     <span className="font-semibold text-olive-800 font-serif">
-                        Rp {calculateServiceBasePrice().toLocaleString('id-ID')}
+                        Rp {selectedService.basePrice.toLocaleString('id-ID')}
                     </span>
                 </div>
 

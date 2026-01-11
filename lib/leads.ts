@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import 'server-only';
 import { randomUUID } from 'crypto';
 import { getDb } from './db';

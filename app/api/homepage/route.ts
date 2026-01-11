@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { HomepageData, HomepageContent, ServiceCategory, Testimonial, ValueProposition } from '@/types/homepage';
+import { HomepageData, HomepageContent, ServiceCategory, Testimonial, ValueProposition, PortfolioImage } from '@/types/homepage';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,8 +39,9 @@ export async function GET() {
             SELECT p.id, p.image_url, p.service_id, s.name as service_name, p.display_order
             FROM portfolio_images p
             LEFT JOIN service_categories s ON p.service_id = s.id
+            WHERE p.is_active = 1
             ORDER BY p.display_order ASC
-        `).all() as any[];
+        `).all() as (PortfolioImage & { service_name: string })[];
 
         const responseData: HomepageData = {
             hero: contentMap.hero || {},

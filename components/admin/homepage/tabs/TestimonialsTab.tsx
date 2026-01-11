@@ -48,7 +48,7 @@ export function TestimonialsTab() {
             if (!res.ok) throw new Error('Failed to update background');
             mutate('/api/admin/homepage/content');
             alert('Background saved!');
-        } catch (error) {
+        } catch {
             alert('Failed to save background');
         } finally {
             setIsSavingBg(false);
@@ -74,7 +74,7 @@ export function TestimonialsTab() {
         try {
             await fetch(`/api/admin/testimonials/${id}`, { method: 'DELETE' });
             mutate('/api/admin/testimonials');
-        } catch (error) {
+        } catch {
             alert('Failed to delete testimonial');
         }
     };
@@ -96,8 +96,8 @@ export function TestimonialsTab() {
             mutate('/api/admin/testimonials');
             setIsFormOpen(false);
             reset();
-        } catch (error) {
-            setSubmitError(error instanceof Error ? error.message : 'Failed to save testimonial');
+        } catch (_error) {
+            setSubmitError(_error instanceof Error ? _error.message : 'Failed to save testimonial');
         }
     };
 

@@ -105,8 +105,8 @@ export default function CouponManagement() {
             setIsModalOpen(false);
             resetForm();
             alert(editingCoupon ? 'Kupon berhasil diupdate!' : 'Kupon berhasil dibuat!');
-        } catch (error: any) {
-            alert(error.message);
+        } catch (error) {
+            alert(error instanceof Error ? error.message : 'Unknown error');
         }
     };
 
@@ -136,7 +136,7 @@ export default function CouponManagement() {
 
             await fetchCoupons();
             alert('Kupon berhasil dihapus!');
-        } catch (error) {
+        } catch {
             alert('Gagal menghapus kupon');
         }
     };
@@ -157,7 +157,6 @@ export default function CouponManagement() {
         });
     };
 
-    const totalRevenue = usageHistory.reduce((sum, u) => sum + u.order_total, 0);
     const totalDiscounts = usageHistory.reduce((sum, u) => sum + u.discount_amount, 0);
 
     return (
@@ -205,21 +204,19 @@ export default function CouponManagement() {
             <div className="flex gap-2">
                 <button
                     onClick={() => setViewMode('coupons')}
-                    className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                        viewMode === 'coupons'
+                    className={`px-4 py-2 rounded-lg font-bold transition-all ${viewMode === 'coupons'
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                        }`}
                 >
                     Kelola Kupon
                 </button>
                 <button
                     onClick={() => setViewMode('history')}
-                    className={`px-4 py-2 rounded-lg font-bold transition-all ${
-                        viewMode === 'history'
+                    className={`px-4 py-2 rounded-lg font-bold transition-all ${viewMode === 'history'
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                        }`}
                 >
                     Riwayat Penggunaan
                 </button>
@@ -291,9 +288,8 @@ export default function CouponManagement() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                                coupon.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                                            }`}>
+                                            <span className={`px-2 py-1 rounded-full text-xs font-bold ${coupon.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                                                }`}>
                                                 {coupon.is_active ? 'Aktif' : 'Nonaktif'}
                                             </span>
                                         </td>
@@ -318,7 +314,7 @@ export default function CouponManagement() {
                                 {coupons.length === 0 && (
                                     <tr>
                                         <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
-                                            Belum ada kupon. Klik "Buat Kupon Baru" untuk memulai.
+                                            Belum ada kupon. Klik &quot;Buat Kupon Baru&quot; untuk memulai.
                                         </td>
                                     </tr>
                                 )}
@@ -402,7 +398,7 @@ export default function CouponManagement() {
                                     <label className="block text-sm font-bold text-gray-700 mb-1">Tipe Diskon *</label>
                                     <select
                                         value={formData.discount_type}
-                                        onChange={(e) => setFormData({ ...formData, discount_type: e.target.value as any })}
+                                        onChange={(e) => setFormData({ ...formData, discount_type: e.target.value as 'percentage' | 'fixed' })}
                                         className="w-full p-2.5 border rounded-lg"
                                     >
                                         <option value="percentage">Persentase (%)</option>

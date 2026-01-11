@@ -35,10 +35,30 @@ export function HeroAboutTab() {
 
     useEffect(() => {
         if (content) {
-            const formData: any = { hero: {}, about: {} };
+            const initialHero = {
+                tagline: '',
+                subtagline: '',
+                cta_text: '',
+                background_image: ''
+            };
+            const initialAbout = {
+                label: '',
+                headline: '',
+                body_1: '',
+                body_2: '',
+                image: ''
+            };
+
+            const formData: FormValues = {
+                hero: initialHero,
+                about: initialAbout
+            };
+
             content.forEach(item => {
-                if (item.section === 'hero' || item.section === 'about') {
-                    formData[item.section][item.content_key] = item.content_value;
+                if (item.section === 'hero') {
+                    formData.hero[item.content_key as keyof typeof initialHero] = item.content_value;
+                } else if (item.section === 'about') {
+                    formData.about[item.content_key as keyof typeof initialAbout] = item.content_value;
                 }
             });
             reset(formData);
@@ -72,7 +92,7 @@ export function HeroAboutTab() {
 
             setMessage({ type: 'success', text: 'Settings saved successfully!' });
             mutate('/api/admin/homepage/content'); // Refresh data
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: 'Failed to save changes.' });
         } finally {
             setIsSaving(false);
@@ -91,8 +111,8 @@ export function HeroAboutTab() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 animate-in fade-in duration-500">
             {message && (
                 <div className={`p-4 rounded-xl border flex items-center gap-3 ${message.type === 'success'
-                        ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                        : 'bg-red-50 border-red-200 text-red-800'
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-red-50 border-red-200 text-red-800'
                     }`}>
                     <Info size={18} />
                     <span className="font-medium">{message.text}</span>
@@ -167,7 +187,7 @@ export function HeroAboutTab() {
                     <h3 className="text-xl font-display font-bold text-slate-800">
                         About Section
                     </h3>
-                    <p className="text-sm text-slate-500 mt-1">Tell your studio's story</p>
+                    <p className="text-sm text-slate-500 mt-1">Tell your studio&apos;s story</p>
                 </div>
 
                 <div className="p-6 space-y-6">

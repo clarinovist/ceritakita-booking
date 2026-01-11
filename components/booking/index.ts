@@ -38,8 +38,6 @@ export { ProgressIndicator, MobileStepNavigation } from './ProgressIndicator';
 export { ServiceSelection } from './steps/ServiceSelection';
 /** Add-ons selection step component */
 export { AddonsSelection } from './steps/AddonsSelection';
-/** Portfolio showcase step component */
-export { PortfolioShowcase } from './steps/PortfolioShowcase';
 /** Customer information step component */
 export { CustomerInfo } from './steps/CustomerInfo';
 /** Schedule information step component */

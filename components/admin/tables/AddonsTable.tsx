@@ -1,8 +1,13 @@
 import { Addon } from '@/lib/types';
 
+interface Service {
+    id: string;
+    name: string;
+}
+
 interface AddonsTableProps {
     addons: Addon[];
-    services: any[];
+    services: Service[];
     handleOpenAddAddonModal: () => void;
     handleOpenEditAddonModal: (addon: Addon) => void;
     handleDeleteAddon: (id: string) => void;

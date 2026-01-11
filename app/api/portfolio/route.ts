@@ -66,8 +66,8 @@ export async function POST(req: NextRequest) {
     const db = getDb();
     const newId = randomUUID();
     db.prepare(`
-      INSERT INTO portfolio_images (id, service_id, image_url, display_order)
-      VALUES (?, ?, ?, COALESCE((SELECT MAX(display_order) + 1 FROM portfolio_images WHERE service_id = ?), 0))
+      INSERT INTO portfolio_images (id, service_id, image_url, display_order, is_active)
+      VALUES (?, ?, ?, COALESCE((SELECT MAX(display_order) + 1 FROM portfolio_images WHERE service_id = ?), 0), 1)
     `).run(newId, serviceId, imageUrl, serviceId);
 
     return NextResponse.json({
@@ -108,6 +108,38 @@ export async function DELETE(req: NextRequest) {
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
     logger.error('Error deleting portfolio image', { imageId: id }, error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
+  }
+}
+
+// PATCH - Update portfolio image (toggle visibility)
+export async function PATCH(req: NextRequest) {
+  let id: string | null = null;
+  try {
+    const authCheck = await requireAuth(req);
+    if (authCheck) return authCheck;
+
+    const body = await req.json();
+    id = body.id;
+    const { is_active } = body;
+
+    if (!id || is_active === undefined) {
+      return NextResponse.json({ error: 'ID and is_active required' }, { status: 400 });
+    }
+
+    const db = getDb();
+
+    // Update is_active
+    db.prepare(`
+      UPDATE portfolio_images 
+      SET is_active = ? 
+      WHERE id = ?
+    `).run(is_active ? 1 : 0, id);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    logger.error('Error updating portfolio image', { imageId: id }, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

@@ -42,10 +42,13 @@ export function PromoCtaTab() {
 
     useEffect(() => {
         if (content) {
-            const formData: any = { promo: {}, cta: {}, footer: {} };
+            const formData: Partial<FormValues> = { promo: {}, cta: {}, footer: {} } as Partial<FormValues>;
             content.forEach(item => {
                 if (['promo', 'cta', 'footer'].includes(item.section)) {
-                    formData[item.section][item.content_key] = item.content_value;
+                    const section = item.section as 'promo' | 'cta' | 'footer';
+                    if (formData[section]) {
+                        (formData[section] as Record<string, string>)[item.content_key] = item.content_value;
+                    }
                 }
             });
             reset(formData);
@@ -79,7 +82,7 @@ export function PromoCtaTab() {
 
             setMessage({ type: 'success', text: 'Changes saved successfully!' });
             mutate('/api/admin/homepage/content');
-        } catch (error) {
+        } catch {
             setMessage({ type: 'error', text: 'Failed to save changes.' });
         } finally {
             setIsSaving(false);

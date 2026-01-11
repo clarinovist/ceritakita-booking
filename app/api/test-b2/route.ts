@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from 'next/server';
 import { getS3Client } from '@/lib/b2-s3-client';
 import { ListObjectsV2Command } from '@aws-sdk/client-s3';
@@ -7,7 +8,7 @@ import { ListObjectsV2Command } from '@aws-sdk/client-s3';
  * Test Backblaze B2 connection and bucket accessibility
  * Requires authentication
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Check environment variables first
     const envVars = {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     // Initialize S3 client
     const s3Client = getS3Client();
-    
+
     // Test connection by listing objects in the bucket
     const listCommand = new ListObjectsV2Command({
       Bucket: process.env.B2_BUCKET_NAME,
@@ -66,10 +67,10 @@ export async function GET(request: NextRequest) {
 
   } catch (error: any) {
     console.error('B2 Connection Test Error:', error);
-    
+
     let errorMessage = 'Unknown error occurred';
     let errorDetails = error.message;
-    
+
     if (error.name === 'InvalidAccessKeyId' || error.Code === 'InvalidAccessKeyId') {
       errorMessage = 'Invalid Application Key ID';
       errorDetails = 'The B2_APPLICATION_KEY_ID provided is incorrect or has been revoked.';
@@ -110,18 +111,18 @@ export async function GET(request: NextRequest) {
  * POST /api/test-b2
  * Test upload functionality
  */
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
-    const { getS3Client, uploadToB2 } = await import('@/lib/b2-s3-client');
-    
+    const { uploadToB2 } = await import('@/lib/b2-s3-client');
+
     // Create a small test file
     const testContent = `B2 Connection Test - ${new Date().toISOString()}`;
     const testBuffer = Buffer.from(testContent, 'utf-8');
-    
+
     const testKey = `test/connection-test-${Date.now()}.txt`;
-    
+
     const url = await uploadToB2(testBuffer, testKey, 'text/plain');
-    
+
     return NextResponse.json({
       success: true,
       message: 'Upload test successful!',
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('B2 Upload Test Error:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: 'Upload test failed',
@@ -148,7 +149,7 @@ export async function POST(request: NextRequest) {
 
 function getTroubleshootingSteps(error: any, envVars: any): string[] {
   const steps: string[] = [];
-  
+
   if (!envVars.B2_APPLICATION_KEY_ID) {
     steps.push('Add B2_APPLICATION_KEY_ID to your .env.local file');
   }
@@ -166,18 +167,18 @@ function getTroubleshootingSteps(error: any, envVars: any): string[] {
     steps.push('Verify your Application Key ID in Backblaze B2 dashboard');
     steps.push('Make sure you copied the entire key ID without extra spaces');
   }
-  
+
   if (error.Code === 'SignatureDoesNotMatch' || error.name === 'SignatureDoesNotMatch') {
     steps.push('Verify your Application Key in Backblaze B2 dashboard');
     steps.push('Ensure the key has Read/Write permissions');
     steps.push('Try creating a new Application Key and replacing the old one');
   }
-  
+
   if (error.Code === 'NoSuchBucket' || error.name === 'NoSuchBucket') {
     steps.push('Create the bucket in Backblaze B2 dashboard');
     steps.push('Verify the bucket name is correct (case-sensitive)');
   }
-  
+
   if (error.Code === 'AccessDenied' || error.name === 'AccessDenied') {
     steps.push('Check that your Application Key has "Read and Write" permissions');
     steps.push('Go to Backblaze B2 → App Keys → Your Key → Check permissions');

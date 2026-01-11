@@ -40,7 +40,7 @@ export function RescheduleModal({
             <ul className="list-disc list-inside space-y-1 text-xs">
               <li>The system will check for slot availability</li>
               <li>Previous schedule will be saved in history</li>
-              <li>Booking status will be set to "Rescheduled"</li>
+              <li>Booking status will be set to &quot;Rescheduled&quot;</li>
             </ul>
           </div>
 

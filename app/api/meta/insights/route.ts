@@ -1,3 +1,4 @@
+import { type AdsData } from '@/lib/storage-sqlite';
 import { NextRequest, NextResponse } from 'next/server';
 // ✅ Ganti import lama dengan ini:
 import { saveAdsLog } from '@/lib/storage-sqlite';
@@ -157,7 +158,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       saveAdsLog(adsData);
     } catch (dbError) {
       // Log the error but don't fail the request
-      logger.warn('Database save failed (non-critical)', {}, dbError as Error);
+      logger.warn('Database save failed (non-critical)', { error: (dbError as Error).message });
     }
     return NextResponse.json(
       {
@@ -168,7 +169,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
     );
   } catch (error) {
     logger.error('Unexpected error in Meta insights API', {}, error as Error);
-    
+
     return NextResponse.json(
       {
         success: false,

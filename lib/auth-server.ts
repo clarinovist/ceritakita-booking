@@ -4,7 +4,7 @@
 import { getDb } from './db';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
-import { User, UserPermissions, CreateUserInput, UpdateUserInput } from './types/user';
+import { User, CreateUserInput, UpdateUserInput } from './types/user';
 import { DEFAULT_ADMIN_PERMISSIONS, DEFAULT_STAFF_PERMISSIONS } from './permissions-types';
 import { validateUserInput } from './permissions';
 
@@ -17,8 +17,8 @@ export function getAllUsers(): User[] {
     SELECT id, username, role, is_active, created_at, updated_at, permissions 
     FROM users 
     ORDER BY created_at DESC
-  `).all() as any[];
-  
+  `).all() as Array<User & { permissions: string }>;
+
   return users.map(user => ({
     ...user,
     permissions: user.permissions ? JSON.parse(user.permissions) : undefined
@@ -34,10 +34,10 @@ export function getUserById(id: string): User | null {
     SELECT id, username, role, is_active, created_at, updated_at, permissions 
     FROM users 
     WHERE id = ?
-  `).get(id) as any;
-  
+  `).get(id) as (User & { permissions: string }) | undefined;
+
   if (!user) return null;
-  
+
   return {
     ...user,
     permissions: user.permissions ? JSON.parse(user.permissions) : undefined
@@ -53,10 +53,10 @@ export function getUserByUsername(username: string): User | null {
     SELECT id, username, password_hash, role, is_active, created_at, updated_at, permissions 
     FROM users 
     WHERE username = ?
-  `).get(username) as any;
-  
+  `).get(username) as (User & { permissions: string }) | undefined;
+
   if (!user) return null;
-  
+
   return {
     ...user,
     permissions: user.permissions ? JSON.parse(user.permissions) : undefined
@@ -143,7 +143,7 @@ export function updateUser(id: string, input: UpdateUserInput): User {
   }
 
   const updates: string[] = [];
-  const values: any[] = [];
+  const values: Array<string | number | boolean> = [];
 
   if (input.username) {
     updates.push('username = ?');
@@ -266,7 +266,7 @@ export function seedDefaultAdmin(): void {
  * Sanitize user (remove password_hash for API responses)
  */
 export function sanitizeUser(user: User): Omit<User, 'password_hash'> {
-  const { password_hash, ...safeUser } = user;
+  const { password_hash: _password_hash, ...safeUser } = user;
   return safeUser;
 }
 

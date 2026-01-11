@@ -2,7 +2,7 @@
 
 import { Calendar, MapPin, Clock } from 'lucide-react';
 import { useMultiStepForm } from '../MultiStepForm';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ValidationMessage, FieldValidationWrapper } from '@/components/ui/ValidationMessage';
 import { fieldValidators } from '@/lib/validation/schemas';
 
@@ -24,8 +24,8 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
     const formData = isContextMode ? context.formData : propFormData!;
     const updateFormData = isContextMode ? context.updateFormData : () => { };
     const errors = isContextMode ? context.errors : {};
-    const setFieldError = isContextMode ? context.setFieldError : () => { };
-    const clearFieldError = isContextMode ? context.clearFieldError : () => { };
+    const setFieldError = useMemo(() => isContextMode ? context.setFieldError : () => { }, [isContextMode, context.setFieldError]);
+    const clearFieldError = useMemo(() => isContextMode ? context.clearFieldError : () => { }, [isContextMode, context.clearFieldError]);
 
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [settings, setSettings] = useState<{
@@ -70,7 +70,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                 clearFieldError('date');
             }
         }
-    }, [formData.date, touched.date, isContextMode]);
+    }, [formData.date, touched.date, isContextMode, setFieldError, clearFieldError]);
 
     useEffect(() => {
         if (!isContextMode) return;
@@ -83,7 +83,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                 clearFieldError('time');
             }
         }
-    }, [formData.time, touched.time, isContextMode]);
+    }, [formData.time, touched.time, isContextMode, setFieldError, clearFieldError]);
 
     useEffect(() => {
         if (!isContextMode) return;
@@ -96,7 +96,7 @@ export const ScheduleInfo = ({ formData: propFormData, handleChange: propHandleC
                 clearFieldError('location_link');
             }
         }
-    }, [formData.location_link, touched.location_link, isContextMode]);
+    }, [formData.location_link, touched.location_link, isContextMode, setFieldError, clearFieldError]);
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const newDate = e.target.value;

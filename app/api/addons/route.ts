@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(addons);
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error fetching add-ons', { activeOnly, category }, error as Error);
+    logger.error('Error fetching add-ons', {}, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
@@ -116,7 +116,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error updating add-on', { addonId: body.id }, error as Error);
+    logger.error('Error updating add-on', {}, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
@@ -146,7 +146,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error deleting add-on', { addonId: id }, error as Error);
+    logger.error('Error deleting add-on', {}, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error exporting bookings', { status, startDate, endDate }, error as Error);
+    logger.error('Error exporting bookings', {}, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

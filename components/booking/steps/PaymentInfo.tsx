@@ -4,8 +4,15 @@ import { MessageSquare, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { PaymentDetails } from '../components/PaymentDetails';
 import { useMultiStepForm } from '../MultiStepForm';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { fieldValidators } from '@/lib/validation/schemas';
+
+interface PaymentSettings {
+    bank_name: string;
+    account_name: string;
+    account_number: string;
+    qris_image_url?: string;
+}
 
 interface PaymentInfoProps {
     formData?: {
@@ -14,7 +21,7 @@ interface PaymentInfoProps {
     handleChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
     proofPreview?: string;
     handleFileChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    paymentSettings?: any;
+    paymentSettings?: PaymentSettings;
     copyToClipboard?: (text: string) => void;
 }
 
@@ -33,9 +40,9 @@ export const PaymentInfo = ({
     const formData = isContextMode ? context.formData : propFormData!;
     const updateFormData = isContextMode ? context.updateFormData : () => { };
     const errors = isContextMode ? context.errors : {};
-    const setFieldError = isContextMode ? context.setFieldError : () => { };
-    const clearFieldError = isContextMode ? context.clearFieldError : () => { };
-    const paymentSettings = isContextMode ? context.formData.paymentSettings : propPaymentSettings;
+    const setFieldError = useMemo(() => isContextMode ? context.setFieldError : () => { }, [isContextMode, context.setFieldError]);
+    const clearFieldError = useMemo(() => isContextMode ? context.clearFieldError : () => { }, [isContextMode, context.clearFieldError]);
+    const paymentSettings = isContextMode ? context.formData.paymentSettings : propPaymentSettings || null;
     const copyToClipboard = isContextMode ? (text: string) => {
         navigator.clipboard.writeText(text);
     } : propCopyToClipboard!;
@@ -44,7 +51,7 @@ export const PaymentInfo = ({
 
     // File handling for context mode
     const [proofPreview, setProofPreview] = useState(isContextMode ? context.formData.proofPreview : propProofPreview || '');
-    const [proofFile, setProofFile] = useState(isContextMode ? context.formData.proofFile : null);
+    const [_proofFile, setProofFile] = useState(isContextMode ? context.formData.proofFile : null);
 
     // Real-time validation (only in context mode)
     useEffect(() => {
@@ -58,7 +65,7 @@ export const PaymentInfo = ({
                 clearFieldError('dp_amount');
             }
         }
-    }, [formData.dp_amount, touched.dp_amount, isContextMode, context.formData.totalPrice]);
+    }, [formData.dp_amount, touched.dp_amount, isContextMode, context.formData.totalPrice, setFieldError, clearFieldError]);
 
     const handleDpAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (isContextMode) {

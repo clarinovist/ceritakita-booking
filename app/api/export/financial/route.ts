@@ -97,7 +97,19 @@ export async function GET(req: NextRequest) {
     XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary by Category');
 
     // Sheet 2: Detailed Payment Breakdown
-    const paymentDetails: any[] = [];
+    interface PaymentDetail {
+      'Booking ID': string;
+      'Customer Name': string;
+      'Service Category': string;
+      'Booking Date': string;
+      'Payment #': number;
+      'Payment Date': string;
+      'Amount (Rp)': number;
+      'Payment Note': string;
+      'Total Price (Rp)': number;
+      'Remaining Balance (Rp)': number;
+    }
+    const paymentDetails: PaymentDetail[] = [];
 
     bookings.forEach(b => {
       const totalPaid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
@@ -201,7 +213,7 @@ export async function GET(req: NextRequest) {
     });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-    logger.error('Error exporting financial report', { startDate, endDate }, error as Error);
+    logger.error('Error exporting financial report', {}, error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * File locking utilities for concurrent uploads
  * Prevents race conditions when multiple requests try to access the same resources
@@ -15,7 +16,7 @@ const LOCK_CHECK_INTERVAL = 100; // 100ms
 async function ensureLockDir() {
   try {
     await fs.mkdir(LOCK_DIR, { recursive: true });
-  } catch (error) {
+  } catch {
     // Directory might already exist
   }
 }
@@ -89,7 +90,7 @@ export async function acquireLock(
   try {
     await fs.writeFile(lockPath, JSON.stringify(lockData), { flag: 'wx' });
     return true;
-  } catch (error) {
+  } catch {
     // File might have been created between check and write
     return false;
   }
@@ -102,7 +103,7 @@ export async function releaseLock(resource: string): Promise<void> {
   const lockPath = getLockPath(resource);
   try {
     await fs.unlink(lockPath);
-  } catch (error) {
+  } catch {
     // Lock might not exist or already be released
   }
 }

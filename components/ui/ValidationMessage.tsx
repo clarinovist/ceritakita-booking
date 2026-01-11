@@ -15,22 +15,18 @@ interface ValidationMessageProps {
  * ValidationMessage Component
  * Provides inline validation feedback with ARIA support
  */
-export function ValidationMessage({ 
-  message, 
-  type = 'error', 
-  showIcon = true, 
+export function ValidationMessage({
+  message,
+  type = 'error',
+  showIcon = true,
   className = '',
-  dismissible = false 
+  dismissible = false
 }: ValidationMessageProps) {
-  const [isVisible, setIsVisible] = useState(!!message);
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
     if (message) {
-      setIsVisible(true);
       setIsDismissed(false);
-    } else {
-      setIsVisible(false);
     }
   }, [message]);
 
@@ -80,7 +76,7 @@ export function ValidationMessage({
       className={`flex items-start gap-2 p-3 rounded-lg border ${currentStyle.bg} ${currentStyle.border} ${currentStyle.text} ${className} animate-fade-in`}
     >
       <Icon />
-      
+
       <div className="flex-1 text-sm font-medium leading-relaxed">
         {message}
       </div>
@@ -116,7 +112,7 @@ export function ValidationSummary({ errors }: { errors: { field: string; message
         <XCircle size={20} className="text-error-500" />
         <h3 className="font-bold text-error-700">Terdapat {errors.length} kesalahan:</h3>
       </div>
-      
+
       <ul className="list-disc list-inside space-y-1 ml-6 text-sm text-error-700">
         {errors.map((error, index) => (
           <li key={index} className="pl-1">
@@ -153,7 +149,7 @@ export function FieldValidationWrapper({
           {label}
         </label>
       )}
-      
+
       <div
         className={`
           relative transition-all duration-200
@@ -163,14 +159,14 @@ export function FieldValidationWrapper({
         `}
       >
         {children}
-        
+
         {/* Validation Icons */}
         {hasSuccess && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
             <CheckCircle2 size={18} className="text-success-500" />
           </div>
         )}
-        
+
         {hasError && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
             <XCircle size={18} className="text-error-500" />
@@ -180,8 +176,8 @@ export function FieldValidationWrapper({
 
       {/* Inline Error Message */}
       {hasError && (
-        <ValidationMessage 
-          message={error} 
+        <ValidationMessage
+          message={error}
           type="error"
           showIcon={true}
           className="mt-1"

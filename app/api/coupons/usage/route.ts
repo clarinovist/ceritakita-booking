@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
         }
     } catch (error) {
         const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+        const couponId = new URL(req.url).searchParams.get('couponId');
         logger.error('Error fetching coupon usage', { couponId }, error as Error);
         return NextResponse.json(errorResponse, { status: statusCode });
     }

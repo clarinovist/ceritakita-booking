@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
         });
     } catch (error) {
         const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
-        logger.error('Error validating coupon', { code: body.code }, error as Error);
+        logger.error('Error validating coupon', {}, error as Error);
         return NextResponse.json(
             { ...errorResponse, error: 'Terjadi kesalahan saat memvalidasi kupon' },
             { status: statusCode }

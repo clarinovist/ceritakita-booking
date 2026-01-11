@@ -1,48 +1,47 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Tag, ShoppingBag, ImageIcon, Camera } from 'lucide-react';
+import { Tag, ShoppingBag, Camera, type LucideIcon } from 'lucide-react';
 import { ServicesTable } from './tables/ServicesTable';
 import { AddonsTable } from './tables/AddonsTable';
 import { PhotographersTable } from './tables/PhotographersTable';
-import PortfolioManagement from '../PortfolioManagement';
+import { Service, Addon, Photographer } from '@/lib/types';
 
 // Props matching what AdminDashboard passes to these components
 interface CatalogManagementProps {
     // Service hooks
-    services: any[];
+    services: Service[];
     handleOpenAddServiceModal: () => void;
-    handleOpenEditServiceModal: (service: any) => void;
+    handleOpenEditServiceModal: (service: Service) => void;
     handleDeleteService: (id: string) => void;
     toggleServiceActive: (id: string, active: boolean) => void;
 
     // Addon hooks
-    addons: any[];
+    addons: Addon[];
     handleOpenAddAddonModal: () => void;
-    handleOpenEditAddonModal: (addon: any) => void;
+    handleOpenEditAddonModal: (addon: Addon) => void;
     handleDeleteAddon: (id: string) => void;
     toggleAddonActive: (id: string, active: boolean) => void;
 
     // Photographer hooks
-    photographers: any[];
+    photographers: Photographer[];
     handleOpenAddPhotographerModal: () => void;
-    handleOpenEditPhotographerModal: (photographer: any) => void;
+    handleOpenEditPhotographerModal: (photographer: Photographer) => void;
     handleDeletePhotographer: (id: string) => void;
     togglePhotographerActive: (id: string, active: boolean) => void;
 }
 
-type TabType = 'services' | 'addons' | 'portfolio' | 'photographers';
+type TabType = 'services' | 'addons' | 'photographers';
 
 interface TabConfig {
     id: TabType;
     label: string;
-    icon: any;
+    icon: LucideIcon;
 }
 
 const TABS: TabConfig[] = [
     { id: 'services', label: 'Services', icon: Tag },
     { id: 'addons', label: 'Add-ons', icon: ShoppingBag },
-    { id: 'portfolio', label: 'Portfolio', icon: ImageIcon },
     { id: 'photographers', label: 'Photographers', icon: Camera }
 ];
 
@@ -119,11 +118,6 @@ export default function CatalogManagement({
                         </div>
                     )}
 
-                    {activeTab === 'portfolio' && (
-                        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <PortfolioManagement services={services} />
-                        </div>
-                    )}
 
                     {activeTab === 'photographers' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">

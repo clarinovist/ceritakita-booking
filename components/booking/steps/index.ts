@@ -5,4 +5,3 @@ export { ScheduleInfo } from './ScheduleInfo';
 export { CustomerInfo } from './CustomerInfo';
 export { PaymentInfo } from './PaymentInfo';
 export { OrderSummary } from './OrderSummary';
-export { PortfolioShowcase } from './PortfolioShowcase';

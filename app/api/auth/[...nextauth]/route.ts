@@ -9,7 +9,7 @@ async function initializeAdmin() {
   try {
     const { seedDefaultAdmin } = await import('@/lib/auth-server');
     seedDefaultAdmin();
-  } catch (error) {
+  } catch {
     // Ignore errors during initialization
   }
 }
