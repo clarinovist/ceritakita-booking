@@ -50,6 +50,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /root/nginx-configs:/etc/nginx/conf.d:ro
     depends_on:
       app:
         condition: service_healthy
