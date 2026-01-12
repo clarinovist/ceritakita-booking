@@ -38,8 +38,8 @@ export async function GET() {
         const portfolioImages = db.prepare(`
             SELECT p.id, p.image_url, p.service_id, s.name as service_name, p.display_order
             FROM portfolio_images p
-            LEFT JOIN service_categories s ON p.service_id = s.id
-            WHERE p.is_active = 1
+            JOIN service_categories s ON p.service_id = s.id
+            WHERE p.is_active = 1 AND s.is_active = 1
             ORDER BY p.display_order ASC
         `).all() as (PortfolioImage & { service_name: string })[];
 
