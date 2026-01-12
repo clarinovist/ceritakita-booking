@@ -98,3 +98,14 @@ export const priceAdjustmentSchema = z.object({
   price: z.number().nonnegative().optional(), // Optional override price
   reason: z.string().max(500).optional()
 });
+
+// Expense validation schema
+export const expenseSchema = z.object({
+  date: z.string().refine((val) => {
+    const date = new Date(val);
+    return !isNaN(date.getTime());
+  }, 'Invalid date format'),
+  category: z.enum(['operational', 'equipment', 'marketing', 'salary', 'other']),
+  description: z.string().min(1, 'Description is required').max(255, 'Description too long'),
+  amount: z.number().min(0, 'Amount must be positive'),
+});

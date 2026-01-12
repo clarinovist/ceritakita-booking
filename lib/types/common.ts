@@ -5,7 +5,7 @@
  */
 
 // Admin-specific types that don't fit into other domains
-export type ViewMode = 'dashboard' | 'calendar' | 'table' | 'catalog' | 'coupons' | 'users' | 'payment-settings' | 'ads' | 'settings' | 'leads' | 'homepage';
+export type ViewMode = 'dashboard' | 'calendar' | 'table' | 'catalog' | 'coupons' | 'users' | 'payment-settings' | 'ads' | 'settings' | 'leads' | 'homepage' | 'finance';
 
 export type FilterStatus = 'All' | 'Active' | 'Canceled' | 'Completed';
 

@@ -13,6 +13,7 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   portfolio: { view: true, create: true, update: true },
   coupons: { view: true, create: true, update: true },
   export: { bookings: true, financial: true },
+  finance: true,
   dashboard: true,
   ads: true,
   settings: true,
@@ -33,6 +34,7 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   portfolio: { view: true, create: true, update: true },
   coupons: { view: false, create: false, update: false },
   export: { bookings: false, financial: false },
+  finance: false,
   dashboard: false,
   ads: false,
   settings: false,
@@ -95,6 +97,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
     { id: 'users', icon: 'Users', label: 'Users', permission: 'users' },
     { id: 'payment-settings', icon: 'CreditCard', label: 'Payment Settings', permission: 'payment' },
     { id: 'settings', icon: 'Settings', label: 'Settings', permission: 'settings' },
+    { id: 'finance', icon: 'Wallet', label: 'Finance', permission: 'finance' },
     { id: 'homepage', icon: 'Home', label: 'Homepage CMS', permission: 'homepage_cms' },
   ];
 

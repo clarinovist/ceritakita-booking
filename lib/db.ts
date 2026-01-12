@@ -436,6 +436,26 @@ function initializeSchema() {
     // Column already exists
   }
 
+  // Create expenses table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS expenses (
+      id TEXT PRIMARY KEY,
+      date TEXT NOT NULL,
+      category TEXT NOT NULL CHECK(category IN ('operational', 'equipment', 'marketing', 'salary', 'other')),
+      description TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      created_by TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Create indexes for expenses table
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
+    CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
+  `);
+
   // --- HOMEPAGE CMS TABLES ---
 
   // 1. Homepage Content (Key-Value Store)

@@ -15,6 +15,7 @@ import CatalogManagement from './CatalogManagement';
 import HomepageCMS from './HomepageCMS';
 import AdsPerformance from './AdsPerformance';
 import DateFilterToolbar from './DateFilterToolbar';
+import { FinanceModule } from './FinanceModule';
 
 // Tables
 import { BookingsTable } from './tables/BookingsTable';
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
     const getAvailableViewModes = (): ViewMode[] => {
         // Note: 'users' and 'payment-settings' are now handled within SettingsManagement, 
         // 'services', 'portfolio', 'addons', 'photographers' are now handled within CatalogManagement
-        const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'catalog', 'coupons', 'settings', 'homepage'];
+        const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'catalog', 'coupons', 'settings', 'homepage', 'finance'];
 
         if (userRole === 'admin') {
             return allModes;
@@ -85,6 +86,7 @@ export default function AdminDashboard() {
         if (hasCatalogAccess) allowedModes.push('catalog');
 
         if (userPermissions?.coupons?.view) allowedModes.push('coupons');
+        if (userPermissions?.finance) allowedModes.push('finance');
         if (userPermissions?.settings) allowedModes.push('settings');
         if (userPermissions?.homepage_cms) allowedModes.push('homepage');
 
@@ -485,6 +487,13 @@ export default function AdminDashboard() {
                     {viewMode === 'settings' && (
                         <div className="animate-in fade-in">
                             <SettingsManagement />
+                        </div>
+                    )}
+
+                    {/* FINANCE VIEW */}
+                    {viewMode === 'finance' && (
+                        <div className="animate-in fade-in">
+                            <FinanceModule />
                         </div>
                     )}
 

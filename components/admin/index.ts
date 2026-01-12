@@ -29,6 +29,8 @@ export { default as PaymentMethodsManagement } from './PaymentMethodsManagement'
 export { default as SettingsManagement } from './SettingsManagement';
 /** User management component */
 export { default as UserManagement } from './UserManagement';
+/** Finance module container */
+export { FinanceModule } from './FinanceModule';
 
 // Hooks
 /** Hook for managing add-ons data and operations */

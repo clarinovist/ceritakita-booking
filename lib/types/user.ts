@@ -37,6 +37,7 @@ export interface UserPermissions {
     bookings: boolean;
     financial: boolean;
   };
+  finance: boolean;
   dashboard: boolean;
   ads: boolean;
   settings: boolean;
