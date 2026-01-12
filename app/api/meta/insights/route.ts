@@ -144,21 +144,26 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
     };
 
     // Save to local database for historical tracking
-    // This is done after the API fetch to ensure we always return fresh data
-    // Errors are logged but don't block the response
-    try {
-      const adsData: AdsData = {
-        spend: result.spend,
-        impressions: result.impressions,
-        inlineLinkClicks: result.inlineLinkClicks,
-        reach: result.reach,
-        date_start: result.date_start,
-        date_end: result.date_end,
-      };
-      saveAdsLog(adsData);
-    } catch (dbError) {
-      // Log the error but don't fail the request
-      logger.warn('Database save failed (non-critical)', { error: (dbError as Error).message });
+    // IMPORANT: Only save if this is a DAILY record (single day)
+    // If getting a range (e.g. 30 days), the API returns the TOTAL for that range
+    // We don't want to save the 30-day total as if it were a single day's record
+    const isSingleDay = (!since && !until) || (since === until);
+
+    if (isSingleDay) {
+      try {
+        const adsData: AdsData = {
+          spend: result.spend,
+          impressions: result.impressions,
+          inlineLinkClicks: result.inlineLinkClicks,
+          reach: result.reach,
+          date_start: result.date_start,
+          date_end: result.date_end,
+        };
+        saveAdsLog(adsData);
+      } catch (dbError) {
+        // Log the error but don't fail the request
+        logger.warn('Database save failed (non-critical)', { error: (dbError as Error).message });
+      }
     }
     return NextResponse.json(
       {

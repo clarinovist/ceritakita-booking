@@ -12,9 +12,15 @@ import DateFilterToolbar from './DateFilterToolbar';
 
 export const FinanceModule: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'dashboard' | 'revenue' | 'expenses' | 'reports'>('dashboard');
-    const [dateRange, setDateRange] = useState<DateRange>({
-        start: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0] ?? '',
-        end: new Date().toISOString().split('T')[0] ?? ''
+    const [dateRange, setDateRange] = useState<DateRange>(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return {
+            start: `${year}-${month}-01`,
+            end: `${year}-${month}-${day}`
+        };
     });
 
     const { data, fetchSummary } = useFinanceSummary();
@@ -74,7 +80,7 @@ export const FinanceModule: React.FC = () => {
                 )}
 
                 {activeTab === 'expenses' && (
-                    <ExpenseManager />
+                    <ExpenseManager dateRange={dateRange} />
                 )}
 
                 {activeTab === 'reports' && (

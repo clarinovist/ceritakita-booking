@@ -31,6 +31,7 @@ interface ExpenseRow {
  */
 export function getExpenses(startDate?: string, endDate?: string): Expense[] {
     const db = getDb();
+
     let query = 'SELECT * FROM expenses';
     const params: string[] = [];
 
@@ -198,3 +199,4 @@ export function getExpenseSummaryByCategory(startDate?: string, endDate?: string
 
     return summary;
 }
+

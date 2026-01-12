@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useExpenses } from '../hooks/useExpenses';
 import { Plus, Trash2, Edit2, X, Check } from 'lucide-react';
+import { DateRange } from '@/lib/types';
 
-export const ExpenseManager: React.FC = () => {
+interface ExpenseManagerProps {
+    dateRange?: DateRange;
+}
+
+export const ExpenseManager: React.FC<ExpenseManagerProps> = ({ dateRange }) => {
     const {
         expenses,
         loading,
@@ -13,8 +18,13 @@ export const ExpenseManager: React.FC = () => {
         setFormData,
         editingExpense,
         handleOpenModal,
-        handleSubmit
+        handleSubmit,
+        fetchExpenses
     } = useExpenses();
+
+    useEffect(() => {
+        fetchExpenses(dateRange);
+    }, [fetchExpenses, dateRange]);
 
     // Group expenses by month for display? Or just list? 
     // User requested "Tabel daftar expenses dengan filter".
