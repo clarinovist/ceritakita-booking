@@ -39,7 +39,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Create workbook
+    const format = searchParams.get('format');
+
+    // Create workbook (only needed for excel, but logic is shared)
     const workbook = XLSX.utils.book_new();
 
     // Sheet 1: Financial Summary by Service Category
@@ -62,21 +64,116 @@ export async function GET(req: NextRequest) {
     });
 
     const summaryData = Array.from(categoryMap.entries()).map(([category, stats]) => ({
-      'Service Category': category,
-      'Total Bookings': stats.count,
-      'Total Revenue (Rp)': stats.totalRevenue,
-      'Total Paid (Rp)': stats.totalPaid,
-      'Outstanding Balance (Rp)': stats.totalOutstanding,
-      'Collection Rate (%)': stats.totalRevenue > 0 ? ((stats.totalPaid / stats.totalRevenue) * 100).toFixed(2) : '0.00'
+      category,
+      totalBookings: stats.count,
+      totalRevenue: stats.totalRevenue,
+      totalPaid: stats.totalPaid,
+      outstandingBalance: stats.totalOutstanding,
+      collectionRate: stats.totalRevenue > 0 ? (stats.totalPaid / stats.totalRevenue) * 100 : 0
     }));
 
-    // Add total row
-    const totalBookings = bookings.length;
-    const totalRevenue = bookings.reduce((sum, b) => sum + b.finance.total_price, 0);
-    const totalPaid = bookings.reduce((sum, b) => b.finance.payments.reduce((s, p) => s + p.amount, 0) + sum, 0);
-    const totalOutstanding = totalRevenue - totalPaid;
+     // Add total row calculation for JSON
+     const totalBookings = bookings.length;
+     const totalRevenue = bookings.reduce((sum, b) => sum + b.finance.total_price, 0);
+     const totalPaid = bookings.reduce((sum, b) => b.finance.payments.reduce((s, p) => s + p.amount, 0) + sum, 0);
+     const totalOutstanding = totalRevenue - totalPaid;
 
-    summaryData.push({
+    if (format === 'json') {
+         // Sheet 2: Detailed Payment Breakdown (for JSON)
+        interface PaymentDetailJSON {
+            bookingId: string;
+            customerName: string;
+            category: string;
+            bookingDate: string;
+            paymentIndex: number;
+            paymentDate: string;
+            amount: number;
+            note: string;
+            totalPrice: number;
+            remainingBalance: number;
+        }
+        const paymentDetailsJSON: PaymentDetailJSON[] = [];
+        bookings.forEach(b => {
+            const paid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
+            const balance = b.finance.total_price - paid;
+            b.finance.payments.forEach((payment, idx) => {
+                paymentDetailsJSON.push({
+                    bookingId: b.id.substring(0, 8),
+                    customerName: b.customer.name,
+                    category: b.customer.category,
+                    bookingDate: new Date(b.booking.date).toLocaleDateString('id-ID'),
+                    paymentIndex: idx + 1,
+                    paymentDate: payment.date,
+                    amount: payment.amount,
+                    note: payment.note || '-',
+                    totalPrice: b.finance.total_price,
+                    remainingBalance: balance
+                });
+            });
+             if (b.finance.payments.length === 0) {
+                 paymentDetailsJSON.push({
+                    bookingId: b.id.substring(0, 8),
+                    customerName: b.customer.name,
+                    category: b.customer.category,
+                    bookingDate: new Date(b.booking.date).toLocaleDateString('id-ID'),
+                    paymentIndex: 0,
+                    paymentDate: '-',
+                    amount: 0,
+                    note: 'NO PAYMENTS YET',
+                    totalPrice: b.finance.total_price,
+                    remainingBalance: b.finance.total_price
+                 });
+             }
+        });
+
+        // Sheet 3: Outstanding (for JSON)
+        const unpaidBookingsJSON = bookings.filter(b => {
+            const paid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
+            const balance = b.finance.total_price - paid;
+            return balance > 0 && b.status !== 'Cancelled';
+        }).map(b => {
+            const paid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
+            const balance = b.finance.total_price - paid;
+            return {
+                customerName: b.customer.name,
+                whatsapp: b.customer.whatsapp,
+                category: b.customer.category,
+                sessionDate: new Date(b.booking.date).toLocaleDateString('id-ID'),
+                totalPrice: b.finance.total_price,
+                paid: paid,
+                outstanding: balance,
+                daysUntilSession: Math.ceil((new Date(b.booking.date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+                status: b.status
+            };
+        });
+
+        return NextResponse.json({
+            summary: {
+                byCategory: summaryData,
+                totals: {
+                    totalBookings,
+                    totalRevenue,
+                    totalPaid,
+                    totalOutstanding,
+                    collectionRate: totalRevenue > 0 ? (totalPaid / totalRevenue) * 100 : 0
+                }
+            },
+            details: paymentDetailsJSON,
+            outstanding: unpaidBookingsJSON
+        });
+    }
+
+    // EXCEL GENERATION (Original Logic adapted)
+    const summaryDataExcel = summaryData.map(stats => ({
+      'Service Category': stats.category,
+      'Total Bookings': stats.totalBookings,
+      'Total Revenue (Rp)': stats.totalRevenue,
+      'Total Paid (Rp)': stats.totalPaid,
+      'Outstanding Balance (Rp)': stats.outstandingBalance,
+      'Collection Rate (%)': stats.collectionRate.toFixed(2)
+    }));
+
+    summaryDataExcel.push({
       'Service Category': 'TOTAL',
       'Total Bookings': totalBookings,
       'Total Revenue (Rp)': totalRevenue,
@@ -85,7 +182,7 @@ export async function GET(req: NextRequest) {
       'Collection Rate (%)': totalRevenue > 0 ? ((totalPaid / totalRevenue) * 100).toFixed(2) : '0.00'
     });
 
-    const summarySheet = XLSX.utils.json_to_sheet(summaryData);
+    const summarySheet = XLSX.utils.json_to_sheet(summaryDataExcel);
     summarySheet['!cols'] = [
       { wch: 25 },
       { wch: 15 },
