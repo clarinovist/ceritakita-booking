@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SERVICE_CATEGORIES } from './constants';
+import { SERVICE_CATEGORIES as _SERVICE_CATEGORIES } from './constants';
 
 // Customer validation schema
 export const customerSchema = z.object({

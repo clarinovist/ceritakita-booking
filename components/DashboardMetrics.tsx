@@ -27,7 +27,7 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
     const sessionsTotal = sessionBookings.length;
     const sessionsCancelled = sessionBookings.filter(b => b.status === 'Cancelled' || b.status === 'Rescheduled').length;
 
-    const realizedRevenue = completedSessions.reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
+    const _realizedRevenue = completedSessions.reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
 
     // Calculate actual cash received based on PAYMENT DATE
     // We iterate through ALL bookings and check if any payment falls within the selected date range
