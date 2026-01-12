@@ -76,9 +76,14 @@ export const useBookings = () => {
                 const updated = await res.json();
                 setBookings(prev => prev.map(b => b.id === bookingId ? updated : b));
                 setSelectedBooking(updated);
+            } else {
+                const errorData = await res.json();
+                alert(`Failed to update: ${errorData.error || errorData.message || 'Unknown server error'}`);
+                console.error("Update failed:", errorData);
             }
-        } catch {
-            alert("Failed to update");
+        } catch (err) {
+            console.error(err);
+            alert("Failed to update: Network error or server unreachable");
         }
     };
 

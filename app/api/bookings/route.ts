@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
-  readData as readDataSQLite,
-  createBooking,
-  checkSlotAvailability,
-  getSystemSettings
+    readData as readDataSQLite,
+    createBooking,
+    checkSlotAvailability,
+    getSystemSettings
 } from '@/lib/storage-sqlite';
 import { readServices } from '@/lib/storage';
 import { type Booking } from '@/lib/types';
@@ -14,9 +14,9 @@ import { rateLimiters } from '@/lib/rate-limit';
 import { logger, createErrorResponse, createValidationError } from '@/lib/logger';
 import { safeNumber, safeProperty } from '@/lib/type-utils';
 import {
-  recordCouponUsage,
-  incrementCouponUsage,
-  getCouponByCode
+    recordCouponUsage,
+    incrementCouponUsage,
+    getCouponByCode
 } from '@/lib/coupons';
 import { generateWhatsAppMessage, generateWhatsAppLink } from '@/lib/whatsapp-template';
 import formidable from 'formidable';
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
             // Get single booking
             const { readBooking } = await import('@/lib/storage-sqlite');
             const booking = readBooking(bookingId);
-            
+
             if (!booking) {
                 logger.warn('Booking not found', { bookingId });
                 return NextResponse.json(
@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
 
         // Get all bookings
         const data = readDataSQLite();
-        
+
         logger.info('Bookings retrieved successfully', {
             count: data.length
         });
@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     const requestId = crypto.randomUUID();
-    
+
     try {
         // Rate limiting
         const rateLimitResult = rateLimiters.moderate(req);
@@ -214,13 +214,14 @@ export async function POST(req: NextRequest) {
         // BOOKING RULES VALIDATION
         // Fetch system settings for booking rules
         const settings = getSystemSettings();
-        const minBookingNotice = parseInt(settings.min_booking_notice as string) || 1;
+        const parsedMinNotice = parseInt(settings.min_booking_notice as string);
+        const minBookingNotice = isNaN(parsedMinNotice) ? 1 : parsedMinNotice;
         const maxBookingAhead = parseInt(settings.max_booking_ahead as string) || 90;
 
         // Validate booking date against rules
         const bookingDate = new Date(booking.date);
         const today = new Date();
-        
+
         // Reset time to midnight for accurate date comparison
         bookingDate.setHours(0, 0, 0, 0);
         today.setHours(0, 0, 0, 0);
@@ -236,8 +237,8 @@ export async function POST(req: NextRequest) {
                 minBookingNotice
             });
             return NextResponse.json(
-                { 
-                    error: `Booking must be made at least ${minBookingNotice} day(s) in advance`, 
+                {
+                    error: `Booking must be made at least ${minBookingNotice} day(s) in advance`,
                     code: 'MIN_BOOKING_NOTICE_VIOLATED',
                     details: { minBookingNotice, daysDiff }
                 },
@@ -254,8 +255,8 @@ export async function POST(req: NextRequest) {
                 maxBookingAhead
             });
             return NextResponse.json(
-                { 
-                    error: `Cannot book more than ${maxBookingAhead} days in advance`, 
+                {
+                    error: `Cannot book more than ${maxBookingAhead} days in advance`,
                     code: 'MAX_BOOKING_AHEAD_VIOLATED',
                     details: { maxBookingAhead, daysDiff }
                 },
@@ -374,11 +375,11 @@ export async function POST(req: NextRequest) {
             try {
                 // Get coupon by code
                 const coupon = getCouponByCode(couponCode);
-                
+
                 if (coupon) {
                     // Increment coupon usage count
                     incrementCouponUsage(couponCode);
-                    
+
                     // Record detailed usage
                     recordCouponUsage(
                         coupon.id,

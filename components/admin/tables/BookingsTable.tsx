@@ -88,6 +88,7 @@ export const BookingsTable = ({
                             <th className="px-4 py-3">Customer</th>
                             <th className="px-4 py-3">Phone</th>
                             <th className="px-4 py-3">Category</th>
+                            <th className="px-4 py-3">Price</th>
                             <th className="px-4 py-3">Status</th>
                             <th className="px-4 py-3 text-right">Balance</th>
                             <th className="px-4 py-3">Action</th>
@@ -95,7 +96,7 @@ export const BookingsTable = ({
                     </thead>
                     <tbody className="divide-y">
                         {bookings.length === 0 && (
-                            <tr><td colSpan={8} className="text-center p-8 text-gray-400">No bookings found within this date range.</td></tr>
+                            <tr><td colSpan={9} className="text-center p-8 text-gray-400">No bookings found within this date range.</td></tr>
                         )}
                         {bookings.map(b => {
                             const { balance, isPaidOff } = calculateFinance(b);
@@ -105,7 +106,12 @@ export const BookingsTable = ({
                                     <td className="px-4 py-3 text-gray-600">{formatTime(b.booking.date)}</td>
                                     <td className="px-4 py-3 font-medium">
                                         <div className="flex items-center gap-2">
-                                            {b.customer.name}
+                                            <button
+                                                onClick={() => setSelectedBooking(b)}
+                                                className="font-medium text-blue-600 hover:text-blue-800 hover:underline text-left"
+                                            >
+                                                {b.customer.name}
+                                            </button>
                                             {b.status === 'Rescheduled' && (
                                                 <span className="bg-orange-100 text-orange-700 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase border border-orange-200">
                                                     Reschedule
@@ -115,6 +121,7 @@ export const BookingsTable = ({
                                     </td>
                                     <td className="px-4 py-3">{b.customer.whatsapp}</td>
                                     <td className="px-4 py-3">{b.customer.category}</td>
+                                    <td className="px-4 py-3 font-medium">Rp {b.finance.total_price.toLocaleString()}</td>
                                     <td className="px-4 py-3">
                                         {/* Disable dropdown for Completed bookings (immutable final state) */}
                                         {b.status === 'Completed' ? (
@@ -146,9 +153,6 @@ export const BookingsTable = ({
                                     </td>
                                     <td className="px-4 py-3">
                                         <div className="flex gap-2 flex-wrap">
-                                            <button onClick={() => setSelectedBooking(b)} className="text-blue-600 hover:text-blue-800 font-medium text-xs border border-blue-200 px-3 py-1 rounded hover:bg-blue-50">
-                                                Details
-                                            </button>
 
                                             {/* Mark as Completed button - visible when status is Active/Rescheduled and paid */}
                                             {(b.status === 'Active' || b.status === 'Rescheduled') && isPaidOff && (
