@@ -323,18 +323,14 @@ export async function writeData(bookings: Booking[]): Promise<void> {
 export async function createBooking(booking: Booking): Promise<void> {
   const db = getDb();
 
-  // Use file locking to prevent concurrent access issues
-  const result = await withLock(
-    `booking:${booking.id}`,
+  const result = await executeTransaction(
     async () => {
-      return await executeTransaction(
-        async () => {
-          const transaction = db.transaction(() => {
-            // Validate and normalize status
-            const normalizedStatus = normalizeBookingStatus(booking.status);
+      const transaction = db.transaction(() => {
+        // Validate and normalize status
+        const normalizedStatus = normalizeBookingStatus(booking.status);
 
-            // Insert booking
-            const stmt = db.prepare(`
+        // Insert booking
+        const stmt = db.prepare(`
               INSERT INTO bookings (
                 id, created_at, status,
                 customer_name, customer_whatsapp, customer_category, customer_service_id,
@@ -344,63 +340,61 @@ export async function createBooking(booking: Booking): Promise<void> {
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
 
-            stmt.run(
-              booking.id,
-              booking.created_at,
-              normalizedStatus,
-              safeString(booking.customer.name),
-              safeString(booking.customer.whatsapp),
-              safeString(booking.customer.category),
-              booking.customer.serviceId || null,
-              booking.booking.date,
-              booking.booking.notes || null,
-              booking.booking.location_link || null,
-              safeNumber(booking.finance.total_price),
-              booking.finance.service_base_price ?? null,
-              booking.finance.base_discount ?? null,
-              booking.finance.addons_total ?? null,
-              booking.finance.coupon_discount ?? null,
-              booking.finance.coupon_code || null,
-              booking.photographer_id || null
-            );
+        stmt.run(
+          booking.id,
+          booking.created_at,
+          normalizedStatus,
+          safeString(booking.customer.name),
+          safeString(booking.customer.whatsapp),
+          safeString(booking.customer.category),
+          booking.customer.serviceId || null,
+          booking.booking.date,
+          booking.booking.notes || null,
+          booking.booking.location_link || null,
+          safeNumber(booking.finance.total_price),
+          booking.finance.service_base_price ?? null,
+          booking.finance.base_discount ?? null,
+          booking.finance.addons_total ?? null,
+          booking.finance.coupon_discount ?? null,
+          booking.finance.coupon_code || null,
+          booking.photographer_id || null
+        );
 
-            // Insert payments
-            if (booking.finance.payments.length > 0) {
-              const paymentStmt = db.prepare(`
+        // Insert payments
+        if (booking.finance.payments.length > 0) {
+          const paymentStmt = db.prepare(`
                 INSERT INTO payments (booking_id, date, amount, note, proof_filename, proof_url, storage_backend)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
               `);
 
-              for (const payment of booking.finance.payments) {
-                paymentStmt.run(
-                  booking.id,
-                  payment.date,
-                  safeNumber(payment.amount),
-                  payment.note || null,
-                  payment.proof_filename || null,
-                  payment.proof_url || null,
-                  payment.storage_backend || 'local'
-                );
-              }
-            }
-
-            // Insert add-ons
-            if (booking.addons && booking.addons.length > 0) {
-              setBookingAddons(booking.id, booking.addons.map(addon => ({
-                addon_id: addon.addon_id,
-                quantity: addon.quantity,
-                price: safeNumber(addon.price_at_booking)
-              })));
-            }
-          });
-
-          transaction();
-        },
-        async () => {
-          // Rollback logic would go here if needed
-          logger.warn('Transaction rolled back for createBooking', { bookingId: booking.id });
+          for (const payment of booking.finance.payments) {
+            paymentStmt.run(
+              booking.id,
+              payment.date,
+              safeNumber(payment.amount),
+              payment.note || null,
+              payment.proof_filename || null,
+              payment.proof_url || null,
+              payment.storage_backend || 'local'
+            );
+          }
         }
-      );
+
+        // Insert add-ons
+        if (booking.addons && booking.addons.length > 0) {
+          setBookingAddons(booking.id, booking.addons.map(addon => ({
+            addon_id: addon.addon_id,
+            quantity: addon.quantity,
+            price: safeNumber(addon.price_at_booking)
+          })));
+        }
+      });
+
+      transaction();
+    },
+    async () => {
+      // Rollback logic would go here if needed
+      logger.warn('Transaction rolled back for createBooking', { bookingId: booking.id });
     }
   );
 
