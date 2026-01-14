@@ -876,10 +876,18 @@ export interface SystemSettings {
   [key: string]: string;
 }
 
+// Simple in-memory cache for system settings
+let cachedSystemSettings: SystemSettings | null = null;
+
 /**
  * Get all system settings as an object
  */
 export function getSystemSettings(): SystemSettings {
+  // Return cached settings if available
+  if (cachedSystemSettings) {
+    return cachedSystemSettings;
+  }
+
   const db = getDb();
   const stmt = db.prepare('SELECT key, value FROM system_settings ORDER BY key');
   const rows = stmt.all() as Array<{ key: string; value: string }>;
@@ -898,6 +906,9 @@ export function getSystemSettings(): SystemSettings {
     settings[row.key] = row.value;
   });
 
+  // Update cache
+  cachedSystemSettings = Object.freeze(settings);
+
   return settings;
 }
 
@@ -905,10 +916,10 @@ export function getSystemSettings(): SystemSettings {
  * Get a single system setting by key
  */
 export function getSystemSetting(key: string): string | null {
-  const db = getDb();
-  const stmt = db.prepare('SELECT value FROM system_settings WHERE key = ?');
-  const result = stmt.get(key) as { value: string } | undefined;
-  return result ? result.value : null;
+  // Use cached settings if available to avoid DB hit
+  const settings = getSystemSettings();
+  const val = settings[key];
+  return val !== undefined ? val : null;
 }
 
 /**
@@ -916,6 +927,9 @@ export function getSystemSetting(key: string): string | null {
  * Includes audit trail logging
  */
 export function updateSystemSettings(settings: Record<string, string>, updatedBy: string = 'system'): void {
+  // Invalidate cache
+  cachedSystemSettings = null;
+
   const db = getDb();
 
   const selectStmt = db.prepare('SELECT value FROM system_settings WHERE key = ?');
@@ -955,6 +969,9 @@ export function updateSystemSettings(settings: Record<string, string>, updatedBy
  * Initialize system settings with defaults (if not exists)
  */
 export function initializeSystemSettings(): void {
+  // Invalidate cache
+  cachedSystemSettings = null;
+
   const db = getDb();
   const defaults: Record<string, string> = {
     site_name: 'Cerita Kita',
