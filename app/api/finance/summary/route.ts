@@ -5,6 +5,8 @@ import { readData as readBookings } from '@/lib/storage-sqlite';
 import { createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
     try {
         const rateLimitResult = rateLimiters.moderate(req);
