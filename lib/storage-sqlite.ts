@@ -5,7 +5,7 @@
 
 import 'server-only';
 import getDb from './db';
-import { getBookingAddons, setBookingAddons, type BookingAddon } from './addons';
+import { getBookingAddons, getBookingAddonsForBookings, setBookingAddons, type BookingAddon } from './addons';
 import { logger, AppError } from './logger';
 import { normalizeBookingStatus, safeString, safeNumber, executeTransaction } from './type-utils';
 import { withLock } from './file-lock';
@@ -156,6 +156,49 @@ function getPaymentsForBooking(bookingId: string): Payment[] {
 }
 
 /**
+ * Get payments for multiple bookings
+ */
+function getPaymentsForBookings(bookingIds: string[]): Map<string, Payment[]> {
+  if (bookingIds.length === 0) return new Map();
+
+  const db = getDb();
+  const resultMap = new Map<string, Payment[]>();
+  bookingIds.forEach(id => resultMap.set(id, []));
+
+  const chunkSize = 900;
+  for (let i = 0; i < bookingIds.length; i += chunkSize) {
+    const chunk = bookingIds.slice(i, i + chunkSize);
+    const placeholders = chunk.map(() => '?').join(',');
+
+    const stmt = db.prepare(`
+      SELECT booking_id, date, amount, note, proof_filename, proof_url, storage_backend
+      FROM payments
+      WHERE booking_id IN (${placeholders})
+      ORDER BY date ASC, id ASC
+    `);
+
+    // We need to cast the result to include booking_id which is not in PaymentRow
+    const rows = stmt.all(...chunk) as (PaymentRow & { booking_id: string })[];
+
+    for (const row of rows) {
+      const bookingId = String(row.booking_id);
+      const current = resultMap.get(bookingId) || [];
+      current.push({
+        date: row.date,
+        amount: row.amount,
+        note: row.note || '',
+        ...(row.proof_filename && { proof_filename: row.proof_filename }),
+        ...(row.proof_url && { proof_url: row.proof_url }),
+        ...(row.storage_backend && { storage_backend: row.storage_backend as 'local' | 'b2' }),
+      });
+      resultMap.set(bookingId, current);
+    }
+  }
+
+  return resultMap;
+}
+
+/**
  * Get reschedule history for a booking
  */
 function getRescheduleHistory(bookingId: string): RescheduleHistory[] {
@@ -175,6 +218,47 @@ function getRescheduleHistory(bookingId: string): RescheduleHistory[] {
     rescheduled_at: row.rescheduled_at,
     ...(row.reason && { reason: row.reason }),
   }));
+}
+
+/**
+ * Get reschedule history for multiple bookings
+ */
+function getRescheduleHistoryForBookings(bookingIds: string[]): Map<string, RescheduleHistory[]> {
+  if (bookingIds.length === 0) return new Map();
+
+  const db = getDb();
+  const resultMap = new Map<string, RescheduleHistory[]>();
+  bookingIds.forEach(id => resultMap.set(id, []));
+
+  const chunkSize = 900;
+  for (let i = 0; i < bookingIds.length; i += chunkSize) {
+    const chunk = bookingIds.slice(i, i + chunkSize);
+    const placeholders = chunk.map(() => '?').join(',');
+
+    const stmt = db.prepare(`
+      SELECT booking_id, id, old_date, new_date, rescheduled_at, reason
+      FROM reschedule_history
+      WHERE booking_id IN (${placeholders})
+      ORDER BY rescheduled_at ASC
+    `);
+
+    const rows = stmt.all(...chunk) as (RescheduleHistoryRow & { booking_id: string })[];
+
+    for (const row of rows) {
+      const bookingId = String(row.booking_id);
+      const current = resultMap.get(bookingId) || [];
+      current.push({
+        id: row.id,
+        old_date: row.old_date,
+        new_date: row.new_date,
+        rescheduled_at: row.rescheduled_at,
+        ...(row.reason && { reason: row.reason }),
+      });
+      resultMap.set(bookingId, current);
+    }
+  }
+
+  return resultMap;
 }
 
 /**
@@ -651,10 +735,19 @@ export function searchBookings(query: string): Booking[] {
 
   const rows = stmt.all(searchPattern, searchPattern) as BookingRow[];
 
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const bookingIds = rows.map(r => String(r.id));
+  const paymentsByBookingId = getPaymentsForBookings(bookingIds);
+  const addonsByBookingId = getBookingAddonsForBookings(bookingIds);
+  const historyByBookingId = getRescheduleHistoryForBookings(bookingIds);
+
   return rows.map(row => {
-    const payments = getPaymentsForBooking(String(row.id));
-    const addons = getBookingAddons(String(row.id));
-    const rescheduleHistory = getRescheduleHistory(String(row.id));
+    const payments = paymentsByBookingId.get(String(row.id)) || [];
+    const addons = addonsByBookingId.get(String(row.id)) || [];
+    const rescheduleHistory = historyByBookingId.get(String(row.id)) || [];
     return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }

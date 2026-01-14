@@ -179,6 +179,50 @@ export function getBookingAddons(bookingId: string): BookingAddon[] {
 }
 
 /**
+ * Get add-ons for multiple bookings
+ */
+export function getBookingAddonsForBookings(bookingIds: string[]): Map<string, BookingAddon[]> {
+  if (bookingIds.length === 0) return new Map();
+
+  const db = getDb();
+  const resultMap = new Map<string, BookingAddon[]>();
+
+  // Initialize map with empty arrays for all requested IDs (optional, but good practice)
+  bookingIds.forEach(id => resultMap.set(id, []));
+
+  // Chunk queries to avoid SQLite parameter limits
+  const chunkSize = 900;
+  for (let i = 0; i < bookingIds.length; i += chunkSize) {
+    const chunk = bookingIds.slice(i, i + chunkSize);
+    const placeholders = chunk.map(() => '?').join(',');
+
+    const stmt = db.prepare(`
+      SELECT ba.booking_id, ba.addon_id, a.name as addon_name, ba.quantity, ba.price_at_booking
+      FROM booking_addons ba
+      JOIN addons a ON ba.addon_id = a.id
+      WHERE ba.booking_id IN (${placeholders})
+      ORDER BY a.name ASC
+    `);
+
+    const rows = stmt.all(...chunk) as any[];
+
+    for (const row of rows) {
+      const bookingId = String(row.booking_id);
+      const current = resultMap.get(bookingId) || [];
+      current.push({
+        addon_id: row.addon_id,
+        addon_name: row.addon_name,
+        quantity: row.quantity,
+        price_at_booking: row.price_at_booking,
+      });
+      resultMap.set(bookingId, current);
+    }
+  }
+
+  return resultMap;
+}
+
+/**
  * Set add-ons for a booking (replaces existing add-ons)
  */
 export function setBookingAddons(bookingId: string, addons: { addon_id: string; quantity: number; price: number }[]): void {
