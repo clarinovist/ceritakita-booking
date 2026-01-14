@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Booking } from "@/lib/storage";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { DollarSign, Users, CalendarX, CheckCircle, TrendingUp, TrendingDown, Clock, Wallet } from 'lucide-react';
@@ -11,7 +12,68 @@ interface Props {
     dateRange: { start: string; end: string };
 }
 
+// Date helpers
+const parseLocalDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year!, month! - 1, day!);
+};
+
+const formatDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+};
+
+const subtractMonth = (d: Date) => {
+    const newDate = new Date(d);
+    newDate.setMonth(d.getMonth() - 1);
+    // Handle month overflow (e.g., March 31 -> Feb 28/29)
+    if (d.getDate() !== newDate.getDate()) {
+        newDate.setDate(0);
+    }
+    return newDate;
+};
+
+const getPreviousDateRange = (start: string, end: string) => {
+    const startDate = parseLocalDate(start);
+    const endDate = parseLocalDate(end);
+
+    return {
+        start: formatDate(subtractMonth(startDate)),
+        end: formatDate(subtractMonth(endDate))
+    };
+};
+
+const calculateTrend = (current: number, previous: number) => {
+    if (previous === 0) {
+        if (current === 0) return { percent: 0, isPositive: true };
+        return { percent: 100, isPositive: true };
+    }
+    const change = current - previous;
+    const percent = Math.round((change / previous) * 100);
+    return {
+        percent: Math.abs(percent),
+        isPositive: change >= 0
+    };
+};
+
 export default function DashboardMetrics({ sessionBookings, createdBookings, allBookings, dateRange }: Props) {
+
+    // Calculate previous period metrics for trends
+    const prevDateRange = useMemo(() => getPreviousDateRange(dateRange.start, dateRange.end), [dateRange.start, dateRange.end]);
+
+    const prevSessionBookings = useMemo(() => {
+        return allBookings.filter(b => {
+            const sessionDate = new Date(b.booking.date).toISOString().split('T')[0];
+            return sessionDate && sessionDate >= prevDateRange.start && sessionDate <= prevDateRange.end;
+        });
+    }, [allBookings, prevDateRange]);
+
+    const prevSessionsTotal = prevSessionBookings.length;
+    const prevSessionRevenue = prevSessionBookings
+        .filter(b => b.status !== 'Cancelled')
+        .reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
 
     // Metrics calculations
     const pipelineTotalBookings = createdBookings.length;
@@ -21,6 +83,10 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
 
     // Session Revenue (Operational Value - "Omzet Potensial")
     const sessionRevenue = sessionBookings.filter(b => b.status !== 'Cancelled').reduce((sum, b) => sum + (b.finance.total_price || 0), 0);
+
+    // Calculate trends
+    const bookingsTrend = calculateTrend(sessionBookings.length, prevSessionsTotal);
+    const revenueTrend = calculateTrend(sessionRevenue, prevSessionRevenue);
 
     const completedSessions = sessionBookings.filter(b => b.status === 'Completed');
     const sessionsCompleted = completedSessions.length;
@@ -65,11 +131,11 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
 
     const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#6366f1'];
 
-    // Helper for rendering trend indicator (mock logic for now as we don't have prev period)
-    const renderTrend = (isPositive: boolean = true) => (
-        <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${isPositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-            {isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-            <span>{isPositive ? '+12%' : '-2%'}</span>
+    // Helper for rendering trend indicator
+    const renderTrend = (trend: { percent: number; isPositive: boolean }) => (
+        <div className={`flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${trend.isPositive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+            {trend.isPositive ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+            <span>{trend.isPositive ? '+' : '-'}{trend.percent}%</span>
         </div>
     );
 
@@ -93,7 +159,7 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
                         <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform">
                             <Users size={24} />
                         </div>
-                        {renderTrend(true)}
+                        {renderTrend(bookingsTrend)}
                     </div>
                     <div>
                         <p className="text-slate-500 text-sm font-medium mb-1">Total Bookings</p>
@@ -108,7 +174,7 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
                         <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:scale-110 transition-transform">
                             <DollarSign size={24} />
                         </div>
-                        {renderTrend(true)}
+                        {renderTrend(revenueTrend)}
                     </div>
                     <div>
                         <p className="text-slate-500 text-sm font-medium mb-1">Potential Revenue</p>
