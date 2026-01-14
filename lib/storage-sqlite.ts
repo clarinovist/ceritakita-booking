@@ -77,6 +77,7 @@ interface BookingRow {
 }
 
 interface PaymentRow {
+  booking_id?: string;
   date: string;
   amount: number;
   note?: string | null;
@@ -87,6 +88,7 @@ interface PaymentRow {
 
 interface RescheduleHistoryRow {
   id: number;
+  booking_id?: string;
   old_date: string;
   new_date: string;
   rescheduled_at: string;
@@ -548,10 +550,94 @@ export function getBookingsByStatus(status: 'Active' | 'Completed' | 'Cancelled'
   const stmt = db.prepare('SELECT * FROM bookings WHERE status = ? ORDER BY created_at DESC');
   const rows = stmt.all(status) as BookingRow[];
 
+  if (rows.length === 0) {
+    return [];
+  }
+
+  // Batch fetch related data using subqueries for efficiency
+  // This avoids the N+1 query problem by fetching all related data in just 3 additional queries
+
+  // 1. Fetch all payments for these bookings
+  const paymentsStmt = db.prepare(`
+    SELECT booking_id, date, amount, note, proof_filename, proof_url, storage_backend
+    FROM payments
+    WHERE booking_id IN (SELECT id FROM bookings WHERE status = ?)
+    ORDER BY date ASC, id ASC
+  `);
+  const allPayments = paymentsStmt.all(status) as PaymentRow[];
+
+  // 2. Fetch all addons for these bookings
+  const addonsStmt = db.prepare(`
+    SELECT ba.booking_id, ba.addon_id, a.name as addon_name, ba.quantity, ba.price_at_booking
+    FROM booking_addons ba
+    JOIN addons a ON ba.addon_id = a.id
+    WHERE ba.booking_id IN (SELECT id FROM bookings WHERE status = ?)
+    ORDER BY a.name ASC
+  `);
+  // Define a local type that includes booking_id
+  type BookingAddonWithId = BookingAddon & { booking_id: string };
+  const allAddons = addonsStmt.all(status) as BookingAddonWithId[];
+
+  // 3. Fetch all reschedule history
+  const rescheduleStmt = db.prepare(`
+    SELECT id, booking_id, old_date, new_date, rescheduled_at, reason
+    FROM reschedule_history
+    WHERE booking_id IN (SELECT id FROM bookings WHERE status = ?)
+    ORDER BY rescheduled_at ASC
+  `);
+  const allRescheduleHistory = rescheduleStmt.all(status) as RescheduleHistoryRow[];
+
+  // Group data by booking_id
+  const paymentsMap = new Map<string, Payment[]>();
+  const addonsMap = new Map<string, BookingAddon[]>();
+  const rescheduleMap = new Map<string, RescheduleHistory[]>();
+
+  for (const payment of allPayments) {
+    if (!payment.booking_id) continue;
+    const bookingId = String(payment.booking_id);
+    const bookingPayments = paymentsMap.get(bookingId) || [];
+    bookingPayments.push({
+      date: payment.date,
+      amount: payment.amount,
+      note: payment.note || '',
+      ...(payment.proof_filename && { proof_filename: payment.proof_filename }),
+      ...(payment.proof_url && { proof_url: payment.proof_url }),
+      ...(payment.storage_backend && { storage_backend: payment.storage_backend as 'local' | 'b2' }),
+    });
+    paymentsMap.set(bookingId, bookingPayments);
+  }
+
+  for (const addon of allAddons) {
+    const bookingId = String(addon.booking_id);
+    const bookingAddons = addonsMap.get(bookingId) || [];
+    bookingAddons.push({
+      addon_id: addon.addon_id,
+      addon_name: addon.addon_name,
+      quantity: addon.quantity,
+      price_at_booking: addon.price_at_booking
+    });
+    addonsMap.set(bookingId, bookingAddons);
+  }
+
+  for (const history of allRescheduleHistory) {
+    if (!history.booking_id) continue;
+    const bookingId = String(history.booking_id);
+    const bookingHistory = rescheduleMap.get(bookingId) || [];
+    bookingHistory.push({
+      id: history.id,
+      old_date: history.old_date,
+      new_date: history.new_date,
+      rescheduled_at: history.rescheduled_at,
+      ...(history.reason && { reason: history.reason }),
+    });
+    rescheduleMap.set(bookingId, bookingHistory);
+  }
+
   return rows.map(row => {
-    const payments = getPaymentsForBooking(String(row.id));
-    const addons = getBookingAddons(String(row.id));
-    const rescheduleHistory = getRescheduleHistory(String(row.id));
+    const bookingId = String(row.id);
+    const payments = paymentsMap.get(bookingId) || [];
+    const addons = addonsMap.get(bookingId) || [];
+    const rescheduleHistory = rescheduleMap.get(bookingId) || [];
     return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
