@@ -51,6 +51,9 @@ export async function addPriceAdjustment(
         // Update existing addon quantity
         newAddons = [...existingAddons];
         const existing = newAddons[existingAddonIndex];
+        if (!existing) {
+             throw new Error("Unexpected error: addon not found at index");
+        }
         newAddons[existingAddonIndex] = {
             ...existing,
             quantity: existing.quantity + quantity
@@ -124,35 +127,50 @@ export async function addExtraPerson(booking: Booking, count: number = 1) {
     });
 }
 
+// Map defining which addon corresponds to which service transition
+export type ServiceTransitionMap = Record<string, Record<string, string>>;
+
+export const SERVICE_UPGRADE_MAP: ServiceTransitionMap = {
+    'Prewedding Bronze': {
+        'Prewedding Silver': 'Upgrade ke Prewedding Silver',
+    },
+    'Prewedding Silver': {
+        'Prewedding Bronze': 'Downgrade ke Prewedding Bronze',
+    },
+    // Add more transitions here as needed
+};
+
+/**
+ * Helper to find the addon name for a service upgrade/downgrade
+ */
+export function getServiceUpgradeAddonName(currentCategory: string, targetCategory: string): string | null {
+    const transitions = SERVICE_UPGRADE_MAP[currentCategory];
+    if (!transitions) return null;
+    return transitions[targetCategory] || null;
+}
+
 /**
  * Helper for service upgrade
  */
 export async function upgradeService(booking: Booking, targetService: string) {
-    // This logic is complex because we need to know WHICH upgrade addon maps to WHICH transition.
-    // For now, let's keep it simple or unimplemented as it requires a map of transitions.
-    // The plan mentioned explicit map.
-
-    // Simplified for the "Silver Upgrade" case mentioned in requirements
-    const addons = getAllAddons();
-
-    let addonName = '';
-    if (booking.customer.category === 'Prewedding Bronze' && targetService === 'Prewedding Silver') {
-        addonName = 'Upgrade ke Prewedding Silver';
-    } else if (booking.customer.category === 'Prewedding Silver' && targetService === 'Prewedding Bronze') {
-        addonName = 'Downgrade ke Prewedding Bronze';
-    }
+    const currentCategory = booking.customer.category;
+    const addonName = getServiceUpgradeAddonName(currentCategory, targetService);
 
     if (!addonName) {
-        throw new Error(`Automatic upgrade path from ${booking.customer.category} to ${targetService} not defined`);
+        throw new Error(`Automatic upgrade path from ${currentCategory} to ${targetService} not defined`);
     }
 
+    const addons = getAllAddons();
     const upgradeAddon = addons.find(a => a.name === addonName);
-    if (!upgradeAddon) throw new Error(`Addon "${addonName}" not found`);
+
+    if (!upgradeAddon) {
+        throw new Error(`Addon "${addonName}" required for upgrade not found in database`);
+    }
 
     return addPriceAdjustment(booking, {
         bookingId: booking.id,
         addonId: upgradeAddon.id,
         quantity: 1,
-        reason: `Upgrade dari ${booking.customer.category} ke ${targetService}`
+        reason: `Upgrade dari ${currentCategory} ke ${targetService}`
     });
 }
