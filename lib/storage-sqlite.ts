@@ -867,6 +867,68 @@ export function saveAdsLog(data: AdsData): void {
 }
 
 /**
+ * Save multiple Meta Ads performance data logs in a single transaction
+ * @param dataList Array of AdsData objects
+ */
+export function saveAdsLogBatch(dataList: AdsData[]): void {
+  const db = getDb();
+
+  if (dataList.length === 0) return;
+
+  const validDataList = dataList.filter(data => {
+    if (data.spend < 0 || data.impressions < 0 || data.inlineLinkClicks < 0 || data.reach < 0) {
+      logger.warn('Invalid ads data - negative values detected, skipping save', {
+        spend: data.spend,
+        impressions: data.impressions,
+        clicks: data.inlineLinkClicks,
+        reach: data.reach
+      });
+      return false;
+    }
+    return true;
+  });
+
+  if (validDataList.length === 0) return;
+
+  const transaction = db.transaction(() => {
+    const stmt = db.prepare(`
+      INSERT OR REPLACE INTO ads_performance_log (
+        date_record, spend, impressions, clicks, reach, updated_at
+      ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    for (const data of validDataList) {
+      let dateRecord: string;
+      if (data.date_start) {
+        dateRecord = data.date_start;
+      } else {
+        const now = new Date();
+        dateRecord = now.toISOString().split('T')[0] || '';
+      }
+
+      stmt.run(
+        dateRecord,
+        data.spend,
+        data.impressions,
+        data.inlineLinkClicks,
+        data.reach
+      );
+    }
+  });
+
+  try {
+    transaction();
+    logger.info('Saved batched ads performance logs', { count: validDataList.length });
+  } catch (error) {
+    logger.error('Failed to save batched ads performance logs', {
+      error: error instanceof Error ? error.message : String(error),
+      count: validDataList.length
+    });
+    throw error;
+  }
+}
+
+/**
  * Backfill historical ads data for the last N days
  * This is a one-time operation to populate historical daily data
  * @param accessToken - Meta access token
@@ -883,6 +945,7 @@ export async function backfillAdsHistory(
 ): Promise<{ success: boolean; daysBackfilled: number; errors: string[] }> {
   const errors: string[] = [];
   let daysBackfilled = 0;
+  const adsDataList: AdsData[] = [];
 
   logger.info('Starting ads history backfill', { days });
 
@@ -927,8 +990,8 @@ export async function backfillAdsHistory(
           date_end: dateStr,
         };
 
-        // Save to database
-        saveAdsLog(adsData);
+        // Collect data to save in batch later
+        adsDataList.push(adsData);
         daysBackfilled++;
 
         // Small delay to avoid rate limiting (100ms between requests)
@@ -939,6 +1002,11 @@ export async function backfillAdsHistory(
         errors.push(`${dateStr}: ${errMsg}`);
         logger.error('Backfill error for specific day', { date: dateStr, error: errMsg });
       }
+    }
+
+    // Save all collected data in one batch
+    if (adsDataList.length > 0) {
+      saveAdsLogBatch(adsDataList);
     }
 
     logger.info('Completed ads history backfill', {
