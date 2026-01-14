@@ -1,6 +1,6 @@
 
 import { type Booking } from './storage-sqlite';
-import { type BookingAddon, getAllAddons } from './addons';
+import { type BookingAddon, getAllAddons, getAddonById } from './addons';
 import { safeNumber } from './type-utils';
 
 export interface PriceAdjustmentInput {
@@ -19,10 +19,8 @@ export async function addPriceAdjustment(
     currentBooking: Booking,
     adjustment: PriceAdjustmentInput
 ): Promise<{ newAddons: BookingAddon[], newTotalPrice: number }> {
-    // Get all addons to find the specific one
-    // Note: optimized implementation would fetch single addon, but getAllAddons is cached/fast enough for now
-    const allAddons = getAllAddons();
-    const addon = allAddons.find(a => a.id === adjustment.addonId);
+    // Optimized: fetch single addon by ID
+    const addon = getAddonById(adjustment.addonId);
 
     if (!addon) {
         throw new Error('Addon not found');
