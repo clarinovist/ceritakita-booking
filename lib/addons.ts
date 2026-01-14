@@ -22,6 +22,20 @@ export interface BookingAddon {
 }
 
 /**
+ * Helper to map database row to Addon object
+ */
+function mapRowToAddon(row: any): Addon {
+  return {
+    id: row.id,
+    name: row.name,
+    price: row.price,
+    applicable_categories: row.applicable_categories ? JSON.parse(row.applicable_categories) : undefined,
+    is_active: Boolean(row.is_active),
+    created_at: row.created_at,
+  };
+}
+
+/**
  * Get all add-ons
  */
 export function getAllAddons(): Addon[] {
@@ -29,14 +43,20 @@ export function getAllAddons(): Addon[] {
   const stmt = db.prepare('SELECT * FROM addons ORDER BY created_at DESC');
   const rows = stmt.all() as any[];
 
-  return rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    price: row.price,
-    applicable_categories: row.applicable_categories ? JSON.parse(row.applicable_categories) : undefined,
-    is_active: Boolean(row.is_active),
-    created_at: row.created_at,
-  }));
+  return rows.map(mapRowToAddon);
+}
+
+/**
+ * Get a single add-on by ID
+ */
+export function getAddonById(id: string): Addon | null {
+  const db = getDb();
+  const stmt = db.prepare('SELECT * FROM addons WHERE id = ?');
+  const row = stmt.get(id) as any;
+
+  if (!row) return null;
+
+  return mapRowToAddon(row);
 }
 
 /**
@@ -47,14 +67,7 @@ export function getActiveAddons(category?: string): Addon[] {
   const stmt = db.prepare('SELECT * FROM addons WHERE is_active = 1 ORDER BY name ASC');
   const rows = stmt.all() as any[];
 
-  const addons = rows.map(row => ({
-    id: row.id,
-    name: row.name,
-    price: row.price,
-    applicable_categories: row.applicable_categories ? JSON.parse(row.applicable_categories) : undefined,
-    is_active: true,
-    created_at: row.created_at,
-  }));
+  const addons = rows.map(mapRowToAddon);
 
   // Filter by category if provided
   if (category) {
