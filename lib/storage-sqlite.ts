@@ -203,10 +203,88 @@ export function readData(): Booking[] {
 
   logger.info('Retrieved bookings from database', { count: rows.length });
 
+  if (rows.length === 0) {
+    return [];
+  }
+
+  // Bulk fetch related data to avoid N+1 queries
+  // Fetch all payments sorted by booking_id
+  const paymentsStmt = db.prepare(`
+    SELECT booking_id, date, amount, note, proof_filename, proof_url, storage_backend
+    FROM payments
+    ORDER BY booking_id, date ASC, id ASC
+  `);
+  const paymentRows = paymentsStmt.all() as (PaymentRow & { booking_id: string })[];
+
+  // Fetch all booking addons sorted by booking_id
+  const addonsStmt = db.prepare(`
+    SELECT ba.booking_id, ba.addon_id, a.name as addon_name, ba.quantity, ba.price_at_booking
+    FROM booking_addons ba
+    JOIN addons a ON ba.addon_id = a.id
+    ORDER BY ba.booking_id, a.name ASC
+  `);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const addonRows = addonsStmt.all() as any[];
+
+  // Fetch all reschedule history sorted by booking_id
+  const historyStmt = db.prepare(`
+    SELECT booking_id, id, old_date, new_date, rescheduled_at, reason
+    FROM reschedule_history
+    ORDER BY booking_id, rescheduled_at ASC
+  `);
+  const historyRows = historyStmt.all() as (RescheduleHistoryRow & { booking_id: string })[];
+
+  // Group data by booking_id
+  const paymentsMap = new Map<string, Payment[]>();
+  for (const row of paymentRows) {
+    const bookingId = String(row.booking_id);
+    if (!paymentsMap.has(bookingId)) {
+      paymentsMap.set(bookingId, []);
+    }
+    paymentsMap.get(bookingId)!.push({
+      date: row.date,
+      amount: row.amount,
+      note: row.note || '',
+      ...(row.proof_filename && { proof_filename: row.proof_filename }),
+      ...(row.proof_url && { proof_url: row.proof_url }),
+      ...(row.storage_backend && { storage_backend: row.storage_backend as 'local' | 'b2' }),
+    });
+  }
+
+  const addonsMap = new Map<string, BookingAddon[]>();
+  for (const row of addonRows) {
+    const bookingId = String(row.booking_id);
+    if (!addonsMap.has(bookingId)) {
+      addonsMap.set(bookingId, []);
+    }
+    addonsMap.get(bookingId)!.push({
+      addon_id: row.addon_id,
+      addon_name: row.addon_name,
+      quantity: row.quantity,
+      price_at_booking: row.price_at_booking,
+    });
+  }
+
+  const historyMap = new Map<string, RescheduleHistory[]>();
+  for (const row of historyRows) {
+    const bookingId = String(row.booking_id);
+    if (!historyMap.has(bookingId)) {
+      historyMap.set(bookingId, []);
+    }
+    historyMap.get(bookingId)!.push({
+      id: row.id,
+      old_date: row.old_date,
+      new_date: row.new_date,
+      rescheduled_at: row.rescheduled_at,
+      ...(row.reason && { reason: row.reason }),
+    });
+  }
+
   return rows.map(row => {
-    const payments = getPaymentsForBooking(String(row.id));
-    const addons = getBookingAddons(String(row.id));
-    const rescheduleHistory = getRescheduleHistory(String(row.id));
+    const bookingId = String(row.id);
+    const payments = paymentsMap.get(bookingId) || [];
+    const addons = addonsMap.get(bookingId);
+    const rescheduleHistory = historyMap.get(bookingId);
     return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
