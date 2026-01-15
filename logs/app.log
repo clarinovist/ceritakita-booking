@@ -1977,3 +1977,13 @@
 [2026-01-14T13:01:40.788Z] [INFO] AUDIT: CREATE_BOOKING on booking:d00d14ba-e451-4f48-844f-71d3413e0ff3 | Context: {"action":"CREATE_BOOKING","resource":"booking:d00d14ba-e451-4f48-844f-71d3413e0ff3","bookingId":"d00d14ba-e451-4f48-844f-71d3413e0ff3","date":"2026-01-14"} | User: Benchmark Customer d00d14ba-e451-4f48-844f-71d3413e0ff3
 [2026-01-14T13:08:49.808Z] [INFO] AUDIT: CREATE_BOOKING on booking:0c2e8d91-ac2a-4d8b-8589-26e3fbe0abc2 | Context: {"action":"CREATE_BOOKING","resource":"booking:0c2e8d91-ac2a-4d8b-8589-26e3fbe0abc2","bookingId":"0c2e8d91-ac2a-4d8b-8589-26e3fbe0abc2","date":"2026-01-14"} | User: Benchmark Customer 0c2e8d91-ac2a-4d8b-8589-26e3fbe0abc2
 [2026-01-14T13:15:47.606Z] [INFO] AUDIT: CREATE_BOOKING on booking:bdf29156-747e-4767-95ae-15bf5d3eed27 | Context: {"action":"CREATE_BOOKING","resource":"booking:bdf29156-747e-4767-95ae-15bf5d3eed27","bookingId":"bdf29156-747e-4767-95ae-15bf5d3eed27","date":"2026-01-14"} | User: Benchmark Customer bdf29156-747e-4767-95ae-15bf5d3eed27
+[2026-01-15T02:15:37.786Z] [INFO] Successful login | Context: {"username":"Manager","role":"admin"}
+[2026-01-15T02:15:37.786Z] [INFO] User signed in | Context: {"userId":"303ef6e2-8c0b-47cc-81d1-4a791d2648db","name":"Manager","role":"admin"}
+[2026-01-15T02:15:42.540Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-15T02:15:42.541Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-15T02:15:42.548Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-15T02:15:42.549Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-15T02:15:42.553Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-15T02:15:42.554Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-15T02:15:42.559Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-15T02:15:42.560Z] [INFO] Bookings retrieved successfully | Context: {"count":13}

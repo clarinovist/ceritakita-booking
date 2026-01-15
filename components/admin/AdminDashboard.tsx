@@ -20,6 +20,8 @@ import { FinanceModule } from './FinanceModule';
 // Tables
 import { BookingsTable } from './tables/BookingsTable';
 import { LeadsTable } from './tables/LeadsTable';
+import { LeadsKanban } from './leads/LeadsKanban';
+import { LayoutList, Kanban as KanbanIcon } from 'lucide-react';
 
 // Modals
 import { ServiceModal } from './modals/ServiceModal';
@@ -100,6 +102,7 @@ export default function AdminDashboard() {
 
     const availableViewModes = getAvailableViewModes();
     const [viewMode, setViewMode] = useState<ViewMode>(availableViewModes[0] || 'table');
+    const [leadsViewMode, setLeadsViewMode] = useState<'table' | 'board'>('table');
 
     // Reset view mode if current mode becomes unavailable
     useEffect(() => {
@@ -376,6 +379,26 @@ export default function AdminDashboard() {
                                 </button>
                             </div>
                         )}
+
+                        {/* Leads View Toggle */}
+                        {viewMode === 'leads' && (
+                            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+                                <button
+                                    onClick={() => setLeadsViewMode('table')}
+                                    className={`p-1.5 rounded transition-all ${leadsViewMode === 'table' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    title="Table View"
+                                >
+                                    <LayoutList size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setLeadsViewMode('board')}
+                                    className={`p-1.5 rounded transition-all ${leadsViewMode === 'board' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                    title="Kanban Board View"
+                                >
+                                    <KanbanIcon size={18} />
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Right Side: Admin Profile */}
@@ -506,32 +529,43 @@ export default function AdminDashboard() {
 
                     {/* LEADS VIEW */}
                     {viewMode === 'leads' && (
-                        <LeadsTable
-                            leads={leadsHook.filteredLeads}
-                            filterStatus={leadsHook.filterStatus}
-                            setFilterStatus={leadsHook.setFilterStatus}
-                            filterSource={leadsHook.filterSource}
-                            setFilterSource={leadsHook.setFilterSource}
-                            filterInterest={leadsHook.filterInterest}
-                            setFilterInterest={leadsHook.setFilterInterest}
-                            searchQuery={leadsHook.searchQuery}
-                            setSearchQuery={leadsHook.setSearchQuery}
-                            onOpenModal={leadsHook.handleOpenLeadModal}
-                            onDeleteLead={leadsHook.handleDeleteLead}
-                            onConvertToBooking={leadsHook.handleConvertToBooking}
-                            onWhatsApp={leadsHook.handleWhatsApp}
+                        <>
+                            {leadsViewMode === 'table' ? (
+                                <LeadsTable
+                                    leads={leadsHook.filteredLeads}
+                                    filterStatus={leadsHook.filterStatus}
+                                    setFilterStatus={leadsHook.setFilterStatus}
+                                    filterSource={leadsHook.filterSource}
+                                    setFilterSource={leadsHook.setFilterSource}
+                                    filterInterest={leadsHook.filterInterest}
+                                    setFilterInterest={leadsHook.setFilterInterest}
+                                    searchQuery={leadsHook.searchQuery}
+                                    setSearchQuery={leadsHook.setSearchQuery}
+                                    onOpenModal={leadsHook.handleOpenLeadModal}
+                                    onDeleteLead={leadsHook.handleDeleteLead}
+                                    onConvertToBooking={leadsHook.handleConvertToBooking}
+                                    onWhatsApp={leadsHook.handleWhatsApp}
 
-                            selectedIds={leadsHook.selectedIds}
-                            onToggleSelect={leadsHook.handleToggleSelect}
-                            onSelectAll={leadsHook.handleSelectAll}
-                            onDeselectAll={leadsHook.handleDeselectAll}
-                            onBulkUpdateStatus={leadsHook.handleBulkUpdateStatus}
-                            onBulkDelete={leadsHook.handleBulkDelete}
-                            onBulkWhatsApp={leadsHook.handleBulkWhatsApp}
-                            pagination={leadsHook.pagination}
-                            onPageChange={leadsHook.setPage}
-                            services={servicesHook.services}
-                        />
+                                    selectedIds={leadsHook.selectedIds}
+                                    onToggleSelect={leadsHook.handleToggleSelect}
+                                    onSelectAll={leadsHook.handleSelectAll}
+                                    onDeselectAll={leadsHook.handleDeselectAll}
+                                    onBulkUpdateStatus={leadsHook.handleBulkUpdateStatus}
+                                    onBulkDelete={leadsHook.handleBulkDelete}
+                                    onBulkWhatsApp={leadsHook.handleBulkWhatsApp}
+                                    pagination={leadsHook.pagination}
+                                    onPageChange={leadsHook.setPage}
+                                    services={servicesHook.services}
+                                />
+                            ) : (
+                                <LeadsKanban
+                                    leads={leadsHook.filteredLeads} // Note: Kanban typically shows all leads, but we can respect filters too
+                                    onUpdateStatus={leadsHook.handleUpdateLeadStatus}
+                                    onOpenModal={leadsHook.handleOpenLeadModal}
+                                    onWhatsApp={leadsHook.handleWhatsApp}
+                                />
+                            )}
+                        </>
                     )}
                 </div>
 

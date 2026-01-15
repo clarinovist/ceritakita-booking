@@ -200,6 +200,29 @@ export function useLeads(services: Service[] = []) {
         });
     }, [leads, selectedIds]);
 
+    // Single status update (for Kanban)
+    const handleUpdateLeadStatus = useCallback(async (leadId: string, newStatus: LeadStatus) => {
+        // Optimistic update
+        setLeads(prev => prev.map(lead =>
+            lead.id === leadId ? { ...lead, status: newStatus } : lead
+        ));
+
+        try {
+            const res = await fetch(`/api/leads/${leadId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            if (!res.ok) throw new Error('Failed to update status');
+        } catch (error) {
+            // Revert on error
+            fetchLeads();
+            console.error('Error updating lead status:', error);
+            alert('Failed to update lead status');
+        }
+    }, [fetchLeads]);
+
     // Pagination handlers
     const setPage = useCallback((page: number) => {
         setPagination(prev => ({ ...prev, page }));
@@ -500,6 +523,7 @@ export function useLeads(services: Service[] = []) {
         handleSaveLead,
         handleDeleteLead,
         handleWhatsApp,
+        handleUpdateLeadStatus,
 
         // Lead conversion
         isBookingModalOpen,
