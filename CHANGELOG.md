@@ -7,6 +7,95 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Branding & SEO Settings with Analytics Integration - 2026-01-15
+
+#### Refactored Settings Architecture
+- **Simplified Branding Tab**: Removed redundant "System Contact Info" section for cleaner interface
+- **Analytics & SEO Section**: New dedicated section for tracking configurations
+- **Google Analytics Support**: Configurable GA4 Measurement ID integration
+- **Meta Pixel Integration**: Facebook Pixel tracking for conversion optimization
+- **Dynamic Script Injection**: `DynamicAnalytics` component renders tracking scripts in `<head>`
+
+#### Files Modified
+- `lib/types/settings.ts` - Added `googleAnalyticsId` and `metaPixelId` fields
+- `components/admin/settings/BrandingTab.tsx` - Refactored with new Analytics section
+- `components/analytics/DynamicAnalytics.tsx` - New component for dynamic script rendering
+- `app/layout.tsx` - Integrated `DynamicAnalytics` component
+
+---
+
+### Universal Invoice System - 2026-01-15
+
+#### Centralized Invoice Settings
+- **Invoice Template Component**: Reusable `InvoiceTemplate` for consistent invoice rendering
+- **Invoice Settings in Global Settings**: Company info, bank details, tax rate, notes all configurable
+- **Preview Modal**: Preview invoices before generating in booking details
+- **Dynamic Data Binding**: Invoices auto-populate from booking and settings data
+
+#### Files Modified
+- `components/admin/invoices/InvoiceTemplate.tsx` - Universal invoice component
+- `app/admin/invoices/[id]/page.tsx` - Updated to use `InvoiceTemplate`
+- `app/api/settings/route.ts` - Enhanced serialization for nested invoice settings
+- `lib/storage-sqlite.ts` - Updated storage for invoice settings
+
+---
+
+### Leads Kanban Board View - 2026-01-15
+
+#### Visual Lead Management
+- **Kanban Board**: Drag-and-drop interface for managing leads by status
+- **Status Columns**: New → Contacted → Qualified → Converted → Lost
+- **Optimistic UI Updates**: Instant feedback on status changes
+- **Dual View Toggle**: Switch between Table and Kanban views
+- **Library**: Uses `@hello-pangea/dnd` for accessible drag-and-drop
+
+#### Files Modified
+- `components/admin/LeadsKanban.tsx` - New Kanban board component
+- `hooks/useLeads.ts` - Enhanced with optimistic update support
+- `components/admin/AdminDashboard.tsx` - Added view toggle button
+
+---
+
+### Dashboard Real Trend Logic - 2026-01-14
+
+#### Dynamic Trend Indicators
+- **Real Calculations**: Trend percentages now based on actual period comparisons
+- **Period Comparison**: Current period vs previous period metrics
+- **Visual Indicators**: Up/down arrows with green/red coloring
+- **Multiple Metrics**: Revenue, bookings, and conversion trends
+
+---
+
+### Performance Optimizations - 2026-01-14
+
+#### Database & API Improvements
+- **N+1 Query Fix**: Optimized `getBookingsByStatus` with batch fetching
+- **Addon Fetching**: Single addon fetch by ID instead of full list
+- **Search Optimization**: Batch fetching for search results
+- **System Settings Cache**: In-memory caching for settings
+- **Financial Export**: Single-pass iteration for report generation
+- **Ads Backfill**: Batched database writes for history import
+- **Homepage ISR**: Incremental Static Regeneration for homepage API
+
+---
+
+### Security Enhancements - 2026-01-14
+
+#### CSRF Protection
+- **Token Validation**: CSRF tokens validated on authenticated booking requests
+- **Secure Endpoints**: All mutation endpoints protected
+
+---
+
+### Service Upgrade Logic - 2026-01-14
+
+#### Comprehensive Transition System
+- **Upgrade Path Mapping**: Clear service transition paths (Bronze → Silver → Gold)
+- **Price Difference Calculation**: Automatic upgrade price computation
+- **Validation**: Prevents invalid downgrades or lateral moves
+
+---
+
 ### Dynamic Branding & Upload Reliability - 2026-01-02
 
 #### Dynamic Site Branding

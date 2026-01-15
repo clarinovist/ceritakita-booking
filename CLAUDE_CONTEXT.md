@@ -30,44 +30,57 @@ CeritaKita adalah studio foto dengan layanan:
 
 ## Status Terakhir (Update: Januari 2026)
 
-### Homepage Baru (DONE)
+### Fitur Baru yang Sudah Selesai (DONE)
+
+#### Branding & SEO dengan Analytics (2026-01-15)
+- Refactor BrandingTab untuk fokus pada visual identity
+- Integrasi Google Analytics (GA4 Measurement ID)
+- Integrasi Meta Pixel untuk tracking konversi
+- Komponen `DynamicAnalytics` untuk inject script ke `<head>`
+
+#### Universal Invoice System (2026-01-15)
+- `InvoiceTemplate` component reusable untuk semua invoice
+- Invoice settings terpusat di Global Settings
+- Preview modal sebelum generate invoice
+- Dynamic data binding dari booking dan settings
+
+#### Leads Kanban Board (2026-01-15)
+- Drag-and-drop interface untuk manage leads
+- Status columns: New → Contacted → Qualified → Converted → Lost
+- Optimistic UI updates untuk instant feedback
+- Toggle antara Table view dan Kanban view
+- Menggunakan `@hello-pangea/dnd` library
+
+#### Dashboard Real Trends (2026-01-14)
+- Trend percentages berdasarkan period comparison
+- Visual indicators (up/down arrows dengan warna)
+- Multiple metrics: revenue, bookings, conversion
+
+#### Performance Optimizations (2026-01-14)
+- N+1 query fix di `getBookingsByStatus`
+- In-memory caching untuk system settings
+- Batch fetching untuk search results
+- Single-pass iteration untuk financial export
+- ISR untuk homepage API
+
+#### Security Enhancements (2026-01-14)
+- CSRF token validation pada authenticated requests
+- Semua mutation endpoints terproteksi
+
+#### Service Upgrade Logic (2026-01-14)
+- Upgrade path mapping (Bronze → Silver → Gold)
+- Automatic price difference calculation
+
+### Homepage (DONE)
 Homepage sudah diupdate dengan section:
-- HeroSection - "Abadikan Setiap Momen Berharga"
-- AboutSection - "Studio Foto untuk Setiap Cerita Anda"
-- PackagesGrid - 6 kategori layanan (prewedding, wedding, wisuda, birthday, family, tematik)
-- WhyChooseUsSection - 4 value props (Fotografer, Hasil Cepat, Harga Transparan, Lokasi Fleksibel)
-- PromoSection - Promo seasonal
-- TestimonialsSection - 3 testimonials
-- CTASection - "Siap Mengabadikan Momen Anda?"
-- Footer - Updated tagline
+- HeroSection, AboutSection, PackagesGrid, WhyChooseUsSection
+- PromoSection, TestimonialsSection, CTASection, Footer
 
-**Masalah:** Semua konten HARDCODED di komponen React, belum bisa dikelola dari admin.
+**Masalah:** Sebagian konten masih hardcoded, belum full CMS.
 
-### Rencana Migrasi ke Prisma (IN PROGRESS)
-
-Alasan migrasi:
-- Butuh proper migration system untuk safe deployment
-- Saat ini pakai better-sqlite3 dengan raw SQL
-- Migrasi manual dengan try/catch (rawan error)
-
-Langkah-langkah:
-1. ✅ Keputusan: Tetap pakai SQLite + Prisma (bukan PostgreSQL)
-2. ⏳ Setup Prisma dengan introspect existing DB
-3. ⏳ Buat baseline migration
-4. ⏳ Tambah tabel baru untuk Homepage CMS
-5. ⏳ Update API routes ke Prisma
-6. ⏳ Deploy ke VPS dengan `prisma migrate deploy`
-
-### Rencana Homepage CMS (PENDING - after Prisma)
-
-Tabel baru yang akan ditambahkan:
-- `homepage_content` - Key-value untuk hero, about, cta, footer, promo
-- `service_categories` - Kategori layanan untuk homepage
-- `testimonials` - Testimonials dinamis
-- `value_propositions` - "Mengapa Memilih CeritaKita"
-
-Admin panel yang akan dibuat:
-- /admin/homepage - Tab-based editor (Hero, About, Layanan, Keunggulan, Testimonials, Promo & CTA)
+### Rencana Migrasi ke Prisma (PENDING)
+- Tetap pakai SQLite + Prisma (bukan PostgreSQL)
+- Akan dilakukan setelah fitur-fitur utama stabil
 
 ---
 
@@ -86,7 +99,7 @@ Tabel existing di `lib/db.ts`:
 - users
 - payment_methods
 - ads_performance_log
-- system_settings
+- system_settings (includes: branding, invoice, analytics settings)
 - system_settings_audit
 - leads
 
@@ -95,17 +108,18 @@ Tabel existing di `lib/db.ts`:
 ## File Structure (Homepage)
 
 ```
-components/homepage/
-├── Navbar.tsx
-├── HeroSection.tsx (hardcoded)
-├── AboutSection.tsx (hardcoded)
-├── PackagesGrid.tsx (hardcoded - BUKAN dari DB services)
-├── WhyChooseUsSection.tsx (hardcoded)
-├── PromoSection.tsx (hardcoded)
-├── TestimonialsSection.tsx (hardcoded)
-├── CTASection.tsx (hardcoded)
-├── Footer.tsx (hardcoded)
-└── index.ts
+components/
+├── homepage/              # Homepage sections (some hardcoded)
+├── admin/
+│   ├── settings/         # Tabbed settings (General, Contact, Finance, Rules, Templates)
+│   ├── invoices/         # Invoice components
+│   │   └── InvoiceTemplate.tsx
+│   ├── LeadsKanban.tsx   # Kanban board for leads
+│   └── AdminDashboard.tsx
+├── analytics/
+│   └── DynamicAnalytics.tsx  # Google Analytics & Meta Pixel
+├── booking/               # Multi-step booking form
+└── ui/                    # Reusable UI components
 ```
 
 ---
@@ -121,48 +135,22 @@ components/homepage/
 
 ## Next Steps (To-Do)
 
-1. **Migrasi ke Prisma:**
+1. **Homepage CMS (setelah Prisma ready):**
+   - Tabel baru untuk dynamic content
+   - Admin panel untuk manage homepage
+
+2. **Migrasi ke Prisma:**
    ```bash
    npm install prisma @prisma/client
    npx prisma init --datasource-provider sqlite
    npx prisma db pull
-   # Buat baseline migration
-   # Test di local
    ```
-
-2. **Di VPS setelah migrasi:**
-   ```bash
-   cp data/bookings.db data/bookings.db.backup-$(date +%Y%m%d)
-   git pull
-   npm install
-   npx prisma migrate resolve --applied 0_init
-   npx prisma migrate deploy
-   pm2 restart ceritakita
-   ```
-
-3. **Setelah Prisma ready:**
-   - Tambah tabel Homepage CMS
-   - Buat API endpoints untuk homepage content
-   - Update komponen homepage untuk fetch dari API
-   - Buat admin panel untuk manage homepage content
-
----
-
-## Prompt yang Sudah Disiapkan
-
-### Prompt untuk Implementasi Homepage CMS (Full)
-Lihat conversation sebelumnya - sudah ada prompt lengkap untuk:
-- Database schema (homepage_content, service_categories, testimonials, value_propositions)
-- API endpoints
-- Admin panel pages
-- Frontend component updates
-- Seed data
 
 ---
 
 ## Notes
 
-- WhatsApp number hardcoded di 3 tempat: PromoSection, CTASection, Footer (`6281234567890`)
+- WhatsApp number hardcoded di 3 tempat: PromoSection, CTASection, Footer
 - Services di PackagesGrid TIDAK terhubung ke `data/services.json`
 - Image assets di `/images/` folder (static)
 
@@ -178,4 +166,4 @@ Paste context ini di awal chat baru, lalu sampaikan:
 
 ---
 
-*Last updated: 2026-01-09*
+*Last updated: 2026-01-15*

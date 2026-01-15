@@ -163,23 +163,41 @@ cp data/bookings.db /backup/bookings.db.$(date +%Y%m%d)
 ## 🎨 Features
 
 ### Admin Dashboard
-- Real-time metrics and statistics
+- Real-time metrics and statistics with **trend indicators**
 - Calendar view of bookings
 - Status management (Active, Completed, Cancelled, Rescheduled)
 - Search and filter capabilities
 - Payment tracking with progress visualization
 - Excel export for bookings and financial reports
 - Meta Ads performance tracking with ROI analysis
+- **Leads Management with Kanban Board** (drag-and-drop)
+- **Universal Invoice System** with preview modal
+- **Analytics Integration** (Google Analytics, Meta Pixel)
 
 ### Booking System
 - Multi-step booking form with validation
-- Service selection with categories
+- Service selection with categories and **upgrade path logic**
 - Portfolio image gallery for each service (Backblaze B2 integration)
 - Add-ons system with quantity management
 - Coupon system with validation and suggestions
 - Smart time picker (24h format, 30min increments)
 - Payment proof uploads
 - Reschedule management with history tracking
+- **CSRF protection** on authenticated requests
+
+### Leads Management (Mini CRM)
+- **Kanban Board View**: Drag-and-drop lead status management
+- **Table View**: Traditional list with search and filter
+- Status Pipeline: New → Contacted → Qualified → Converted → Lost
+- Customer data tracking: Name, phone, email, source, notes
+- Follow-up system with reminders
+- Convert leads directly to bookings
+
+### Invoice System
+- **Universal Invoice Template**: Consistent invoice rendering
+- **Centralized Settings**: Company info, bank details, tax rate configurable
+- **Preview Modal**: Preview before generating
+- **Dynamic Data Binding**: Auto-populate from bookings and settings
 
 ### Payment Tracking
 - Multiple payments per booking

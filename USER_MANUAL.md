@@ -13,6 +13,9 @@ This manual provides non-technical instructions for managing the booking system 
 4. [User Account Management](#user-account-management)
 5. [Booking Status Management](#booking-status-management)
 6. [Site Branding Configuration](#site-branding-configuration)
+7. [Leads Management (Kanban Board)](#leads-management-kanban-board)
+8. [Analytics & SEO Configuration](#analytics--seo-configuration)
+9. [Invoice Management](#invoice-management)
 
 ---
 
@@ -339,3 +342,122 @@ Customize your website's identity directly from the admin panel.
 5. **Save Changes**
    - Click **"Save All Settings"**
    - **Verify**: Refresh your public website to see the changes instantly (Logo, Title, and Favicon)
+
+---
+
+## Leads Management (Kanban Board)
+
+Manage customer inquiries with a visual Kanban board.
+
+### Accessing Leads
+
+1. **Navigate to Leads**
+   - Login to Admin Dashboard
+   - Click **"Leads"** in the sidebar
+
+### Using Kanban View
+
+1. **Switch to Kanban View**
+   - Click the **"Kanban"** toggle button (top right)
+   - Leads are organized in columns by status
+
+2. **Status Columns**
+   - **New**: Fresh inquiries
+   - **Contacted**: Initial contact made
+   - **Qualified**: Potential customer confirmed
+   - **Converted**: Became a booking
+   - **Lost**: Did not convert
+
+3. **Moving Leads**
+   - **Drag and Drop**: Click and drag a lead card to another column
+   - Status updates automatically and saves immediately
+   - Visual feedback confirms the move
+
+### Using Table View
+
+1. **Switch to Table View**
+   - Click the **"Table"** toggle button
+   - See leads in a traditional list format
+   - Search and filter capabilities available
+
+### Converting Leads to Bookings
+
+1. Open a qualified lead
+2. Click **"Convert to Booking"**
+3. Customer info auto-populates in booking form
+4. Complete the booking as usual
+
+---
+
+## Analytics & SEO Configuration
+
+Configure tracking and search engine optimization settings.
+
+### Setting Up Google Analytics
+
+1. **Navigate to Settings**
+   - Click **"System Settings"** → **"General & SEO"** tab
+   
+2. **Add Google Analytics ID**
+   - Find **"Google Analytics Measurement ID"** field
+   - Enter your GA4 ID (format: `G-XXXXXXXXXX`)
+   - Get this from your Google Analytics dashboard
+   
+3. **Save Changes**
+   - Click **"Save All Settings"**
+   - Tracking starts immediately on all pages
+
+### Setting Up Meta Pixel
+
+1. **Navigate to Settings**
+   - Click **"System Settings"** → **"General & SEO"** tab
+   
+2. **Add Meta Pixel ID**
+   - Find **"Meta Pixel ID"** field  
+   - Enter your Pixel ID (numeric format)
+   - Get this from Meta Business Manager
+   
+3. **Save Changes**
+   - Click **"Save All Settings"**
+   - Conversion tracking starts immediately
+
+### SEO Best Practices
+
+- **Meta Title**: Keep under 60 characters
+- **Meta Description**: Keep between 120-160 characters
+- **Hero Title**: Use action-oriented language
+- Update these settings when running promotions or campaigns
+
+---
+
+## Invoice Management
+
+Generate and preview professional invoices.
+
+### Viewing Invoices
+
+1. **Navigate to Bookings**
+   - Click **"Bookings"** in sidebar
+   - Find the booking you need
+
+2. **Open Invoice**
+   - Click the booking row
+   - Click **"View Invoice"** button
+
+### Invoice Preview
+
+1. **Preview Before Generating**
+   - Click **"Preview Invoice"** button
+   - Review all details (customer info, services, prices)
+   - Close preview or proceed to print/download
+
+### Invoice Settings
+
+1. **Customize Invoice Details**
+   - Go to **"System Settings"** → **"Finance"** tab
+   - Update: Company name, address, bank details
+   - Set tax rate and invoice notes
+   
+2. **Save Changes**
+   - All future invoices use updated settings
+   - Existing invoices are not affected
