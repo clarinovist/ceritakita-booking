@@ -5,7 +5,7 @@ import { SystemSettings } from '@/lib/types/settings';
 import { UPLOAD_FOLDERS } from '@/lib/constants';
 import {
   Info, Home, DollarSign, Calendar,
-  MessageSquare, CreditCard, Users, Eye,
+  MessageSquare, CreditCard, Users,
   type LucideIcon
 } from 'lucide-react';
 
@@ -16,7 +16,6 @@ import RulesTab from './settings/RulesTab';
 import TemplatesTab from './settings/TemplatesTab';
 import UserManagement from './UserManagement';
 import PaymentMethodsManagement from './PaymentMethodsManagement';
-import { SettingsPreviewModal } from './modals/SettingsPreviewModal';
 import { InvoicePreviewModal } from './modals/InvoicePreviewModal';
 import { InvoiceSettings } from '@/lib/types/settings';
 
@@ -75,7 +74,6 @@ export default function SettingsManagement() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('general');
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isInvoicePreviewOpen, setIsInvoicePreviewOpen] = useState(false);
 
   useEffect(() => {
@@ -98,7 +96,7 @@ export default function SettingsManagement() {
     }
   };
 
-  const handleInputChange = (key: keyof SystemSettings, value: string) => {
+  const handleInputChange = (key: keyof SystemSettings, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
@@ -306,16 +304,7 @@ export default function SettingsManagement() {
 
       {/* Form Actions - Hide for self-managed tabs */}
       {!isSelfManagedTab && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex justify-between items-center shadow-sm">
-          <button
-            type="button"
-            onClick={() => setIsPreviewOpen(true)}
-            className="px-5 py-2.5 bg-indigo-50 text-indigo-700 rounded-xl hover:bg-indigo-100 font-semibold transition-colors flex items-center gap-2"
-          >
-            <Eye size={18} />
-            Preview Settings
-          </button>
-
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 flex justify-end items-center shadow-sm">
           <div className="flex gap-3">
             <button
               type="button"
@@ -338,13 +327,6 @@ export default function SettingsManagement() {
           </div>
         </div>
       )}
-
-      {/* Settings Preview Modal */}
-      <SettingsPreviewModal
-        isOpen={isPreviewOpen}
-        onClose={() => setIsPreviewOpen(false)}
-        settings={settings}
-      />
 
       {/* Invoice Preview Modal */}
       <InvoicePreviewModal

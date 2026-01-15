@@ -11,6 +11,12 @@ export interface GeneralSettings {
   meta_description: string;
 }
 
+// 1b. SEO & Analytics Settings
+export interface SeoSettings {
+  googleAnalyticsId: string;
+  metaPixelId: string;
+}
+
 // 2. Core Contact Settings (Business Identity / Invoices)
 export interface ContactSettings {
   whatsapp_admin_number: string;
@@ -58,7 +64,9 @@ export interface SystemSettings
   ContactSettings,
   FinanceSettings,
   BookingRulesSettings,
-  TemplatesSettings { }
+  TemplatesSettings {
+  seo?: SeoSettings;
+}
 
 // Context Type
 export interface SettingsContextType {

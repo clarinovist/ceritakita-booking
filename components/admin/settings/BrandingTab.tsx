@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { SystemSettings } from '@/lib/types/settings';
+import { SystemSettings, SeoSettings } from '@/lib/types/settings';
 import { FILE_CONSTRAINTS } from '@/lib/constants';
-import { Globe, Shield, Mail, MessageCircle } from 'lucide-react';
+import { Globe, Shield, BarChart } from 'lucide-react';
 
 interface BrandingTabProps {
   settings: SystemSettings;
-  onChange: (key: keyof SystemSettings, value: string) => void;
+  onChange: (key: keyof SystemSettings, value: any) => void;
   onLogoUpload: (file: File) => Promise<void>;
   uploading: boolean;
 }
@@ -44,6 +44,12 @@ export default function BrandingTab({ settings, onChange, onLogoUpload, uploadin
     }
 
     await onLogoUpload(file);
+  };
+
+  const handleSeoChange = (key: keyof SeoSettings, value: string) => {
+    const currentSeo = settings.seo || { googleAnalyticsId: '', metaPixelId: '' };
+    const updatedSeo = { ...currentSeo, [key]: value };
+    onChange('seo', updatedSeo);
   };
 
   return (
@@ -93,82 +99,6 @@ export default function BrandingTab({ settings, onChange, onLogoUpload, uploadin
                   {uploading ? 'Uploading...' : 'Change Logo'}
                 </label>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Core Contact (For System Use) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
-          <Mail size={18} className="text-indigo-600" />
-          <h3 className="font-display font-bold text-slate-800">System Contact Info</h3>
-        </div>
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                <Mail size={14} className="text-slate-400" />
-                Invoice Sender Email
-              </label>
-              <input
-                type="email"
-                value={settings.business_email}
-                onChange={(e) => onChange('business_email', e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder="billing@ceritakita.studio"
-              />
-              <p className="text-xs text-slate-500 mt-2">Used as the contact email on customer invoices.</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                <MessageCircle size={14} className="text-slate-400" />
-                Admin WhatsApp Number
-              </label>
-              <input
-                type="text"
-                value={settings.whatsapp_admin_number}
-                onChange={(e) => onChange('whatsapp_admin_number', e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder="+62..."
-              />
-              <p className="text-xs text-slate-500 mt-2">Recipient for admin notifications and system alerts.</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-                Business Phone (Invoice)
-              </label>
-              <input
-                type="text"
-                value={settings.business_phone}
-                onChange={(e) => onChange('business_phone', e.target.value)}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder="+62..."
-              />
-              <p className="text-xs text-slate-500 mt-2">Official phone number displayed on invoices.</p>
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
-                <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                Business Address (Invoice)
-              </label>
-              <textarea
-                value={settings.business_address}
-                onChange={(e) => onChange('business_address', e.target.value)}
-                rows={2}
-                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none"
-                placeholder="Studio Address..."
-              />
-              <p className="text-xs text-slate-500 mt-2">Official business address for invoices and legal documents.</p>
             </div>
           </div>
         </div>
@@ -234,6 +164,42 @@ export default function BrandingTab({ settings, onChange, onLogoUpload, uploadin
             </div>
             <div className="text-slate-600 text-sm leading-relaxed line-clamp-2">
               {seoPreview.description}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Analytics & SEO */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-2">
+          <BarChart size={18} className="text-indigo-600" />
+          <h3 className="font-display font-bold text-slate-800">Analytics & Tracking</h3>
+        </div>
+
+        <div className="p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Google Analytics ID</label>
+              <input
+                type="text"
+                value={settings.seo?.googleAnalyticsId || ''}
+                onChange={(e) => handleSeoChange('googleAnalyticsId', e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                placeholder="G-XXXXXXXXXX"
+              />
+              <p className="text-xs text-slate-500 mt-2">Enter your GA4 Measurement ID.</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2">Meta (Facebook) Pixel ID</label>
+              <input
+                type="text"
+                value={settings.seo?.metaPixelId || ''}
+                onChange={(e) => handleSeoChange('metaPixelId', e.target.value)}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                placeholder="1234567890"
+              />
+              <p className="text-xs text-slate-500 mt-2">Enter your Meta/Facebook Pixel ID.</p>
             </div>
           </div>
         </div>
