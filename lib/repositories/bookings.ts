@@ -3,7 +3,6 @@ import { getDb } from '@/lib/db';
 import { getBookingAddons, getBookingAddonsForBookings, setBookingAddons, type BookingAddon } from '@/lib/addons';
 import { logger, AppError } from '@/lib/logger';
 import { normalizeBookingStatus, safeString, safeNumber, executeTransaction } from '@/lib/type-utils';
-import { withLock } from '@/lib/file-lock';
 import { Booking, Payment, RescheduleHistory } from '@/lib/types';
 
 interface BookingRow {
