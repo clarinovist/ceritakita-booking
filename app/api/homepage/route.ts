@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { HomepageData, HomepageContent, ServiceCategory, Testimonial, ValueProposition, PortfolioImage } from '@/types/homepage';
 
-export const revalidate = 60;
+export const revalidate = 3600;
 
 export async function GET() {
     try {

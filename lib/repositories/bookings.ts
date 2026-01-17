@@ -239,10 +239,91 @@ export function readData(): Booking[] {
 
   logger.info('Retrieved bookings from database', { count: rows.length });
 
+  if (rows.length === 0) {
+    return [];
+  }
+
+  // Batch fetch related data using bulk queries for efficiency
+  // This avoids the N+1 query problem by fetching all related data in just 3 additional queries
+
+  // 1. Fetch all payments
+  const paymentsStmt = db.prepare(`
+    SELECT booking_id, date, amount, note, proof_filename, proof_url, storage_backend
+    FROM payments
+    ORDER BY booking_id, date ASC, id ASC
+  `);
+  const allPayments = paymentsStmt.all() as PaymentRow[];
+
+  // 2. Fetch all addons
+  const addonsStmt = db.prepare(`
+    SELECT ba.booking_id, ba.addon_id, a.name as addon_name, ba.quantity, ba.price_at_booking
+    FROM booking_addons ba
+    JOIN addons a ON ba.addon_id = a.id
+    ORDER BY ba.booking_id, a.name ASC
+  `);
+  // Define a local type that includes booking_id
+  type BookingAddonWithId = BookingAddon & { booking_id: string };
+  const allAddons = addonsStmt.all() as BookingAddonWithId[];
+
+  // 3. Fetch all reschedule history
+  const rescheduleStmt = db.prepare(`
+    SELECT id, booking_id, old_date, new_date, rescheduled_at, reason
+    FROM reschedule_history
+    ORDER BY booking_id, rescheduled_at ASC
+  `);
+  const allRescheduleHistory = rescheduleStmt.all() as RescheduleHistoryRow[];
+
+  // Group data by booking_id
+  const paymentsMap = new Map<string, Payment[]>();
+  const addonsMap = new Map<string, BookingAddon[]>();
+  const rescheduleMap = new Map<string, RescheduleHistory[]>();
+
+  for (const payment of allPayments) {
+    if (!payment.booking_id) continue;
+    const bookingId = String(payment.booking_id);
+    const bookingPayments = paymentsMap.get(bookingId) || [];
+    bookingPayments.push({
+      date: payment.date,
+      amount: payment.amount,
+      note: payment.note || '',
+      ...(payment.proof_filename && { proof_filename: payment.proof_filename }),
+      ...(payment.proof_url && { proof_url: payment.proof_url }),
+      ...(payment.storage_backend && { storage_backend: payment.storage_backend as 'local' | 'b2' }),
+    });
+    paymentsMap.set(bookingId, bookingPayments);
+  }
+
+  for (const addon of allAddons) {
+    const bookingId = String(addon.booking_id);
+    const bookingAddons = addonsMap.get(bookingId) || [];
+    bookingAddons.push({
+      addon_id: addon.addon_id,
+      addon_name: addon.addon_name,
+      quantity: addon.quantity,
+      price_at_booking: addon.price_at_booking
+    });
+    addonsMap.set(bookingId, bookingAddons);
+  }
+
+  for (const history of allRescheduleHistory) {
+    if (!history.booking_id) continue;
+    const bookingId = String(history.booking_id);
+    const bookingHistory = rescheduleMap.get(bookingId) || [];
+    bookingHistory.push({
+      id: history.id,
+      old_date: history.old_date,
+      new_date: history.new_date,
+      rescheduled_at: history.rescheduled_at,
+      ...(history.reason && { reason: history.reason }),
+    });
+    rescheduleMap.set(bookingId, bookingHistory);
+  }
+
   return rows.map(row => {
-    const payments = getPaymentsForBooking(String(row.id));
-    const addons = getBookingAddons(String(row.id));
-    const rescheduleHistory = getRescheduleHistory(String(row.id));
+    const bookingId = String(row.id);
+    const payments = paymentsMap.get(bookingId) || [];
+    const addons = addonsMap.get(bookingId) || [];
+    const rescheduleHistory = rescheduleMap.get(bookingId) || [];
     return rowToBooking(row, payments, addons, rescheduleHistory);
   });
 }
@@ -451,18 +532,14 @@ export async function createBooking(booking: Booking): Promise<void> {
 export async function updateBooking(booking: Booking): Promise<void> {
   const db = getDb();
 
-  // Use file locking to prevent concurrent access issues
-  const result = await withLock(
-    `booking:${booking.id}`,
+  const result = await executeTransaction(
     async () => {
-      return await executeTransaction(
-        async () => {
-          const transaction = db.transaction(() => {
-            // Validate and normalize status
-            const normalizedStatus = normalizeBookingStatus(booking.status);
+      const transaction = db.transaction(() => {
+        // Validate and normalize status
+        const normalizedStatus = normalizeBookingStatus(booking.status);
 
-            // Update booking
-            const stmt = db.prepare(`
+        // Update booking
+        const stmt = db.prepare(`
               UPDATE bookings SET
                 status = ?,
                 customer_name = ?,
@@ -483,67 +560,65 @@ export async function updateBooking(booking: Booking): Promise<void> {
               WHERE id = ?
             `);
 
-            stmt.run(
-              normalizedStatus,
-              safeString(booking.customer.name),
-              safeString(booking.customer.whatsapp),
-              safeString(booking.customer.category),
-              booking.customer.serviceId || null,
-              booking.booking.date,
-              booking.booking.notes || null,
-              booking.booking.location_link || null,
-              safeNumber(booking.finance.total_price),
-              booking.finance.service_base_price ?? null,
-              booking.finance.base_discount ?? null,
-              booking.finance.addons_total ?? null,
-              booking.finance.coupon_discount ?? null,
-              booking.finance.coupon_code || null,
-              booking.photographer_id || null,
-              booking.id
-            );
+        stmt.run(
+          normalizedStatus,
+          safeString(booking.customer.name),
+          safeString(booking.customer.whatsapp),
+          safeString(booking.customer.category),
+          booking.customer.serviceId || null,
+          booking.booking.date,
+          booking.booking.notes || null,
+          booking.booking.location_link || null,
+          safeNumber(booking.finance.total_price),
+          booking.finance.service_base_price ?? null,
+          booking.finance.base_discount ?? null,
+          booking.finance.addons_total ?? null,
+          booking.finance.coupon_discount ?? null,
+          booking.finance.coupon_code || null,
+          booking.photographer_id || null,
+          booking.id
+        );
 
-            // Delete old payments and insert new ones
-            db.prepare('DELETE FROM payments WHERE booking_id = ?').run(booking.id);
+        // Delete old payments and insert new ones
+        db.prepare('DELETE FROM payments WHERE booking_id = ?').run(booking.id);
 
-            if (booking.finance.payments.length > 0) {
-              const paymentStmt = db.prepare(`
+        if (booking.finance.payments.length > 0) {
+          const paymentStmt = db.prepare(`
                 INSERT INTO payments (booking_id, date, amount, note, proof_filename, proof_url, storage_backend)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
               `);
 
-              for (const payment of booking.finance.payments) {
-                paymentStmt.run(
-                  booking.id,
-                  payment.date,
-                  safeNumber(payment.amount),
-                  payment.note || null,
-                  payment.proof_filename || null,
-                  payment.proof_url || null,
-                  payment.storage_backend || 'local'
-                );
-              }
-            }
-
-            // Update add-ons
-            if (booking.addons) {
-              setBookingAddons(booking.id, booking.addons.map(addon => ({
-                addon_id: addon.addon_id,
-                quantity: addon.quantity,
-                price: safeNumber(addon.price_at_booking)
-              })));
-            } else {
-              // Clear add-ons if not provided
-              setBookingAddons(booking.id, []);
-            }
-          });
-
-          transaction();
-        },
-        async () => {
-          // Rollback logic
-          logger.warn('Transaction rolled back for updateBooking', { bookingId: booking.id });
+          for (const payment of booking.finance.payments) {
+            paymentStmt.run(
+              booking.id,
+              payment.date,
+              safeNumber(payment.amount),
+              payment.note || null,
+              payment.proof_filename || null,
+              payment.proof_url || null,
+              payment.storage_backend || 'local'
+            );
+          }
         }
-      );
+
+        // Update add-ons
+        if (booking.addons) {
+          setBookingAddons(booking.id, booking.addons.map(addon => ({
+            addon_id: addon.addon_id,
+            quantity: addon.quantity,
+            price: safeNumber(addon.price_at_booking)
+          })));
+        } else {
+          // Clear add-ons if not provided
+          setBookingAddons(booking.id, []);
+        }
+      });
+
+      transaction();
+    },
+    async () => {
+      // Rollback logic
+      logger.warn('Transaction rolled back for updateBooking', { bookingId: booking.id });
     }
   );
 
