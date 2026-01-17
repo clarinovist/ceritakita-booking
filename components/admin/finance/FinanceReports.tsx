@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Download, Eye, Loader2 } from 'lucide-react';
 import { DateRange } from '@/lib/types';
 import { FinanceReportPreview, FinanceReportData } from './FinanceReportPreview';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface FinanceReportsProps {
     dateRange: DateRange;
@@ -9,6 +11,7 @@ interface FinanceReportsProps {
 
 export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => {
     const [isLoading, setIsLoading] = useState(false);
+    const [isPdfLoading, setIsPdfLoading] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [previewData, setPreviewData] = useState<FinanceReportData | null>(null);
 
@@ -60,6 +63,119 @@ export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => 
             alert('Failed to load preview');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleExportPnL = async () => {
+        setIsPdfLoading(true);
+        try {
+            const params = new URLSearchParams({
+                startDate: dateRange.start,
+                endDate: dateRange.end
+            });
+
+            const response = await fetch(`/api/reports/pnl?${params.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch P&L data');
+
+            const data = await response.json();
+
+            // Generate PDF
+            const doc = new jsPDF();
+            const formatCurrency = (amount: number) => {
+                return new Intl.NumberFormat('id-ID', {
+                    style: 'currency',
+                    currency: 'IDR',
+                    minimumFractionDigits: 0
+                }).format(amount);
+            };
+
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(15, 23, 42); // slate-900
+            doc.text('Profit & Loss Statement', 14, 22);
+
+            doc.setFontSize(10);
+            doc.setTextColor(100, 116, 139); // slate-500
+            doc.text(`Period: ${new Date(dateRange.start).toLocaleDateString('id-ID')} - ${new Date(dateRange.end).toLocaleDateString('id-ID')}`, 14, 32);
+            doc.text(`Generated on: ${new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`, 14, 38);
+
+            let yPos = 50;
+
+            // Revenue Section
+            doc.setFontSize(14);
+            doc.setTextColor(22, 163, 74); // green-600
+            doc.setFont('helvetica', 'bold');
+            doc.text('Revenue', 14, yPos);
+            yPos += 5;
+
+            const revenueData = data.revenue.breakdown.map((item: any) => [
+                item.category,
+                formatCurrency(item.amount)
+            ]);
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Category', 'Amount']],
+                body: revenueData,
+                theme: 'striped',
+                headStyles: { fillColor: [22, 163, 74] },
+                foot: [['Total Revenue', formatCurrency(data.revenue.total)]],
+                footStyles: { fillColor: [22, 163, 74], fontStyle: 'bold' }
+            });
+
+            yPos = (doc as any).lastAutoTable.finalY + 20;
+
+            // Expenses Section
+            doc.setFontSize(14);
+            doc.setTextColor(220, 38, 38); // red-600
+            doc.text('Expenses', 14, yPos);
+            yPos += 5;
+
+            const expenseData = data.expenses.breakdown.map((item: any) => [
+                item.category,
+                formatCurrency(item.amount)
+            ]);
+
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Category', 'Amount']],
+                body: expenseData,
+                theme: 'striped',
+                headStyles: { fillColor: [220, 38, 38] },
+                foot: [['Total Expenses', formatCurrency(data.expenses.total)]],
+                footStyles: { fillColor: [220, 38, 38], fontStyle: 'bold' }
+            });
+
+            yPos = (doc as any).lastAutoTable.finalY + 20;
+
+            // Net Profit Section
+            // Draw a summary box
+            doc.setFillColor(241, 245, 249); // slate-100
+            doc.setDrawColor(226, 232, 240); // slate-200
+            doc.roundedRect(14, yPos, 180, 40, 3, 3, 'FD');
+
+            doc.setFontSize(12);
+            doc.setTextColor(71, 85, 105); // slate-600
+            doc.setFont('helvetica', 'normal');
+            doc.text('Net Profit / Loss', 24, yPos + 15);
+
+            doc.setFontSize(24);
+            doc.setFont('helvetica', 'bold');
+
+            if (data.netProfit >= 0) {
+                 doc.setTextColor(22, 163, 74); // Green
+            } else {
+                 doc.setTextColor(220, 38, 38); // Red
+            }
+            doc.text(formatCurrency(data.netProfit), 24, yPos + 30);
+
+            doc.save(`Profit_Loss_${dateRange.start}_${dateRange.end}.pdf`);
+
+        } catch (error) {
+            console.error('P&L Export failed:', error);
+            alert('Failed to export P&L report');
+        } finally {
+            setIsPdfLoading(false);
         }
     };
 
@@ -123,22 +239,23 @@ export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => 
                     </button>
                 </div>
 
-                {/* Profit/Loss Card (Placeholder for future PDF) */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow opacity-75">
+                {/* Profit/Loss Card */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between mb-4">
                         <div className="p-3 bg-green-100 rounded-lg text-green-600">
                             <Download size={24} />
                         </div>
-                        <span className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded font-medium">Coming Soon</span>
                     </div>
                     <h3 className="text-lg font-bold text-slate-800 mb-2">Profit & Loss</h3>
                     <p className="text-slate-500 text-sm mb-6">
-                        Monthly P&L statement summarizing total revenue, COGS, and expenses.
+                        Monthly P&L statement summarizing total revenue and expenses.
                     </p>
                     <button
-                        disabled
-                        className="w-full py-2.5 bg-slate-100 text-slate-400 rounded-lg font-medium cursor-not-allowed text-sm"
+                        onClick={handleExportPnL}
+                        disabled={isPdfLoading}
+                        className="w-full py-2.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2"
                     >
+                        {isPdfLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                         Download PDF
                     </button>
                 </div>
