@@ -15,25 +15,6 @@ export const InvoicePreviewModal = ({
 }: InvoicePreviewModalProps) => {
     if (!isOpen) return null;
 
-    const handlePrint = () => {
-        // Create a hidden iframe or new window for printing
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-
-        // Clone the content - simplified print logic
-        // In a real app we might want to target a specific route for printing
-        // For this preview, we can just let the user see the visual preview
-        // But for actual printing, the user will likely use the real invoice page
-        // So for this modal, maybe just "Close" is enough, but "Print Test" is nice.
-
-        // Actually, since we have print styles in InvoiceTemplate using specific media queries, 
-        // printing this modal page directly might include the modal shell.
-        // It's better to guide the user to rely on the visual preview here.
-        // But if we want to support print here, we'd need to add @media print styles that hide everything else.
-        // Given complexity, let's stick to visual preview mainly, but allow browser print access if needed.
-        window.print();
-    };
-
     return (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 print:p-0 print:bg-white print:block print:relative">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col animate-in zoom-in-95 duration-200 print:shadow-none print:w-full print:h-auto print:rounded-none">

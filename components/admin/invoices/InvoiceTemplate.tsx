@@ -112,7 +112,7 @@ export const InvoiceTemplate = ({ settings, data, previewMode = false }: Invoice
                         <div className="flex justify-end gap-4">
                             <span className="text-slate-500 font-medium">Status:</span>
                             <span className={`font-bold px-2 py-0.5 rounded text-xs uppercase
-                                ${booking.status === 'Paid' || finance.balance <= 0 ? 'bg-green-100 text-green-700' :
+                                ${finance.balance <= 0 ? 'bg-green-100 text-green-700' :
                                     booking.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
                                         'bg-amber-100 text-amber-700'
                                 }

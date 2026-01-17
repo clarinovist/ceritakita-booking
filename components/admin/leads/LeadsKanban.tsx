@@ -65,7 +65,7 @@ export const LeadsKanban: React.FC<LeadsKanbanProps> = ({
                                         {leadsByStatus[status]?.length || 0}
                                     </span>
                                 </div>
-                                <div className={`w-2 h-2 rounded-full ${getLeadStatusColor(status).split(' ')[0].replace('bg-', 'bg-') || 'bg-gray-400'}`} />
+                                <div className={`w-2 h-2 rounded-full ${(getLeadStatusColor(status).split(' ')[0] ?? '').replace('bg-', 'bg-') || 'bg-gray-400'}`} />
                             </div>
 
                             {/* Droppable Area */}

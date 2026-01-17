@@ -5,14 +5,14 @@ const nextConfig = {
   // Reduces Docker image size by ~60%
   output: 'standalone',
 
-  // Ignore ESLint during builds to prevent Docker build failures
+  // Enable ESLint during builds
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 
-  // Ignore TypeScript errors during builds to prevent Docker build failures
+  // Enable TypeScript errors during builds
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   // Allow images from Backblaze B2

@@ -22,7 +22,7 @@ export function useExpenses() {
 
     // Form data state
     const [formData, setFormData] = useState<ExpenseFormData>({
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0] ?? '',
         category: 'operational',
         description: '',
         amount: 0
@@ -122,7 +122,7 @@ export function useExpenses() {
         } else {
             setEditingExpense(null);
             setFormData({
-                date: new Date().toISOString().split('T')[0],
+                date: new Date().toISOString().split('T')[0] ?? '',
                 category: 'operational',
                 description: '',
                 amount: 0

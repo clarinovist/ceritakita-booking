@@ -40,11 +40,12 @@ export function BookingDetailModal({
   calculateFinance,
   getOrReconstructBreakdown,
 }: BookingDetailModalProps) {
+  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
+
   if (!booking || !booking.booking) return null;
 
   const finance = calculateFinance(booking);
   const breakdown = getOrReconstructBreakdown(booking);
-  const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
 
   return (
     <>

@@ -104,11 +104,11 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ data }) => {
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    {pieData.map((entry, index) => (
+                                    {pieData.map((_, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>
-                                <Tooltip formatter={(value: number) => `Rp ${(value || 0).toLocaleString('id-ID')}`} />
+                                <Tooltip formatter={(value: number | undefined) => `Rp ${(value || 0).toLocaleString('id-ID')}`} />
                                 <Legend />
                             </PieChart>
                         </ResponsiveContainer>
@@ -131,7 +131,7 @@ export const FinanceDashboard: React.FC<FinanceDashboardProps> = ({ data }) => {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                 <XAxis dataKey="name" />
                                 <YAxis tickFormatter={(val) => `Rp${val / 1000000}M`} />
-                                <Tooltip formatter={(value: number) => `Rp ${(value || 0).toLocaleString('id-ID')}`} />
+                                <Tooltip formatter={(value: number | undefined) => `Rp ${(value || 0).toLocaleString('id-ID')}`} />
                                 <Bar dataKey="amount" fill="#3B82F6" radius={[4, 4, 0, 0]}>
                                     {
                                         [
