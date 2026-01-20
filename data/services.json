@@ -5,7 +5,13 @@
     "basePrice": 1500000,
     "discountValue": 200000,
     "isActive": true,
-    "badgeText": "Best deal"
+    "badgeText": "Best deal",
+    "benefits": [
+      "30+ edited photos",
+      "2 jam sesi pemotretan",
+      "Softcopy via Google Drive",
+      "1 lokasi outdoor pilihan"
+    ]
   },
   {
     "id": "4",
@@ -13,7 +19,13 @@
     "basePrice": 400000,
     "discountValue": 0,
     "isActive": true,
-    "badgeText": ""
+    "badgeText": "",
+    "benefits": [
+      "15 edited photos",
+      "1 jam sesi studio",
+      "Max 2 orang",
+      "1 outfit"
+    ]
   },
   {
     "id": "5",

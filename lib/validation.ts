@@ -82,6 +82,9 @@ export const serviceSchema = z.object({
   discountValue: z.number().min(0, 'Discount must be positive'),
   isActive: z.boolean(),
   badgeText: z.string().max(50, 'Badge text too long').optional(),
+  benefits: z.array(z.string().max(100, 'Benefit text too long'))
+    .max(5, 'Maximum 5 benefits allowed')
+    .optional(),
 }).refine((data) => data.discountValue <= data.basePrice, {
   message: 'Discount cannot exceed base price',
   path: ['discountValue'],

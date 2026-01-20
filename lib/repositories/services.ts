@@ -11,6 +11,7 @@ export interface Service {
   discountValue: number;
   isActive: boolean;
   badgeText?: string;
+  benefits?: string[];
 }
 
 export function readServices(): Service[] {

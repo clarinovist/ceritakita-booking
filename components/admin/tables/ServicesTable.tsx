@@ -36,6 +36,7 @@ export const ServicesTable = ({
                             <th className="px-6 py-3">Discount (Rp)</th>
                             <th className="px-6 py-3">Final Price</th>
                             <th className="px-6 py-3 text-center">Active</th>
+                            <th className="px-6 py-3">Benefits</th>
                             <th className="px-6 py-3 text-right">Actions</th>
                         </tr>
                     </thead>
@@ -68,6 +69,11 @@ export const ServicesTable = ({
                                     >
                                         {service.isActive ? 'Active' : 'Inactive'}
                                     </button>
+                                </td>
+                                <td className="px-6 py-4">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${service.benefits && service.benefits.length > 0 ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-400'}`}>
+                                        {service.benefits?.length || 0} items
+                                    </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2 transition-opacity">

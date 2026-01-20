@@ -12,7 +12,8 @@ export const useServices = () => {
         basePrice: 0,
         discountValue: 0,
         isActive: true,
-        badgeText: ''
+        badgeText: '',
+        benefits: []
     });
 
     const fetchData = async () => {
@@ -47,7 +48,7 @@ export const useServices = () => {
 
     const handleOpenAddModal = () => {
         setEditingService(null);
-        setServiceFormData({ name: '', basePrice: 0, discountValue: 0, isActive: true, badgeText: '' });
+        setServiceFormData({ name: '', basePrice: 0, discountValue: 0, isActive: true, badgeText: '', benefits: [] });
         setIsServiceModalOpen(true);
     };
 
@@ -58,7 +59,8 @@ export const useServices = () => {
             basePrice: service.basePrice,
             discountValue: service.discountValue,
             isActive: service.isActive,
-            badgeText: service.badgeText || ''
+            badgeText: service.badgeText || '',
+            benefits: service.benefits || []
         });
         setIsServiceModalOpen(true);
     };

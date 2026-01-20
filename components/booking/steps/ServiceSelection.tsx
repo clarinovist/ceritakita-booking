@@ -12,6 +12,7 @@ export interface Service {
   discountValue: number;
   isActive: boolean;
   badgeText?: string;
+  benefits?: string[];
 }
 
 interface ServiceSelectionProps {
@@ -226,6 +227,22 @@ export function ServiceSelection({
                     }`}>
                     {service.badgeText}
                   </span>
+                )}
+
+                {/* Benefits List */}
+                {service.benefits && service.benefits.length > 0 && (
+                  <ul className="mt-4 space-y-1.5 border-t border-dashed border-olive-200 pt-4">
+                    {service.benefits.map((benefit, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs text-olive-700">
+                        <CheckCircle2
+                          size={14}
+                          className={`mt-0.5 shrink-0 ${tier === 'premium' ? 'text-amber-500' : 'text-success-600'
+                            }`}
+                        />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
                 )}
               </div>
 

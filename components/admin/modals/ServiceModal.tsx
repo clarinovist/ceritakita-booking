@@ -92,6 +92,74 @@ export const ServiceModal = ({
                         />
                         <label htmlFor="is_active" className="text-sm font-bold text-gray-700 cursor-pointer">Service is Active</label>
                     </div>
+
+                    <div className="border-t pt-4">
+                        <label className="block text-sm font-bold text-gray-700 mb-2">Benefits (Max 5)</label>
+                        <div className="space-y-2 mb-3">
+                            {formData.benefits.map((benefit, index) => (
+                                <div key={index} className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
+                                    <span className="flex-1 text-sm">{benefit}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({
+                                            ...formData,
+                                            benefits: formData.benefits.filter((_, i) => i !== index)
+                                        })}
+                                        className="text-red-500 hover:text-red-700"
+                                    >
+                                        <XCircle size={18} />
+                                    </button>
+                                </div>
+                            ))}
+                            {formData.benefits.length === 0 && (
+                                <p className="text-xs text-gray-400 italic">No benefits added yet</p>
+                            )}
+                        </div>
+
+                        {formData.benefits.length < 5 && (
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="new-benefit-input"
+                                    placeholder="Add a benefit..."
+                                    className="flex-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            const input = e.currentTarget;
+                                            const val = input.value.trim();
+                                            if (val && formData.benefits.length < 5) {
+                                                setFormData({
+                                                    ...formData,
+                                                    benefits: [...formData.benefits, val]
+                                                });
+                                                input.value = '';
+                                            }
+                                        }
+                                    }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const input = document.getElementById('new-benefit-input') as HTMLInputElement;
+                                        const val = input.value.trim();
+                                        if (val && formData.benefits.length < 5) {
+                                            setFormData({
+                                                ...formData,
+                                                benefits: [...formData.benefits, val]
+                                            });
+                                            input.value = '';
+                                        }
+                                    }}
+                                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        )}
+                        <p className="text-[10px] text-gray-500 mt-2 italic">* Press Enter or click Add to save a benefit</p>
+                    </div>
+
                     <div className="pt-4 flex gap-3">
                         <button type="button" onClick={onClose} className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
                         <button type="submit" className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2">
