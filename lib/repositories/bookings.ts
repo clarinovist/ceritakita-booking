@@ -239,13 +239,15 @@ export function readData(startDate?: string, endDate?: string): Booking[] {
   const whereClauses: string[] = [];
 
   if (startDate) {
-    // Ensure we are comparing dates, not datetimes
-    whereClauses.push('date(booking_date) >= ?');
+    // Optimized: Use direct comparison instead of date() function to enable index usage
+    whereClauses.push('booking_date >= ?');
     params.push(startDate);
   }
 
   if (endDate) {
-    whereClauses.push('date(booking_date) <= ?');
+    // Optimized: Use direct comparison. booking_date (datetime) < next day (date)
+    // this ensures all times on the end date are included
+    whereClauses.push("booking_date < date(?, '+1 day')");
     params.push(endDate);
   }
 
