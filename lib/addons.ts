@@ -21,6 +21,34 @@ export interface BookingAddon {
   price_at_booking: number;
 }
 
+// Cache for parsed category JSON strings to avoid repeated parsing overhead
+const categoriesCache = new Map<string, string[]>();
+
+function parseCategories(json: string): string[] | undefined {
+  if (!json) return undefined;
+
+  if (categoriesCache.has(json)) {
+    const cached = categoriesCache.get(json);
+    // Return a shallow copy to prevent mutation of the cached value
+    if (Array.isArray(cached)) return [...cached];
+    return cached;
+  }
+
+  try {
+    const parsed = JSON.parse(json);
+    // Prevent unbounded growth
+    if (categoriesCache.size > 1000) {
+      categoriesCache.clear();
+    }
+    categoriesCache.set(json, parsed);
+    // Return a shallow copy
+    if (Array.isArray(parsed)) return [...parsed];
+    return parsed;
+  } catch (e) {
+    return undefined;
+  }
+}
+
 /**
  * Helper to map database row to Addon object
  */
@@ -29,7 +57,7 @@ function mapRowToAddon(row: any): Addon {
     id: row.id,
     name: row.name,
     price: row.price,
-    applicable_categories: row.applicable_categories ? JSON.parse(row.applicable_categories) : undefined,
+    applicable_categories: row.applicable_categories ? parseCategories(row.applicable_categories) : undefined,
     is_active: Boolean(row.is_active),
     created_at: row.created_at,
   };
