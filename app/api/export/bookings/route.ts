@@ -25,27 +25,12 @@ export async function GET(req: NextRequest) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
 
-    // Fetch all bookings
-    let bookings = readData();
-
-    // Apply filters
-    if (status && status !== 'All') {
-      bookings = bookings.filter(b => b.status === status);
-    }
-
-    if (startDate) {
-      bookings = bookings.filter(b => {
-        const bDate = b.booking.date.split('T')[0] ?? '';
-        return bDate >= startDate;
-      });
-    }
-
-    if (endDate) {
-      bookings = bookings.filter(b => {
-        const bDate = b.booking.date.split('T')[0] ?? '';
-        return bDate <= endDate;
-      });
-    }
+    // Fetch bookings with filters applied at database level for better performance
+    const bookings = readData(
+      startDate || undefined,
+      endDate || undefined,
+      status || undefined
+    );
 
     // Prepare data for Excel
     const excelData = bookings.map(b => {

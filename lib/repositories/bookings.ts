@@ -231,7 +231,7 @@ export function addRescheduleHistory(
 /**
  * Read all bookings, with optional date filtering
  */
-export function readData(startDate?: string, endDate?: string): Booking[] {
+export function readData(startDate?: string, endDate?: string, status?: string): Booking[] {
   const db = getDb();
 
   let query = 'SELECT * FROM bookings';
@@ -249,6 +249,11 @@ export function readData(startDate?: string, endDate?: string): Booking[] {
     params.push(endDate);
   }
 
+  if (status && status !== 'All') {
+    whereClauses.push('status = ?');
+    params.push(status);
+  }
+
   if (whereClauses.length > 0) {
     query += ' WHERE ' + whereClauses.join(' AND ');
   }
@@ -261,7 +266,8 @@ export function readData(startDate?: string, endDate?: string): Booking[] {
   logger.info('Retrieved bookings from database', {
     count: rows.length,
     startDate,
-    endDate
+    endDate,
+    status
   });
 
   if (rows.length === 0) {
