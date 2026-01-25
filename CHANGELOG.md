@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Repository Synchronization & Performance Optimizations - 2026-01-25
+
+#### Performance & Optimization
+- **Database Query Fix**: Added index-aware optimization for `readData` query using `booking_date`.
+- **Addon Parsing Optimization**: Implemented JSON parsing cache in `mapRowToAddon` for faster row mapping.
+- **Admin Hook Enhancement**: Improved logging and comprehensive error handling in `useServices` hook.
+
+#### Build & Type Fixes
+- **Build Fix (P&L Report)**: Resolved "cannot reassign to a variable declared with const" in `app/api/reports/pnl/route.ts`.
+- **Type Fix (Benchmark Script)**: Added nullish coalescing to `startDate` and `endDate` in `scripts/benchmark-export-filtering.ts` to prevent potential undefined errors.
+
+#### DevOps & Infrastructure
+- **Security & Permissions**: Updated `docker-compose.yml` to set specific app user and enhanced handling of `./data/services.json` permissions (`EACCES` prevention).
+- **Documentation**: Updated `DEPLOYMENT_GUIDE.md` with detailed `./data` folder permission management.
+
+#### Files Modified
+- `app/api/reports/pnl/route.ts`
+- `scripts/benchmark-export-filtering.ts`
+- `components/admin/hooks/useServices.ts`
+- `lib/repositories/bookings.ts`
+- `docker-compose.yml`
+- `DEPLOYMENT_GUIDE.md`
+
+---
+
 ### Branding & SEO Settings with Analytics Integration - 2026-01-15
 
 #### Refactored Settings Architecture
