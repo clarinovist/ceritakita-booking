@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Diagnostic script for CeritaKita Booking permissions
 # Run this on your production server inside or outside the container
