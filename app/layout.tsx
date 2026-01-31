@@ -53,6 +53,12 @@ async function getLayoutSettings() {
 export async function generateMetadata(): Promise<Metadata> {
   const { siteName, metaTitle, metaDescription } = await getLayoutSettings();
 
+  const siteUrlRaw =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.SITE_URL ??
+    "https://ceritakitastudio.site";
+  const siteUrl = siteUrlRaw.replace(/\/+$/, "");
+
   return {
     title: metaTitle,
     description: metaDescription,
@@ -66,28 +72,18 @@ export async function generateMetadata(): Promise<Metadata> {
       address: false,
       telephone: false,
     },
-    metadataBase: new URL("https://ceritakita-studio.com"),
-    alternates: {
-      canonical: "/",
-    },
+    metadataBase: new URL(siteUrl),
     openGraph: {
       title: metaTitle,
       description: metaDescription,
       type: "website",
       locale: "id_ID",
       siteName: siteName,
-      images: [{
-        url: "/og-image.jpg",
-        width: 1200,
-        height: 630,
-        alt: metaTitle,
-      }],
     },
     twitter: {
       card: "summary_large_image",
       title: metaTitle,
       description: metaDescription,
-      images: ["/twitter-image.jpg"],
     },
     robots: {
       index: true,

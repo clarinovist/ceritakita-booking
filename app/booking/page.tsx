@@ -1,9 +1,21 @@
 import { MultiStepBookingForm } from '@/components/booking';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import JsonLd from '@/components/seo/JsonLd';
+import { buildBookingJsonLd } from '@/lib/seo/schema';
+
+export const metadata: Metadata = {
+    title: 'Booking Sesi Foto | CeritaKita Studio',
+    description: 'Booking sesi foto profesional bersama CeritaKita Studio. Pilih layanan, tentukan jadwal, dan abadikan momen terbaik Anda.',
+    alternates: {
+        canonical: '/booking',
+    },
+};
 
 export default function BookingPage() {
     return (
         <main className="min-h-screen bg-cream-100">
+            <JsonLd data={buildBookingJsonLd()} />
             {/* Header with Logo */}
             <header className="bg-olive-900 border-b border-olive-700 sticky top-0 z-50">
                 <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">

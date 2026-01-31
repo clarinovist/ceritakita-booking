@@ -11,9 +11,21 @@ import {
   GallerySection,
 } from '@/components/homepage';
 
+import JsonLd from '@/components/seo/JsonLd';
+import { buildHomeJsonLd } from '@/lib/seo/schema';
+
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: '/',
+  },
+};
+
 export default function Home() {
   return (
     <main className="bg-olive-900">
+      <JsonLd data={buildHomeJsonLd()} />
       {/* Navigation */}
       <Navbar />
 
