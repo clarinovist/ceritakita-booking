@@ -1,4 +1,6 @@
+# Build and Push Docker Image - Triggered for deployment check
 name: Build and Push Docker Image
+
 
 on:
   push:
