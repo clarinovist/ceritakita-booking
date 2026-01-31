@@ -1,77 +1,96 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import lockfile from 'proper-lockfile';
+import { Service } from '../types';
+import { AppError } from '../logger';
 
-const SERVICES_PATH = path.join(process.cwd(), 'data', 'services.json');
+const DATA_DIR = path.join(process.cwd(), 'data');
+const SERVICES_FILE = path.join(DATA_DIR, 'services.json');
 
-export interface Service {
-  id: string;
-  name: string;
-  basePrice: number;
-  discountValue: number;
-  isActive: boolean;
-  badgeText?: string;
-  benefits?: string[];
+/**
+ * Ensure the data directory exists
+ */
+async function ensureDataDir() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+  } catch (error: any) {
+    if (error.code === 'EACCES') {
+      throw new AppError(`Permission denied: Cannot create directory ${DATA_DIR}`, 500, 'DIR_PERMISSION_ERROR');
+    }
+    throw error;
+  }
 }
 
+/**
+ * Read all services from JSON file
+ */
 export async function readServices(): Promise<Service[]> {
   try {
-    const fileContent = await fs.promises.readFile(SERVICES_PATH, 'utf-8');
-    return JSON.parse(fileContent) as Service[];
-  } catch (error: any) {
-    if (error.code === 'ENOENT') {
+    await ensureDataDir();
+
+    try {
+      await fs.access(SERVICES_FILE);
+    } catch {
+      // File doesn't exist, return default services
       const defaultServices: Service[] = [
         { id: '1', name: 'Indoor Studio', basePrice: 0, discountValue: 0, isActive: true },
         { id: '2', name: 'Outdoor / On Location', basePrice: 0, discountValue: 0, isActive: true },
         { id: '3', name: 'Wedding', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '4', name: 'Prewedding Bronze', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '5', name: 'Prewedding Silver', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '6', name: 'Prewedding Gold', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '7', name: 'Wisuda', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '8', name: 'Family', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '9', name: 'Birthday', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '10', name: 'Pas Foto', basePrice: 0, discountValue: 0, isActive: true },
-        { id: '11', name: 'Self Photo', basePrice: 0, discountValue: 0, isActive: true },
       ];
-      await fs.promises.writeFile(SERVICES_PATH, JSON.stringify(defaultServices, null, 2), 'utf-8');
+      await fs.writeFile(SERVICES_FILE, JSON.stringify(defaultServices, null, 2));
       return defaultServices;
     }
-    console.error("Error parsing services file:", error);
+
+    const data = await fs.readFile(SERVICES_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error: any) {
+    console.error('Error reading services:', error);
+    if (error.code === 'EACCES') {
+      throw new AppError('Permission denied: Cannot read services.json', 500, 'FILE_READ_PERMISSION');
+    }
     return [];
   }
 }
 
-export async function writeServices(data: Service[]): Promise<void> {
-  let release: (() => Promise<void>) | null = null;
+/**
+ * Write all services to JSON file with locking for safety
+ */
+export async function writeServices(services: Service[]): Promise<void> {
+  await ensureDataDir();
 
+  // Ensure file exists before locking
   try {
-    // Acquire exclusive lock
-    release = await lockfile.lock(SERVICES_PATH, {
+    await fs.access(SERVICES_FILE);
+  } catch {
+    // Create initial empty file if it doesn't exist
+    await fs.writeFile(SERVICES_FILE, JSON.stringify([], null, 2));
+  }
+
+  let release;
+  try {
+    // Use lockfile to prevent concurrent writes
+    release = await lockfile.lock(SERVICES_FILE, {
       retries: {
         retries: 5,
-        minTimeout: 100,
-        maxTimeout: 1000,
+        factor: 3,
+        minTimeout: 1000,
+        maxTimeout: 5000,
       }
     });
 
-    // Write data
-    try {
-      await fs.promises.writeFile(SERVICES_PATH, JSON.stringify(data, null, 2), 'utf-8');
-    } catch (err: any) {
-      // Provide a clearer error message for permission issues so operators know how to fix
-      if (err.code === 'EACCES' || err.code === 'EPERM') {
-        console.error(`Permission error writing services file: ${SERVICES_PATH}. Please ensure the container user can write to the data directory.`);
-        // Re-throw a descriptive error so API layer returns 500 with context
-        const e = new Error(`EACCES: cannot write services file (${SERVICES_PATH}). Ensure ./data is writable by the container user or set the service user in docker-compose.`);
-        // attach original code for logging downstream
-        (e as any).code = err.code;
-        throw e;
-      }
-      throw err;
+    await fs.writeFile(SERVICES_FILE, JSON.stringify(services, null, 2));
+  } catch (error: any) {
+    console.error('Error writing services:', error);
+
+    if (error.code === 'ELOCKED') {
+      throw new AppError('File is currently locked by another process. Please try again.', 409, 'FILE_LOCKED');
     }
-  } catch (error) {
-    console.error("Error writing services file:", error);
-    throw error;
+
+    if (error.code === 'EACCES') {
+      throw new AppError('Permission denied: Cannot write to services.json. Check folder ownership.', 500, 'FILE_WRITE_PERMISSION');
+    }
+
+    throw new AppError(`Failed to save services: ${error.message}`, 500, 'FILE_WRITE_ERROR');
   } finally {
     if (release) {
       await release();

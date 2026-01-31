@@ -26,6 +26,11 @@ export async function POST(req: NextRequest) {
         // Validate services array using Zod
         const validationResult = servicesArraySchema.safeParse(body);
         if (!validationResult.success) {
+            logger.error('Services validation failed', {
+                issueCount: validationResult.error.issues.length,
+                issues: validationResult.error.issues,
+                payloadPreview: body.slice(0, 2) // Log a bit of the payload for context
+            });
             return NextResponse.json(
                 { error: 'Validation failed', details: validationResult.error.issues },
                 { status: 400 }

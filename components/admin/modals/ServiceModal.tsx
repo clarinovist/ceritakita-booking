@@ -1,14 +1,5 @@
-import { XCircle, Save } from 'lucide-react';
-import { ServiceFormData } from '@/lib/types';
-
-interface Service {
-    id: string;
-    name: string;
-    badgeText?: string;
-    basePrice: number;
-    discountValue: number;
-    isActive: boolean;
-}
+import { XCircle, Save, Loader2, AlertCircle } from 'lucide-react';
+import { Service, ServiceFormData } from '@/lib/types';
 
 interface ServiceModalProps {
     isOpen: boolean;
@@ -17,6 +8,8 @@ interface ServiceModalProps {
     editingService: Service | null;
     formData: ServiceFormData;
     setFormData: (data: ServiceFormData) => void;
+    loading?: boolean;
+    error?: string | null;
 }
 
 export const ServiceModal = ({
@@ -25,20 +18,31 @@ export const ServiceModal = ({
     onSubmit,
     editingService,
     formData,
-    setFormData
+    setFormData,
+    loading = false,
+    error = null
 }: ServiceModalProps) => {
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 overflow-hidden">
                 <div className="p-6 border-b flex justify-between items-center bg-gray-50">
                     <h2 className="text-xl font-bold">{editingService ? 'Edit Service' : 'Add New Service'}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-red-500">
+                    <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition-colors" disabled={loading}>
                         <XCircle size={24} />
                     </button>
                 </div>
+
                 <form onSubmit={onSubmit} className="p-6 space-y-4">
+                    {/* Error Display */}
+                    {error && (
+                        <div className="p-3 rounded-lg bg-red-50 border border-red-100 flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
+                            <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
+                            <p className="text-xs text-red-600 font-medium leading-relaxed">{error}</p>
+                        </div>
+                    )}
+
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-1">Service Name</label>
                         <input
@@ -48,6 +52,7 @@ export const ServiceModal = ({
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                             placeholder="e.g. Seasonal Promo"
                             className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            disabled={loading}
                         />
                     </div>
                     <div>
@@ -58,6 +63,7 @@ export const ServiceModal = ({
                             onChange={e => setFormData({ ...formData, badgeText: e.target.value })}
                             placeholder="Empty if no badge"
                             className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            disabled={loading}
                         />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
@@ -69,6 +75,7 @@ export const ServiceModal = ({
                                 value={formData.basePrice}
                                 onChange={e => setFormData({ ...formData, basePrice: Number(e.target.value) })}
                                 className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                disabled={loading}
                             />
                         </div>
                         <div>
@@ -79,6 +86,7 @@ export const ServiceModal = ({
                                 value={formData.discountValue}
                                 onChange={e => setFormData({ ...formData, discountValue: Number(e.target.value) })}
                                 className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-red-600 font-medium"
+                                disabled={loading}
                             />
                         </div>
                     </div>
@@ -89,30 +97,38 @@ export const ServiceModal = ({
                             checked={formData.isActive}
                             onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
                             className="w-5 h-5 text-blue-600 rounded"
+                            disabled={loading}
                         />
                         <label htmlFor="is_active" className="text-sm font-bold text-gray-700 cursor-pointer">Service is Active</label>
                     </div>
 
                     <div className="border-t pt-4">
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Benefits (Max 5)</label>
-                        <div className="space-y-2 mb-3">
+                        <div className="flex justify-between items-center mb-2">
+                            <label className="block text-sm font-bold text-gray-700">Benefits ({formData.benefits.length}/5)</label>
+                            {formData.benefits.length >= 5 && (
+                                <span className="text-[10px] text-orange-600 font-bold uppercase tracking-wider bg-orange-50 px-1.5 py-0.5 rounded">Limit Reached</span>
+                            )}
+                        </div>
+                        <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
                             {formData.benefits.map((benefit, index) => (
-                                <div key={index} className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border">
+                                <div key={index} className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border group">
                                     <span className="flex-1 text-sm">{benefit}</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setFormData({
-                                            ...formData,
-                                            benefits: formData.benefits.filter((_, i) => i !== index)
-                                        })}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        <XCircle size={18} />
-                                    </button>
+                                    {!loading && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({
+                                                ...formData,
+                                                benefits: formData.benefits.filter((_, i) => i !== index)
+                                            })}
+                                            className="text-gray-300 group-hover:text-red-500 transition-colors"
+                                        >
+                                            <XCircle size={16} />
+                                        </button>
+                                    )}
                                 </div>
                             ))}
                             {formData.benefits.length === 0 && (
-                                <p className="text-xs text-gray-400 italic">No benefits added yet</p>
+                                <p className="text-xs text-gray-400 italic py-2">No benefits added yet</p>
                             )}
                         </div>
 
@@ -123,6 +139,7 @@ export const ServiceModal = ({
                                     id="new-benefit-input"
                                     placeholder="Add a benefit..."
                                     className="flex-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    disabled={loading}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             e.preventDefault();
@@ -140,6 +157,7 @@ export const ServiceModal = ({
                                 />
                                 <button
                                     type="button"
+                                    disabled={loading}
                                     onClick={() => {
                                         const input = document.getElementById('new-benefit-input') as HTMLInputElement;
                                         const val = input.value.trim();
@@ -151,7 +169,7 @@ export const ServiceModal = ({
                                             input.value = '';
                                         }
                                     }}
-                                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold"
+                                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
                                 >
                                     Add
                                 </button>
@@ -161,10 +179,25 @@ export const ServiceModal = ({
                     </div>
 
                     <div className="pt-4 flex gap-3">
-                        <button type="button" onClick={onClose} className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Cancel</button>
-                        <button type="submit" className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors flex items-center justify-center gap-2">
-                            <Save size={18} />
-                            {editingService ? 'Update Service' : 'Create Service'}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={loading}
+                            className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-md shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        >
+                            {loading ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <Save size={18} />
+                            )}
+                            {loading ? 'Processing...' : (editingService ? 'Update Service' : 'Create Service')}
                         </button>
                     </div>
                 </form>

@@ -612,6 +612,8 @@ export default function AdminDashboard() {
                     editingService={servicesHook.editingService}
                     formData={servicesHook.serviceFormData}
                     setFormData={servicesHook.setServiceFormData}
+                    loading={servicesHook.loading}
+                    error={servicesHook.error}
                 />
 
                 {/* Booking Detail Modal */}
