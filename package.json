@@ -25,6 +25,7 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^11.7.0",
     "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
     "formidable": "^3.5.4",
     "jspdf": "^4.0.0",
     "jspdf-autotable": "^5.0.7",

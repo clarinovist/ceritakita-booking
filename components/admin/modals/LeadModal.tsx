@@ -44,17 +44,17 @@ export function LeadModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b flex justify-between items-center bg-gray-50 sticky top-0">
-          <h2 className="text-xl font-bold">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col">
+        <div className="p-4 md:p-6 border-b flex justify-between items-center bg-gray-50 flex-none sticky top-0 z-10">
+          <h2 className="text-lg md:text-xl font-bold">
             {isEditing ? 'Edit Lead' : 'Add New Lead'}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-red-500">
-            <span style={{ fontSize: '24px' }}>✕</span>
+          <button onClick={onClose} className="text-gray-400 hover:text-red-500 p-2 transition-colors">
+            <span className="text-2xl">✕</span>
           </button>
         </div>
 
-        <form onSubmit={onSubmit} className="p-6 space-y-6">
+        <form onSubmit={onSubmit} className="p-4 md:p-6 space-y-6 overflow-y-auto custom-scrollbar flex-1">
           {/* Lead Information */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
             <h3 className="font-bold text-blue-900 mb-3 flex items-center gap-2">
@@ -69,7 +69,7 @@ export function LeadModal({
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. John Doe"
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base md:text-sm min-h-[44px]"
                 />
               </div>
               <div>
@@ -80,7 +80,7 @@ export function LeadModal({
                   value={formData.whatsapp}
                   onChange={e => setFormData({ ...formData, whatsapp: e.target.value })}
                   placeholder="e.g. 081234567890"
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base md:text-sm min-h-[44px]"
                 />
               </div>
               <div className="md:col-span-2">
@@ -90,7 +90,7 @@ export function LeadModal({
                   value={formData.email || ''}
                   onChange={e => setFormData({ ...formData, email: e.target.value })}
                   placeholder="e.g. john@example.com"
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base md:text-sm min-h-[44px]"
                 />
               </div>
             </div>
@@ -108,7 +108,7 @@ export function LeadModal({
                   required
                   value={formData.source}
                   onChange={e => setFormData({ ...formData, source: e.target.value as LeadSource })}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-base md:text-sm min-h-[44px] bg-white cursor-pointer"
                 >
                   {LEAD_SOURCES.map(source => (
                     <option key={source} value={source}>{source}</option>
@@ -121,7 +121,7 @@ export function LeadModal({
                   required
                   value={formData.status}
                   onChange={e => setFormData({ ...formData, status: e.target.value as LeadStatus })}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-base md:text-sm min-h-[44px] bg-white cursor-pointer"
                 >
                   {LEAD_STATUSES.map(status => (
                     <option key={status} value={status}>{status}</option>
@@ -134,23 +134,23 @@ export function LeadModal({
                   type="date"
                   value={formData.next_follow_up || ''}
                   onChange={e => setFormData({ ...formData, next_follow_up: e.target.value })}
-                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none"
+                  className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none text-base md:text-sm min-h-[44px]"
                 />
               </div>
             </div>
 
             <div className="mt-4">
               <label className="block text-sm font-bold text-gray-700 mb-2">Interest</label>
-              <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border rounded-lg bg-white">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 border rounded-lg bg-white shadow-inner">
                 {services.map(service => (
-                  <label key={service.id} className="flex items-center gap-2 text-sm cursor-pointer p-1 hover:bg-gray-50 rounded">
+                  <label key={service.id} className="flex items-center gap-3 text-sm cursor-pointer p-2 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-colors">
                     <input
                       type="checkbox"
                       checked={(formData.interest || []).includes(service.name)}
                       onChange={() => toggleInterest(service.name)}
-                      className="rounded text-purple-600 focus:ring-purple-500"
+                      className="w-5 h-5 rounded text-purple-600 focus:ring-purple-500 transition-all cursor-pointer"
                     />
-                    <span>{service.name}</span>
+                    <span className="font-medium text-gray-700">{service.name}</span>
                   </label>
                 ))}
               </div>
@@ -167,7 +167,7 @@ export function LeadModal({
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Add any notes about this lead..."
               rows={4}
-              className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none"
+              className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none text-base md:text-sm min-h-[100px]"
             />
           </div>
 
@@ -181,23 +181,23 @@ export function LeadModal({
               value={formData.assigned_to || ''}
               onChange={e => setFormData({ ...formData, assigned_to: e.target.value })}
               placeholder="User ID to assign to"
-              className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none"
+              className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-base md:text-sm min-h-[44px]"
             />
-            <p className="text-xs text-gray-500 mt-1">Leave empty if not assigning to anyone</p>
+            <p className="text-[10px] text-indigo-500 mt-1 font-medium pl-1">Leave empty if not assigning to anyone</p>
           </div>
 
           {/* Form Actions */}
-          <div className="pt-4 flex gap-3 border-t">
+          <div className="pt-4 flex gap-3 border-t flex-none sticky bottom-0 bg-white md:bg-transparent pb-2 md:pb-0">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              className="flex-1 py-3.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors min-h-[48px]"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 text-sm font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-all shadow-lg shadow-purple-200 flex items-center justify-center gap-2 min-h-[48px]"
             >
               <span>💾</span>
               {isEditing ? 'Update Lead' : 'Create Lead'}

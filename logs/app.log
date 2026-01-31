@@ -2048,3 +2048,45 @@
 [2026-01-20T04:54:21.380Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
 [2026-01-20T04:54:21.385Z] [INFO] Retrieved bookings from database | Context: {"count":13}
 [2026-01-20T04:54:21.385Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T11:55:47.678Z] [INFO] User signed in | Context: {"userId":"303ef6e2-8c0b-47cc-81d1-4a791d2648db","name":"Manager","role":"admin"}
+[2026-01-25T11:55:47.678Z] [INFO] Successful login | Context: {"username":"Manager","role":"admin"}
+[2026-01-25T11:55:50.692Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T11:55:50.693Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T11:55:50.701Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T11:55:50.701Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T11:55:50.705Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T11:55:50.706Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T11:55:50.711Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T11:55:50.711Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:03.491Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:03.491Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T12:14:03.844Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:03.844Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T12:14:03.857Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:03.857Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T12:14:03.862Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:03.862Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T12:14:45.722Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:45.723Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T12:14:45.743Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T12:14:45.742Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:45.756Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:45.757Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T12:14:45.766Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T12:14:45.766Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T13:42:58.933Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T13:42:58.933Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T13:42:58.945Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T13:42:58.945Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T13:42:58.962Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T13:42:58.961Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T13:42:58.970Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T13:42:58.970Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T14:12:56.096Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T14:12:56.096Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T14:12:56.116Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T14:12:56.116Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T14:12:56.152Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-25T14:12:56.153Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T14:12:56.163Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-25T14:12:56.162Z] [INFO] Retrieved bookings from database | Context: {"count":13}

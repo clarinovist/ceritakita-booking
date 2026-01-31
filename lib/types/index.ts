@@ -73,7 +73,10 @@ export type {
   LEAD_STATUSES,
   LEAD_SOURCES,
   LeadsPaginatedResponse,
-  BulkActionRequest
+  BulkActionRequest,
+  LeadInteraction,
+  LeadInteractionFormData,
+  InteractionType
 } from './leads';
 
 // User Types (existing)

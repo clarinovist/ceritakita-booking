@@ -1,4 +1,5 @@
 import React from 'react';
+// Removed duplicate Phone import
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { Lead, LeadStatus } from '@/lib/types';
 import { LEAD_STATUSES, getLeadStatusColor, getLeadSourceIcon } from '@/lib/types/leads';
@@ -52,13 +53,13 @@ export const LeadsKanban: React.FC<LeadsKanbanProps> = ({
     };
 
     return (
-        <div className="h-full overflow-x-auto overflow-y-hidden pb-4">
+        <div className="h-full overflow-x-auto overflow-y-hidden pb-4 bg-cream-50">
             <DragDropContext onDragEnd={onDragEnd}>
                 <div className="flex h-full gap-4 min-w-[1200px]">
                     {LEAD_STATUSES.map(status => (
                         <div key={status} className="flex flex-col w-72 bg-gray-50/50 rounded-xl border border-gray-200 h-full max-h-[calc(100vh-220px)]">
                             {/* Column Header */}
-                            <div className={`p-3 border-b border-gray-100 flex items-center justify-between rounded-t-xl bg-white sticky top-0 z-10`}>
+                            <div className={`p-3 border-b border-warmBrown-200 flex items-center justify-between rounded-t-xl bg-white sticky top-0 z-10`}>
                                 <div className="flex items-center gap-2">
                                     <h3 className="font-semibold text-sm text-gray-700">{status}</h3>
                                     <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full font-medium">
@@ -96,14 +97,14 @@ export const LeadsKanban: React.FC<LeadsKanbanProps> = ({
                                                         <div className="flex flex-col gap-2">
                                                             {/* Header: Name + Date */}
                                                             <div className="flex justify-between items-start">
-                                                                <h4 className="font-medium text-sm text-gray-900 line-clamp-1" title={lead.name}>
+                                                                <h4 className="font-medium text-sm text-olive-900 line-clamp-1 font-display" title={lead.name}>
                                                                     {lead.name}
                                                                 </h4>
                                                             </div>
 
                                                             {/* Contact */}
                                                             <div
-                                                                className="flex items-center gap-1.5 text-xs text-green-600 font-medium hover:text-green-700 w-fit p-1 -ml-1 rounded hover:bg-green-50 transition-colors"
+                                                                className="flex items-center gap-1.5 text-xs text-olive-600 font-medium hover:text-olive-800 w-fit p-1 -ml-1 rounded hover:bg-cream-100 transition-colors"
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     onWhatsApp(lead.whatsapp);
@@ -115,19 +116,19 @@ export const LeadsKanban: React.FC<LeadsKanbanProps> = ({
 
                                                             {/* Metadata Row */}
                                                             <div className="flex items-center gap-2 mt-1 pt-2 border-t border-gray-50">
-                                                                <span className="flex items-center gap-1 text-[10px] text-gray-500 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-100" title={`Source: ${lead.source}`}>
+                                                                <span className="flex items-center gap-1 text-[10px] text-olive-600 bg-cream-50 px-1.5 py-0.5 rounded border border-warmBrown-100" title={`Source: ${lead.source}`}>
                                                                     <span>{getLeadSourceIcon(lead.source)}</span>
                                                                     <span className="truncate max-w-[60px]">{lead.source}</span>
                                                                 </span>
 
                                                                 {/* Notes Indicator */}
                                                                 {lead.notes && (
-                                                                    <span className="text-gray-400" title={lead.notes}>
+                                                                    <span className="text-olive-400" title={lead.notes}>
                                                                         <MessageCircle size={12} />
                                                                     </span>
                                                                 )}
 
-                                                                <span className="text-[10px] text-gray-400 ml-auto flex items-center gap-1" title={`Created: ${formatDate(lead.created_at)}`}>
+                                                                <span className="text-[10px] text-olive-400 ml-auto flex items-center gap-1 font-serif" title={`Created: ${formatDate(lead.created_at)}`}>
                                                                     <Calendar size={10} />
                                                                     {new Date(lead.created_at).toLocaleDateString()}
                                                                 </span>

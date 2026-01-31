@@ -1,0 +1,61 @@
+{
+    "meta": {
+        "brand_name": "CeritaKita Booking",
+        "description": "Earthy & Moody design tokens for Photography Studio booking system."
+    },
+    "colors": {
+        "primary": {
+            "DEFAULT": "#6b6b50",
+            "hover": "#4a4a3a",
+            "foreground": "#f5f2eb"
+        },
+        "secondary": {
+            "DEFAULT": "#d4b896",
+            "foreground": "#2c2c20"
+        },
+        "background": "#fdfcfa",
+        "foreground": "#1a1a14",
+        "muted": "#f0f0e8",
+        "accent": "#c9a96e",
+        "destructive": "#dc2626",
+        "success": "#10b981",
+        "warning": "#f59e0b",
+        "info": "#3b82f6",
+        "olive": {
+            "500": "#8a8a6c",
+            "700": "#4a4a3a"
+        },
+        "cream": {
+            "100": "#f5f2eb",
+            "200": "#e8e4d9"
+        },
+        "gold": {
+            "500": "#b89856"
+        }
+    },
+    "typography": {
+        "font_family_headings": [
+            "Playfair Display",
+            "serif"
+        ],
+        "font_family_body": [
+            "Inter",
+            "sans-serif"
+        ],
+        "font_family_accent": [
+            "Cormorant Garamond",
+            "serif"
+        ],
+        "font_family_mono": [
+            "JetBrains Mono",
+            "monospace"
+        ],
+        "font_weight_bold": "700",
+        "font_weight_normal": "400"
+    },
+    "ui": {
+        "border_radius_default": "0.75rem",
+        "border_radius_small": "0.375rem",
+        "spacing_base_unit": "4px"
+    }
+}

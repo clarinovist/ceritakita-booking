@@ -26,15 +26,15 @@ export const ServiceModal = ({
 
     return (
         <div className="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 overflow-hidden">
-                <div className="p-6 border-b flex justify-between items-center bg-gray-50">
-                    <h2 className="text-xl font-bold">{editingService ? 'Edit Service' : 'Add New Service'}</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition-colors" disabled={loading}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md animate-in zoom-in-95 duration-200 overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="p-4 md:p-6 border-b flex justify-between items-center bg-gray-50 flex-none">
+                    <h2 className="text-lg md:text-xl font-bold">{editingService ? 'Edit Service' : 'Add New Service'}</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-red-500 transition-colors p-2" disabled={loading}>
                         <XCircle size={24} />
                     </button>
                 </div>
 
-                <form onSubmit={onSubmit} className="p-6 space-y-4">
+                <form onSubmit={onSubmit} className="p-4 md:p-6 space-y-4 overflow-y-auto custom-scrollbar flex-1">
                     {/* Error Display */}
                     {error && (
                         <div className="p-3 rounded-lg bg-red-50 border border-red-100 flex items-start gap-2 animate-in fade-in slide-in-from-top-1">
@@ -51,7 +51,7 @@ export const ServiceModal = ({
                             value={formData.name}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                             placeholder="e.g. Seasonal Promo"
-                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base md:text-sm min-h-[44px]"
                             disabled={loading}
                         />
                     </div>
@@ -62,7 +62,7 @@ export const ServiceModal = ({
                             value={formData.badgeText}
                             onChange={e => setFormData({ ...formData, badgeText: e.target.value })}
                             placeholder="Empty if no badge"
-                            className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                            className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base md:text-sm min-h-[44px]"
                             disabled={loading}
                         />
                     </div>
@@ -74,7 +74,7 @@ export const ServiceModal = ({
                                 type="number"
                                 value={formData.basePrice}
                                 onChange={e => setFormData({ ...formData, basePrice: Number(e.target.value) })}
-                                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base md:text-sm min-h-[44px]"
                                 disabled={loading}
                             />
                         </div>
@@ -85,7 +85,7 @@ export const ServiceModal = ({
                                 type="number"
                                 value={formData.discountValue}
                                 onChange={e => setFormData({ ...formData, discountValue: Number(e.target.value) })}
-                                className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-red-600 font-medium"
+                                className="w-full py-2.5 px-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base md:text-sm text-red-600 font-bold min-h-[44px]"
                                 disabled={loading}
                             />
                         </div>
@@ -96,7 +96,7 @@ export const ServiceModal = ({
                             id="is_active"
                             checked={formData.isActive}
                             onChange={e => setFormData({ ...formData, isActive: e.target.checked })}
-                            className="w-5 h-5 text-blue-600 rounded"
+                            className="w-6 h-6 text-blue-600 rounded cursor-pointer"
                             disabled={loading}
                         />
                         <label htmlFor="is_active" className="text-sm font-bold text-gray-700 cursor-pointer">Service is Active</label>
@@ -106,13 +106,13 @@ export const ServiceModal = ({
                         <div className="flex justify-between items-center mb-2">
                             <label className="block text-sm font-bold text-gray-700">Benefits ({formData.benefits.length}/5)</label>
                             {formData.benefits.length >= 5 && (
-                                <span className="text-[10px] text-orange-600 font-bold uppercase tracking-wider bg-orange-50 px-1.5 py-0.5 rounded">Limit Reached</span>
+                                <span className="text-[10px] text-orange-600 font-bold uppercase tracking-wider bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100">Limit Reached</span>
                             )}
                         </div>
-                        <div className="space-y-2 mb-3 max-h-32 overflow-y-auto pr-1 custom-scrollbar">
+                        <div className="space-y-2 mb-3 max-h-48 overflow-y-auto pr-1 flex flex-col gap-1">
                             {formData.benefits.map((benefit, index) => (
-                                <div key={index} className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg border group">
-                                    <span className="flex-1 text-sm">{benefit}</span>
+                                <div key={index} className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg border group animate-in slide-in-from-left-2 transition-all">
+                                    <span className="flex-1 text-sm font-medium">{benefit}</span>
                                     {!loading && (
                                         <button
                                             type="button"
@@ -120,15 +120,15 @@ export const ServiceModal = ({
                                                 ...formData,
                                                 benefits: formData.benefits.filter((_, i) => i !== index)
                                             })}
-                                            className="text-gray-300 group-hover:text-red-500 transition-colors"
+                                            className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                         >
-                                            <XCircle size={16} />
+                                            <XCircle size={20} />
                                         </button>
                                     )}
                                 </div>
                             ))}
                             {formData.benefits.length === 0 && (
-                                <p className="text-xs text-gray-400 italic py-2">No benefits added yet</p>
+                                <p className="text-xs text-gray-400 italic py-2 text-center">No benefits added yet</p>
                             )}
                         </div>
 
@@ -138,7 +138,7 @@ export const ServiceModal = ({
                                     type="text"
                                     id="new-benefit-input"
                                     placeholder="Add a benefit..."
-                                    className="flex-1 p-2 text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                    className="flex-1 py-2.5 px-3 text-base md:text-sm border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none min-h-[44px]"
                                     disabled={loading}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
@@ -169,35 +169,35 @@ export const ServiceModal = ({
                                             input.value = '';
                                         }
                                     }}
-                                    className="px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors disabled:opacity-50"
+                                    className="px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-bold transition-colors disabled:opacity-50 min-h-[44px] border border-blue-100"
                                 >
                                     Add
                                 </button>
                             </div>
                         )}
-                        <p className="text-[10px] text-gray-500 mt-2 italic">* Press Enter or click Add to save a benefit</p>
+                        <p className="text-[10px] text-gray-500 mt-2 italic font-medium">* Press Enter or click Add to save a benefit</p>
                     </div>
 
-                    <div className="pt-4 flex gap-3">
+                    <div className="pt-4 flex gap-3 flex-none sticky bottom-0 bg-white md:bg-transparent pb-2 md:pb-0">
                         <button
                             type="button"
                             onClick={onClose}
                             disabled={loading}
-                            className="flex-1 py-3 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50"
+                            className="flex-1 py-3.5 text-sm font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors disabled:opacity-50 min-h-[48px]"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-1 py-3 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-md shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                            className="flex-1 py-3.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-all shadow-lg shadow-blue-200 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed min-h-[48px]"
                         >
                             {loading ? (
                                 <Loader2 size={18} className="animate-spin" />
                             ) : (
                                 <Save size={18} />
                             )}
-                            {loading ? 'Processing...' : (editingService ? 'Update Service' : 'Create Service')}
+                            {loading ? 'Processing...' : (editingService ? 'Update' : 'Create')}
                         </button>
                     </div>
                 </form>

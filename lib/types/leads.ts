@@ -155,3 +155,21 @@ export const getLeadSourceIcon = (source: LeadSource): string => {
 
 export const LEAD_STATUSES: LeadStatus[] = ['New', 'Contacted', 'Follow Up', 'Won', 'Lost', 'Converted'];
 export const LEAD_SOURCES: LeadSource[] = ['Meta Ads', 'Organic', 'Referral', 'Instagram', 'WhatsApp', 'Phone Call', 'Website Form', 'Other'];
+
+export type InteractionType = 'WhatsApp' | 'Phone' | 'Email' | 'Note';
+
+export interface LeadInteraction {
+  id: string;
+  lead_id: string;
+  created_at: string;
+  interaction_type: InteractionType;
+  interaction_content: string | null;
+  created_by: string | null;
+  meta_event_sent: boolean;
+  meta_event_id: string | null;
+}
+
+export interface LeadInteractionFormData {
+  interaction_type: InteractionType;
+  interaction_content: string;
+}

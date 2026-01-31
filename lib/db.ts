@@ -446,6 +446,28 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_perf_metrics_module ON performance_metrics(module);
   `);
 
+  // Create lead_interactions table (Mini CRM Upgrade)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS lead_interactions (
+      id TEXT PRIMARY KEY,
+      lead_id TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      interaction_type TEXT NOT NULL CHECK(interaction_type IN ('WhatsApp', 'Phone', 'Email', 'Note')),
+      interaction_content TEXT,
+      created_by TEXT,
+      meta_event_sent INTEGER DEFAULT 0, -- Boolean 0/1
+      meta_event_id TEXT,
+      
+      FOREIGN KEY (lead_id) REFERENCES leads(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create indexes for lead_interactions
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_lead_interactions_lead_id ON lead_interactions(lead_id);
+    CREATE INDEX IF NOT EXISTS idx_lead_interactions_created_at ON lead_interactions(created_at);
+  `);
+
   // Add interest column to existing leads table (migration)
   try {
     db.exec(`ALTER TABLE leads ADD COLUMN interest TEXT`);

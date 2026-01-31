@@ -80,71 +80,172 @@ export const LeadsTable = ({
 
   return (
     <div className="bg-white rounded-xl shadow overflow-hidden animate-in fade-in min-h-[500px] flex flex-col">
-      {/* Search and Filters Row */}
-      <div className="p-4 border-b flex gap-3 items-center flex-wrap bg-white">
+      {/* Search and Filters Row - Responsive */}
+      <div className="p-4 border-b flex flex-col sm:flex-row gap-3 items-stretch sm:items-center bg-white">
         {/* Search Bar */}
-        <div className="relative flex-1 min-w-[200px] max-w-sm">
+        <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search name or contact..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-8 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full pl-9 pr-8 py-2.5 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[44px]"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-2"
             >
               <X size={16} />
             </button>
           )}
         </div>
 
-        {/* Status Filter */}
-        <div className="flex bg-white border rounded-lg overflow-hidden text-sm">
-          {['All', ...LEAD_STATUSES].map(s => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s as LeadStatus | 'All')}
-              className={`px-3 py-1.5 transition-colors ${filterStatus === s ? 'bg-blue-600 text-white' : 'hover:bg-gray-50 text-gray-600'}`}
+        <div className="flex gap-2 flex-wrap sm:flex-nowrap">
+          {/* Status Filter */}
+          <div className="flex-1 sm:flex-none">
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as LeadStatus | 'All')}
+              className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white cursor-pointer min-h-[44px]"
             >
-              {s}
-            </button>
-          ))}
-        </div>
+              <option value="All">All Status</option>
+              {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
 
-        {/* Source Filter */}
-        <div className="flex bg-white border rounded-lg overflow-hidden text-sm">
-          <select
-            value={filterSource}
-            onChange={(e) => setFilterSource(e.target.value as LeadSource | 'All')}
-            className="px-3 py-1.5 outline-none hover:bg-gray-50 text-gray-600 bg-transparent cursor-pointer"
-          >
-            <option value="All">All Sources</option>
-            {LEAD_SOURCES.map(s => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </div>
+          {/* Source Filter */}
+          <div className="flex-1 sm:flex-none">
+            <select
+              value={filterSource}
+              onChange={(e) => setFilterSource(e.target.value as LeadSource | 'All')}
+              className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white cursor-pointer min-h-[44px]"
+            >
+              <option value="All">All Sources</option>
+              {LEAD_SOURCES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
 
-        {/* Interest Filter */}
-        <div className="flex bg-white border rounded-lg overflow-hidden text-sm">
-          <select
-            value={filterInterest}
-            onChange={(e) => setFilterInterest(e.target.value)}
-            className="px-3 py-1.5 outline-none hover:bg-gray-50 text-gray-600 bg-transparent cursor-pointer"
-          >
-            <option value="All">All Interests</option>
-            {services.map(s => (
-              <option key={s.id} value={s.name}>{s.name}</option>
-            ))}
-          </select>
+          {/* Interest Filter */}
+          <div className="flex-1 sm:flex-none">
+            <select
+              value={filterInterest}
+              onChange={(e) => setFilterInterest(e.target.value)}
+              className="w-full px-3 py-2.5 border rounded-lg text-sm bg-white cursor-pointer min-h-[44px]"
+            >
+              <option value="All">All Interests</option>
+              {services.map(s => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
-      <div className="overflow-x-auto flex-1">
+      {/* Mobile Card View */}
+      <div className="lg:hidden grid grid-cols-1 divide-y flex-1 overflow-y-auto">
+        {leads.length === 0 && (
+          <div className="p-12 text-center text-gray-400 font-medium">No leads found.</div>
+        )}
+        {leads.map(lead => (
+          <div key={lead.id} className={`p-4 space-y-4 hover:bg-gray-50 transition-colors ${selectedIds.has(lead.id) ? 'bg-blue-50' : ''}`}>
+            <div className="flex justify-between items-start">
+              <div className="flex gap-3">
+                {onToggleSelect && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(lead.id)}
+                    onChange={() => onToggleSelect(lead.id)}
+                    className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500 w-5 h-5 cursor-pointer"
+                  />
+                )}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    {!isPlaceholderName(lead.name) ? (
+                      <span className="font-bold text-gray-900">{lead.name}</span>
+                    ) : (
+                      <span className="text-gray-400 italic text-sm">Unnamed Lead</span>
+                    )}
+                    {lead.notes && <MessageCircle size={14} className="text-gray-400" />}
+                  </div>
+                  {isPhoneNumber(lead.whatsapp) ? (
+                    <button
+                      onClick={() => onWhatsApp(lead.whatsapp)}
+                      className="text-green-600 font-bold text-xs flex items-center gap-1 min-h-[32px] hover:underline"
+                    >
+                      <Phone size={12} className="fill-current" />
+                      {lead.whatsapp}
+                    </button>
+                  ) : (
+                    <div className="text-gray-500 text-xs flex items-center gap-1">
+                      <MessageCircle size={12} />
+                      {lead.whatsapp}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase shadow-sm ${getLeadStatusColor(lead.status)}`}>
+                {lead.status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 text-xs">
+              <div className="space-y-1">
+                <span className="text-gray-400 uppercase font-black text-[9px] tracking-wider">Source & Interest</span>
+                <div className="flex items-center gap-1.5 text-gray-700 font-medium">
+                  <span>{getLeadSourceIcon(lead.source)}</span>
+                  {lead.source}
+                </div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {lead.interest?.slice(0, 2).map((item, idx) => (
+                    <span key={idx} className="bg-gray-50 text-gray-600 px-2 py-0.5 rounded border border-gray-100 font-medium">
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1 text-right">
+                <span className="text-gray-400 uppercase font-black text-[9px] tracking-wider">Timeline</span>
+                <div className="text-gray-500 font-medium">{formatDate(lead.created_at)}</div>
+                {lead.next_follow_up && (
+                  <div className="text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded inline-block mt-1 border border-orange-100">
+                    Follow-up: {formatDate(lead.next_follow_up)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-1">
+              {lead.status === 'Won' && !lead.booking_id && (
+                <button
+                  onClick={() => onConvertToBooking(lead)}
+                  className="flex-1 bg-purple-50 text-purple-700 font-bold text-[10px] uppercase py-3 rounded-xl border border-purple-100 flex items-center justify-center gap-2 min-h-[44px] hover:bg-purple-100 transition-colors"
+                >
+                  <ArrowRightLeft size={16} /> Convert
+                </button>
+              )}
+              <button
+                onClick={() => onOpenModal(lead)}
+                className="flex-1 bg-blue-50 text-blue-700 font-bold text-[10px] uppercase py-3 rounded-xl border border-blue-100 flex items-center justify-center gap-2 min-h-[44px] hover:bg-blue-100 transition-colors"
+              >
+                <Pencil size={16} /> Edit
+              </button>
+              <button
+                onClick={() => {
+                  if (confirm('Delete this lead?')) onDeleteLead(lead.id);
+                }}
+                className="flex-1 bg-red-50 text-red-700 font-bold text-[10px] uppercase py-3 rounded-xl border border-red-100 flex items-center justify-center gap-2 min-h-[44px] hover:bg-red-100 transition-colors"
+              >
+                <Trash2 size={16} /> Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block overflow-x-auto flex-1">
         <table className="w-full text-sm text-left">
           <thead className="bg-gray-50 text-gray-500 font-medium">
             <tr>
@@ -165,7 +266,7 @@ export const LeadsTable = ({
                         onSelectAll?.();
                       }
                     }}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                   />
                 )}
               </th>
@@ -181,7 +282,7 @@ export const LeadsTable = ({
           <tbody className="divide-y">
             {leads.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center p-12 text-gray-400">
+                <td colSpan={8} className="text-center p-12 text-gray-400 font-medium">
                   <div className="flex flex-col items-center gap-2">
                     <span className="text-2xl">📭</span>
                     <span>No leads found.</span>
@@ -197,7 +298,7 @@ export const LeadsTable = ({
                       type="checkbox"
                       checked={selectedIds.has(lead.id)}
                       onChange={() => onToggleSelect(lead.id)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     />
                   )}
                 </td>
@@ -207,7 +308,7 @@ export const LeadsTable = ({
                     {/* Name row */}
                     <div className="flex items-center gap-2">
                       {!isPlaceholderName(lead.name) && (
-                        <span className="font-medium text-gray-900">{lead.name}</span>
+                        <span className="font-medium text-gray-900 font-bold">{lead.name}</span>
                       )}
                       {lead.notes && (
                         <span className="text-gray-300 group-hover:text-gray-500 transition-colors" title={lead.notes}>
@@ -234,7 +335,7 @@ export const LeadsTable = ({
                   </div>
                 </td>
                 <td className="px-4 py-3">
-                  <span className="inline-flex items-center gap-1.5 text-gray-600 text-xs">
+                  <span className="inline-flex items-center gap-1.5 text-gray-600 text-xs font-medium">
                     <span>{getLeadSourceIcon(lead.source)}</span>
                     {lead.source}
                   </span>
@@ -243,12 +344,12 @@ export const LeadsTable = ({
                   {(lead.interest && lead.interest.length > 0) ? (
                     <div className="flex flex-wrap gap-1">
                       {lead.interest.slice(0, 2).map((item, idx) => (
-                        <span key={idx} className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded border border-gray-200">
+                        <span key={idx} className="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded border border-gray-200 font-bold">
                           {item}
                         </span>
                       ))}
                       {lead.interest.length > 2 && (
-                        <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded border border-gray-200" title={lead.interest.join(', ')}>
+                        <span className="bg-gray-100 text-gray-600 text-[10px] px-2 py-0.5 rounded border border-gray-200 font-bold" title={lead.interest.join(', ')}>
                           +{lead.interest.length - 2}
                         </span>
                       )}
@@ -258,16 +359,16 @@ export const LeadsTable = ({
                   )}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${getLeadStatusColor(lead.status)}`}>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase ${getLeadStatusColor(lead.status)} shadow-sm`}>
                     {lead.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                <td className="px-4 py-3 text-gray-500 text-xs font-medium">
                   {formatDate(lead.created_at)}
                 </td>
                 <td className="px-4 py-3 text-xs">
                   {lead.next_follow_up ? (
-                    <span className="text-orange-600 font-medium bg-orange-50 px-2 py-1 rounded">
+                    <span className="text-orange-600 font-bold bg-orange-50 px-2 py-1 rounded border border-orange-100">
                       {formatDate(lead.next_follow_up)}
                     </span>
                   ) : (
@@ -280,7 +381,7 @@ export const LeadsTable = ({
                     {lead.status === 'Won' && !lead.booking_id && (
                       <button
                         onClick={() => onConvertToBooking(lead)}
-                        className="text-purple-600 hover:text-purple-800 p-1.5 rounded hover:bg-purple-50 transition-colors"
+                        className="text-purple-600 hover:text-purple-800 p-3 rounded-lg hover:bg-purple-50 transition-colors min-h-[44px]"
                         title="Convert to Booking"
                       >
                         <ArrowRightLeft size={16} />
@@ -290,10 +391,10 @@ export const LeadsTable = ({
                     {/* Edit */}
                     <button
                       onClick={() => onOpenModal(lead)}
-                      className="text-blue-600 hover:text-blue-800 p-1.5 rounded hover:bg-blue-50 transition-colors"
+                      className="text-blue-600 hover:text-blue-800 p-3 rounded-lg hover:bg-blue-50 transition-colors min-h-[44px]"
                       title="Edit Lead"
                     >
-                      <Pencil size={16} />
+                      <Pencil size={18} />
                     </button>
 
                     {/* Delete */}
@@ -303,10 +404,10 @@ export const LeadsTable = ({
                           onDeleteLead(lead.id);
                         }
                       }}
-                      className="text-red-600 hover:text-red-800 p-1.5 rounded hover:bg-red-50 transition-colors"
+                      className="text-red-600 hover:text-red-800 p-3 rounded-lg hover:bg-red-50 transition-colors min-h-[44px]"
                       title="Delete Lead"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </td>
