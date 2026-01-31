@@ -2090,3 +2090,13 @@
 [2026-01-25T14:12:56.153Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
 [2026-01-25T14:12:56.163Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
 [2026-01-25T14:12:56.162Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-31T13:58:37.915Z] [INFO] Successful login | Context: {"username":"Manager","role":"admin"}
+[2026-01-31T13:58:37.915Z] [INFO] User signed in | Context: {"userId":"303ef6e2-8c0b-47cc-81d1-4a791d2648db","name":"Manager","role":"admin"}
+[2026-01-31T13:58:40.951Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-31T13:58:40.950Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-31T13:58:40.958Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-31T13:58:40.958Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-31T13:58:40.963Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-31T13:58:40.963Z] [INFO] Bookings retrieved successfully | Context: {"count":13}
+[2026-01-31T13:58:40.971Z] [INFO] Retrieved bookings from database | Context: {"count":13}
+[2026-01-31T13:58:40.972Z] [INFO] Bookings retrieved successfully | Context: {"count":13}

@@ -14,6 +14,7 @@ import SettingsManagement from './SettingsManagement';
 import CatalogManagement from './CatalogManagement';
 import HomepageCMS from './HomepageCMS';
 import AdsPerformance from './AdsPerformance';
+import LeadPerformance, { type LeadAnalyticsData } from './analytics/LeadPerformance';
 import DateFilterToolbar from './DateFilterToolbar';
 import { FinanceModule } from './FinanceModule';
 
@@ -103,6 +104,46 @@ export default function AdminDashboard() {
     const availableViewModes = getAvailableViewModes();
     const [viewMode, setViewMode] = useState<ViewMode>(availableViewModes[0] || 'table');
     const [leadsViewMode, setLeadsViewMode] = useState<'table' | 'board'>('table');
+
+    // Lead Analytics State
+    const [analyticsData, setAnalyticsData] = useState<LeadAnalyticsData>({
+        total_leads: 0,
+        total_won: 0,
+        conversion_rate: 0,
+        by_agent: [],
+        isLoading: true
+    });
+
+    // Fetch analytics
+    const fetchAnalytics = React.useCallback(async () => {
+        setAnalyticsData(prev => ({ ...prev, isLoading: true, error: null }));
+        try {
+            // Ensure date string is valid for API
+            const startStr = (bookingsHook.dateRange.start || new Date().toISOString().split('T')[0]) as string;
+            const endStr = (bookingsHook.dateRange.end || new Date().toISOString().split('T')[0]) as string;
+
+            const params: Record<string, string> = {
+                start: startStr,
+                end: endStr
+            };
+            const query = new URLSearchParams(params);
+            const res = await fetch(`/api/analytics/leads?${query.toString()}`);
+            if (!res.ok) throw new Error('Failed to fetch analytics');
+
+            const data = await res.json();
+            setAnalyticsData({ ...data, isLoading: false, error: null });
+        } catch (err) {
+            console.error(err);
+            setAnalyticsData((prev: LeadAnalyticsData) => ({ ...prev, isLoading: false, error: 'Failed to load analytics' }));
+        }
+    }, [bookingsHook.dateRange]);
+
+    // Trigger fetch on view change or date change
+    useEffect(() => {
+        if (viewMode === 'ads') {
+            fetchAnalytics();
+        }
+    }, [fetchAnalytics, viewMode]);
 
     // Reset view mode if current mode becomes unavailable
     useEffect(() => {
@@ -448,11 +489,12 @@ export default function AdminDashboard() {
 
                     {/* ADS VIEW */}
                     {viewMode === 'ads' && (
-                        <div className="animate-in fade-in">
+                        <div className="animate-in fade-in space-y-8">
                             <AdsPerformance
                                 bookings={bookingsHook.bookingsByCreatedDate}
                                 dateRange={bookingsHook.dateRange}
                             />
+                            <LeadPerformance data={analyticsData} />
                         </div>
                     )}
 
