@@ -47,7 +47,7 @@ async function isLocked(resource: string): Promise<boolean> {
  */
 async function waitForLock(resource: string, timeout: number = LOCK_TIMEOUT): Promise<boolean> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeout) {
     const locked = await isLocked(resource);
     if (!locked) {
@@ -55,7 +55,7 @@ async function waitForLock(resource: string, timeout: number = LOCK_TIMEOUT): Pr
     }
     await new Promise(resolve => setTimeout(resolve, LOCK_CHECK_INTERVAL));
   }
-  
+
   return false;
 }
 
@@ -68,7 +68,7 @@ export async function acquireLock(
   timeout: number = LOCK_TIMEOUT
 ): Promise<boolean> {
   await ensureLockDir();
-  
+
   // Check if already locked
   const alreadyLocked = await isLocked(resource);
   if (alreadyLocked) {
@@ -78,7 +78,7 @@ export async function acquireLock(
       return false;
     }
   }
-  
+
   // Create lock file
   const lockPath = getLockPath(resource);
   const lockData = {
@@ -86,7 +86,7 @@ export async function acquireLock(
     pid: process.pid,
     resource
   };
-  
+
   try {
     await fs.writeFile(lockPath, JSON.stringify(lockData), { flag: 'wx' });
     return true;
@@ -118,11 +118,11 @@ export async function withLock<T>(
   timeout: number = LOCK_TIMEOUT
 ): Promise<T> {
   const acquired = await acquireLock(resource, timeout);
-  
+
   if (!acquired) {
     throw new Error(`Failed to acquire lock for resource: ${resource}`);
   }
-  
+
   try {
     return await fn();
   } finally {
@@ -139,12 +139,12 @@ export async function getLockStatus(resource: string): Promise<{
   age?: number;
 } | null> {
   const lockPath = getLockPath(resource);
-  
+
   try {
     const content = await fs.readFile(lockPath, 'utf-8');
     const data = JSON.parse(content);
     const age = Date.now() - data.timestamp;
-    
+
     return {
       locked: true,
       data,
@@ -162,7 +162,7 @@ export async function getLockStatus(resource: string): Promise<{
  */
 export async function forceRemoveLock(resource: string): Promise<boolean> {
   const lockPath = getLockPath(resource);
-  
+
   try {
     await fs.unlink(lockPath);
     return true;
@@ -176,13 +176,13 @@ export async function forceRemoveLock(resource: string): Promise<boolean> {
  */
 export async function cleanupStaleLocks(): Promise<number> {
   await ensureLockDir();
-  
+
   const files = await fs.readdir(LOCK_DIR);
-  
+
   const results = await Promise.all(
     files
       .filter(file => file.endsWith('.lock'))
-      .map(async (file) => {
+      .map(async (file): Promise<number> => {
         const lockPath = path.join(LOCK_DIR, file);
         try {
           const content = await fs.readFile(lockPath, 'utf-8');
@@ -198,11 +198,11 @@ export async function cleanupStaleLocks(): Promise<number> {
         return 0;
       })
   );
-  
+
   return results.reduce((acc, curr) => acc + curr, 0);
 }
 
 // Auto-cleanup stale locks every 5 minutes
 setInterval(() => {
-  cleanupStaleLocks().catch(() => {});
+  cleanupStaleLocks().catch(() => { });
 }, 5 * 60 * 1000);
