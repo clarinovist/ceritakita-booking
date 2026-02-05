@@ -10,7 +10,6 @@ import crypto from 'crypto';
 
 const LOCK_DIR = path.join(process.cwd(), 'data', 'locks');
 const LOCK_TIMEOUT = 30000; // 30 seconds
-const LOCK_CHECK_INTERVAL = 100; // 100ms
 
 // Ensure lock directory exists
 async function ensureLockDir() {
@@ -47,13 +46,20 @@ async function isLocked(resource: string): Promise<boolean> {
  */
 async function waitForLock(resource: string, timeout: number = LOCK_TIMEOUT): Promise<boolean> {
   const startTime = Date.now();
+  let delay = 50; // Initial delay
   
   while (Date.now() - startTime < timeout) {
     const locked = await isLocked(resource);
     if (!locked) {
       return true;
     }
-    await new Promise(resolve => setTimeout(resolve, LOCK_CHECK_INTERVAL));
+
+    // Exponential backoff with jitter
+    const jitter = Math.floor(Math.random() * 20);
+    await new Promise(resolve => setTimeout(resolve, delay + jitter));
+
+    // Increase delay for next iteration, capped at 200ms
+    delay = Math.min(delay * 1.2, 200);
   }
   
   return false;
