@@ -178,26 +178,28 @@ export async function cleanupStaleLocks(): Promise<number> {
   await ensureLockDir();
   
   const files = await fs.readdir(LOCK_DIR);
-  let cleaned = 0;
   
-  for (const file of files) {
-    if (!file.endsWith('.lock')) continue;
-    
-    const lockPath = path.join(LOCK_DIR, file);
-    try {
-      const content = await fs.readFile(lockPath, 'utf-8');
-      const data = JSON.parse(content);
-      
-      if (Date.now() - data.timestamp > LOCK_TIMEOUT) {
-        await fs.unlink(lockPath);
-        cleaned++;
-      }
-    } catch {
-      // File might have been deleted
-    }
-  }
+  const results = await Promise.all(
+    files
+      .filter(file => file.endsWith('.lock'))
+      .map(async (file) => {
+        const lockPath = path.join(LOCK_DIR, file);
+        try {
+          const content = await fs.readFile(lockPath, 'utf-8');
+          const data = JSON.parse(content);
+
+          if (Date.now() - data.timestamp > LOCK_TIMEOUT) {
+            await fs.unlink(lockPath);
+            return 1;
+          }
+        } catch {
+          // File might have been deleted or invalid
+        }
+        return 0;
+      })
+  );
   
-  return cleaned;
+  return results.reduce((acc, curr) => acc + curr, 0);
 }
 
 // Auto-cleanup stale locks every 5 minutes
