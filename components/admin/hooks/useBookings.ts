@@ -18,7 +18,8 @@ export const useBookings = () => {
         };
 
         const start = formatDate(year, month, 1);
-        const end = formatDate(year, month + 1, 0); // Last day of month
+        const lastDay = new Date(year, month + 1, 0).getDate();
+        const end = formatDate(year, month, lastDay);
 
         return { start, end };
     });

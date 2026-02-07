@@ -496,6 +496,26 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses(category);
   `);
 
+  // Create website_traffic table for analytics
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS website_traffic (
+      id TEXT PRIMARY KEY,
+      path TEXT NOT NULL,
+      visitor_id TEXT NOT NULL,
+      user_agent TEXT,
+      device_type TEXT NOT NULL CHECK(device_type IN ('mobile', 'desktop', 'tablet', 'unknown')),
+      referer TEXT,
+      visited_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Create indexes for website_traffic
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_traffic_visited_at ON website_traffic(visited_at);
+    CREATE INDEX IF NOT EXISTS idx_traffic_path ON website_traffic(path);
+    CREATE INDEX IF NOT EXISTS idx_traffic_visitor_id ON website_traffic(visitor_id);
+  `);
+
   // --- HOMEPAGE CMS TABLES ---
 
   // 1. Homepage Content (Key-Value Store)

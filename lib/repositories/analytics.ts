@@ -1,6 +1,7 @@
 import { getDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { AdsData } from '@/lib/types';
+import crypto from 'crypto';
 
 /**
  * Database row interface for ads_performance_log table
@@ -316,6 +317,139 @@ export function getAdsLog(
       limit
     });
     // Return empty array instead of throwing to prevent UI breakage
+    return [];
+  }
+}
+
+// --- Website Traffic Analytics ---
+
+export interface PageViewData {
+  path: string;
+  visitor_id: string;
+  user_agent: string | null;
+  device_type: 'mobile' | 'desktop' | 'tablet' | 'unknown';
+  referer: string | null;
+}
+
+export interface TrafficStats {
+  date: string;
+  views: number;
+  visitors: number;
+}
+
+export interface TopPageData {
+  path: string;
+  views: number;
+  visitors: number;
+}
+
+/**
+ * Record a page view in the database
+ */
+export function recordPageView(data: PageViewData): void {
+  const db = getDb();
+  const id = crypto.randomUUID();
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO website_traffic (id, path, visitor_id, user_agent, device_type, referer, visited_at)
+      VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    stmt.run(
+      id,
+      data.path,
+      data.visitor_id,
+      data.user_agent,
+      data.device_type,
+      data.referer
+    );
+  } catch (error) {
+    logger.error('Failed to record page view', { error });
+    // Don't throw, just log. Analytics shouldn't break the app.
+  }
+}
+
+/**
+ * Get daily traffic stats (views and unique visitors)
+ */
+export function getTrafficStats(startDate?: string, endDate?: string): TrafficStats[] {
+  const db = getDb();
+
+  // Default to last 30 days if not specified
+  const end = endDate || new Date().toISOString().split('T')[0];
+  const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  try {
+    // Generate a sequence of dates to ensure we have entries for days with zero traffic
+    // Note: SQLite doesn't have a built-in generate_series, so we might have gaps if we group by date only.
+    // However, for simplicity, we'll just query the data present and handle gaps in the UI if needed,
+    // or we can handle it here by filling in the gaps. Let's fill gaps in JS.
+
+    const stmt = db.prepare(`
+      SELECT 
+        date(visited_at) as date,
+        COUNT(*) as views,
+        COUNT(DISTINCT visitor_id) as visitors
+      FROM website_traffic
+      WHERE date(visited_at) >= ? AND date(visited_at) <= ?
+      GROUP BY date(visited_at)
+      ORDER BY date(visited_at) ASC
+    `);
+
+    const rows = stmt.all(start, end) as TrafficStats[];
+
+    // Fill in missing dates with 0
+    const results: TrafficStats[] = [];
+    const currentDate = new Date(start as string);
+    const lastDate = new Date(end as string);
+
+    while (currentDate <= lastDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const found = rows.find(r => r.date === dateStr);
+
+      if (found) {
+        results.push(found);
+      } else {
+        results.push({ date: dateStr ?? '', views: 0, visitors: 0 });
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return results;
+  } catch (error) {
+    logger.error('Failed to get traffic stats', { error });
+    return [];
+  }
+}
+
+/**
+ * Get top visited pages
+ */
+export function getTopPages(startDate?: string, endDate?: string, limit: number = 10): TopPageData[] {
+  const db = getDb();
+
+  // Default to last 30 days
+  const end = endDate || new Date().toISOString().split('T')[0];
+  const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  try {
+    const stmt = db.prepare(`
+      SELECT 
+        path,
+        COUNT(*) as views,
+        COUNT(DISTINCT visitor_id) as visitors
+      FROM website_traffic
+      WHERE date(visited_at) >= ? AND date(visited_at) <= ?
+      GROUP BY path
+      ORDER BY views DESC
+      LIMIT ?
+    `);
+
+    return stmt.all(start, end, limit) as TopPageData[];
+  } catch (error) {
+    logger.error('Failed to get top pages', { error });
     return [];
   }
 }

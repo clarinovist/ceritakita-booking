@@ -22,12 +22,11 @@ const store = new Map<string, RateLimitData>();
 // Cleanup old entries periodically
 setInterval(() => {
   const now = Date.now();
-  const entries = Array.from(store.entries());
-  for (const [key, data] of entries) {
+  store.forEach((data, key) => {
     if (data.resetTime < now) {
       store.delete(key);
     }
-  }
+  });
 }, 60000); // Cleanup every minute
 
 /**
