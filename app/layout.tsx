@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import DynamicAnalytics from "@/components/analytics/DynamicAnalytics";
+import { TrafficTracker } from "@/components/analytics/TrafficTracker";
 import type { SeoSettings } from "@/lib/types/settings";
 
 const geistSans = localFont({
@@ -116,6 +117,7 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <DynamicAnalytics seoSettings={seoSettings} />
+        <TrafficTracker />
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Booking } from "@/lib/types";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { DollarSign, Users, CalendarX, CheckCircle, TrendingUp, TrendingDown, Clock, Wallet } from 'lucide-react';
+import { TrafficStats } from '@/components/admin/analytics/TrafficStats';
 
 interface Props {
     sessionBookings: Booking[];
@@ -325,6 +326,8 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
                     </div>
                 </div>
             </div>
+
+            <TrafficStats dateRange={dateRange} />
         </div>
     );
 }
