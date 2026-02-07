@@ -17,6 +17,7 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
+import { Suspense } from "react";
 import { getDb } from "@/lib/db";
 
 async function getLayoutSettings() {
@@ -117,7 +118,9 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <DynamicAnalytics seoSettings={seoSettings} />
-        <TrafficTracker />
+        <Suspense>
+          <TrafficTracker />
+        </Suspense>
         <Providers>{children}</Providers>
       </body>
     </html>
