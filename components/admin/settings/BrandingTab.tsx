@@ -179,7 +179,15 @@ export default function BrandingTab({ settings, onChange, onLogoUpload, uploadin
         <div className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Google Analytics ID</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-slate-700">Google Analytics ID</label>
+                {settings.seo?.googleAnalyticsId && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 uppercase tracking-wider">
+                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Active
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 value={settings.seo?.googleAnalyticsId || ''}
@@ -191,7 +199,15 @@ export default function BrandingTab({ settings, onChange, onLogoUpload, uploadin
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2">Meta (Facebook) Pixel ID</label>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-sm font-semibold text-slate-700">Meta (Facebook) Pixel ID</label>
+                {settings.seo?.metaPixelId && (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100 uppercase tracking-wider">
+                    <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Active
+                  </span>
+                )}
+              </div>
               <input
                 type="text"
                 value={settings.seo?.metaPixelId || ''}

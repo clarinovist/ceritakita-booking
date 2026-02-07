@@ -28,8 +28,9 @@ export function getSystemSettings(): SystemSettings {
   };
 
   // Override with database values
+  const jsonKeys = ['invoice', 'seo'];
   rows.forEach(row => {
-    if (row.key === 'invoice') {
+    if (jsonKeys.includes(row.key)) {
       try {
         settings[row.key] = JSON.parse(row.value);
       } catch (e) {
