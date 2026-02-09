@@ -542,4 +542,5 @@ export interface TrafficSourceData {
   source: string;
   visitors: number;
   percent: number;
+  [key: string]: any;
 }
