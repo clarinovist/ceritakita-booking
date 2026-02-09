@@ -8,10 +8,13 @@ import {
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    Legend
+    Legend,
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer
 } from 'recharts';
-import { TrafficStats as TrafficStatsType, TopPageData } from '@/lib/repositories/analytics';
+import { TrafficStats as TrafficStatsType, TopPageData, TrafficSourceData } from '@/lib/repositories/analytics';
 
 
 interface TrafficStatsProps {
@@ -21,12 +24,32 @@ interface TrafficStatsProps {
 export function TrafficStats({ dateRange }: TrafficStatsProps) {
     const [trafficData, setTrafficData] = useState<TrafficStatsType[]>([]);
     const [topPages, setTopPages] = useState<TopPageData[]>([]);
+    const [trafficSources, setTrafficSources] = useState<TrafficSourceData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     // Helper to format date for display
     const formatDate = (dateStr: string) => {
         const date = new Date(dateStr);
         return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    };
+
+    // Helper to get friendly page names
+    const getPageTitle = (path: string) => {
+        if (path === '/') return 'Homepage';
+        if (path === '/login') return 'Login';
+        if (path === '/admin') return 'Admin Dashboard';
+        if (path.startsWith('/admin')) {
+            if (path.includes('/bookings')) return 'Admin Bookings';
+            if (path.includes('/services')) return 'Admin Services';
+            return 'Admin Area';
+        }
+        if (path.startsWith('/packages')) return 'Packages';
+        if (path.startsWith('/portfolio')) return 'Portfolio';
+        if (path.startsWith('/about')) return 'About Us';
+        if (path.startsWith('/contact')) return 'Contact';
+        if (path.startsWith('/gallery')) return 'Gallery';
+        // Capitalize and clean up others
+        return path.split('/').filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ') || path;
     };
 
     useEffect(() => {
@@ -45,6 +68,7 @@ export function TrafficStats({ dateRange }: TrafficStatsProps) {
                     const data = await res.json();
                     setTrafficData(data.traffic || []);
                     setTopPages(data.topPages || []);
+                    setTrafficSources(data.sources || []);
                 }
             } catch (error) {
                 console.error('Failed to fetch traffic stats', error);
@@ -130,8 +154,55 @@ export function TrafficStats({ dateRange }: TrafficStatsProps) {
                     </div>
                 </div>
 
-                {/* Top Pages Table */}
+                {/* Traffic Sources */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">Traffic Sources</h3>
+                    <div className="h-64 w-full relative">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={trafficSources}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="visitors"
+                                >
+                                    {trafficSources.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                />
+                            </PieChart>
+                        </ResponsiveContainer>
+                        {/* Center Text */}
+                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none">
+                            <p className="text-xs text-slate-500 font-medium">Top Source</p>
+                            <p className="text-lg font-bold text-slate-800">{trafficSources[0]?.source || '-'}</p>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                        {trafficSources.slice(0, 5).map((source, index) => (
+                            <div key={index} className="flex items-center justify-between text-sm">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5] }}></div>
+                                    <span className="text-slate-600 font-medium">{source.source}</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-slate-800 font-bold">{source.visitors}</span>
+                                    <span className="text-slate-400 text-xs w-8 text-right">{source.percent}%</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Top Pages Table - Full Width on Mobile, Span 2 on Desktop if needed, currently 1 */}
+                <div className="lg:col-span-3 bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                     <h3 className="text-lg font-bold text-slate-800 mb-4">Top Pages</h3>
                     <div className="overflow-auto max-h-80 pr-1">
                         <table className="w-full">
@@ -145,7 +216,8 @@ export function TrafficStats({ dateRange }: TrafficStatsProps) {
                                 {topPages.map((page, index) => (
                                     <tr key={index} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors">
                                         <td className="px-3 py-3 text-slate-700 truncate max-w-[200px]" title={page.path}>
-                                            {page.path}
+                                            <div className="font-medium text-slate-800">{getPageTitle(page.path)}</div>
+                                            <div className="text-xs text-slate-400 truncate">{page.path}</div>
                                         </td>
                                         <td className="px-3 py-3 text-right font-medium text-slate-800">
                                             {page.views.toLocaleString()}

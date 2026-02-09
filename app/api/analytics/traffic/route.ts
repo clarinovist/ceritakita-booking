@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTrafficStats, getTopPages } from '@/lib/repositories/analytics';
+import { getTrafficStats, getTopPages, getTrafficSources } from '@/lib/repositories/analytics';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 
@@ -19,10 +19,12 @@ export async function GET(req: NextRequest) {
 
         const stats = getTrafficStats(startDate, endDate);
         const topPages = getTopPages(startDate, endDate);
+        const sources = getTrafficSources(startDate, endDate);
 
         return NextResponse.json({
             traffic: stats,
-            topPages: topPages
+            topPages: topPages,
+            sources: sources
         });
     } catch (error) {
         console.error('Traffic API Error:', error);

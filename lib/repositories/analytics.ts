@@ -437,12 +437,19 @@ export function getTopPages(startDate?: string, endDate?: string, limit: number 
   try {
     const stmt = db.prepare(`
       SELECT 
-        path,
+        CASE 
+          WHEN instr(path, '?') > 0 THEN substr(path, 1, instr(path, '?') - 1)
+          ELSE path 
+        END as path,
         COUNT(*) as views,
         COUNT(DISTINCT visitor_id) as visitors
       FROM website_traffic
       WHERE date(visited_at) >= ? AND date(visited_at) <= ?
-      GROUP BY path
+      GROUP BY 
+        CASE 
+          WHEN instr(path, '?') > 0 THEN substr(path, 1, instr(path, '?') - 1)
+          ELSE path 
+        END
       ORDER BY views DESC
       LIMIT ?
     `);
@@ -452,4 +459,87 @@ export function getTopPages(startDate?: string, endDate?: string, limit: number 
     logger.error('Failed to get top pages', { error });
     return [];
   }
+}
+
+/**
+ * Get traffic sources (utm_source or referer)
+ */
+export function getTrafficSources(startDate?: string, endDate?: string): TrafficSourceData[] {
+  const db = getDb();
+
+  // Default to last 30 days
+  const end = endDate || new Date().toISOString().split('T')[0];
+  const start = startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  try {
+    // We need to fetch raw data to process the parsing in JS because SQLite text processing is limited
+    // We fetch path and referer for all visits in the period
+    const stmt = db.prepare(`
+      SELECT path, referer, visitor_id
+      FROM website_traffic
+      WHERE date(visited_at) >= ? AND date(visited_at) <= ?
+    `);
+
+    const rows = stmt.all(start, end) as { path: string; referer: string | null; visitor_id: string }[];
+
+    const sourceMap = new Map<string, Set<string>>(); // Source -> Set of Visitor IDs
+    const totalVisitors = new Set(rows.map(r => r.visitor_id)).size;
+
+    rows.forEach(row => {
+      let source = 'Direct';
+
+      // 1. Check UTM Source in Path
+      if (row.path.includes('utm_source=')) {
+        const match = row.path.match(/utm_source=([^&]+)/);
+        if (match && match[1]) {
+          source = match[1].charAt(0).toUpperCase() + match[1].slice(1);
+        }
+      }
+      // 2. Check Referer if no UTM
+      else if (row.referer) {
+        try {
+          const refUrl = new URL(row.referer);
+          const hostname = refUrl.hostname.toLowerCase();
+
+          if (hostname.includes('google')) source = 'Google';
+          else if (hostname.includes('facebook') || hostname.includes('fb.com')) source = 'Facebook';
+          else if (hostname.includes('instagram') || hostname.includes('ig.me')) source = 'Instagram';
+          else if (hostname.includes('twitter') || hostname.includes('t.co') || hostname.includes('x.com')) source = 'Twitter/X';
+          else if (hostname.includes('linkedin')) source = 'LinkedIn';
+          else if (hostname.includes('youtube') || hostname.includes('youtu.be')) source = 'YouTube';
+          else if (hostname.includes('tiktok')) source = 'TikTok';
+          else if (hostname.includes('whatsapp') || hostname.includes('wa.me')) source = 'WhatsApp';
+          else source = hostname; // Other referrals
+        } catch {
+          // Invalid URL, treat as Direct
+        }
+      }
+
+      if (!sourceMap.has(source)) {
+        sourceMap.set(source, new Set());
+      }
+      sourceMap.get(source)?.add(row.visitor_id);
+    });
+
+    const results: TrafficSourceData[] = [];
+    sourceMap.forEach((visitors, source) => {
+      results.push({
+        source,
+        visitors: visitors.size,
+        percent: totalVisitors > 0 ? Math.round((visitors.size / totalVisitors) * 100) : 0
+      });
+    });
+
+    return results.sort((a, b) => b.visitors - a.visitors);
+
+  } catch (error) {
+    logger.error('Failed to get traffic sources', { error });
+    return [];
+  }
+}
+
+export interface TrafficSourceData {
+  source: string;
+  visitors: number;
+  percent: number;
 }
