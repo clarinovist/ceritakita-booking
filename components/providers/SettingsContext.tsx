@@ -36,7 +36,10 @@ const DEFAULT_SETTINGS: SystemSettings = {
   max_booking_ahead: 90,
 
   // Templates
-  whatsapp_message_template: ''
+  whatsapp_message_template: '',
+
+  // Cash Position
+  initial_cash_balance: 0
 };
 
 export function SettingsProvider({ children }: { children: ReactNode }) {

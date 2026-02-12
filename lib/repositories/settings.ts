@@ -24,11 +24,13 @@ export function getSystemSettings(): SystemSettings {
     business_phone: '+62 812 3456 7890',
     business_address: 'Jalan Raya No. 123, Jakarta',
     whatsapp_admin_number: '+62 812 3456 7890',
-    whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!'
+    whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!',
+    initial_cash_balance: 0
   };
 
   // Override with database values
   const jsonKeys = ['invoice', 'seo'];
+  const numericKeys = ['deposit_amount', 'tax_rate', 'initial_cash_balance'];
   rows.forEach(row => {
     if (jsonKeys.includes(row.key)) {
       try {
@@ -36,6 +38,8 @@ export function getSystemSettings(): SystemSettings {
       } catch (e) {
         settings[row.key] = {};
       }
+    } else if (numericKeys.includes(row.key)) {
+      settings[row.key] = parseFloat(row.value) || 0;
     } else {
       settings[row.key] = row.value;
     }
@@ -116,7 +120,8 @@ export function initializeSystemSettings(): void {
     business_phone: '+62 812 3456 7890',
     business_address: 'Jalan Raya No. 123, Jakarta',
     whatsapp_admin_number: '+62 812 3456 7890',
-    whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!'
+    whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!',
+    initial_cash_balance: '0'
   };
 
   const checkStmt = db.prepare('SELECT key FROM system_settings WHERE key = ?');

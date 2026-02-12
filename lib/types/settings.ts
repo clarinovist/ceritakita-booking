@@ -34,6 +34,7 @@ export interface FinanceSettings {
   requires_deposit: boolean;
   deposit_amount: number; // percentage
   tax_rate: number; // percentage
+  initial_cash_balance: number;
   invoice?: InvoiceSettings;
 }
 

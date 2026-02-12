@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Download, Eye, Loader2 } from 'lucide-react';
 import { DateRange } from '@/lib/types';
 import { FinanceReportPreview, FinanceReportData } from './FinanceReportPreview';
+import { CashPositionReport } from './CashPositionReport';
+import { Wallet } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -13,6 +15,7 @@ export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => 
     const [isLoading, setIsLoading] = useState(false);
     const [isPdfLoading, setIsPdfLoading] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
+    const [showCashPosition, setShowCashPosition] = useState(false);
     const [previewData, setPreviewData] = useState<FinanceReportData | null>(null);
 
     const handleExport = async (type: 'financial' | 'expenses') => {
@@ -163,9 +166,9 @@ export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => 
             doc.setFont('helvetica', 'bold');
 
             if (data.netProfit >= 0) {
-                 doc.setTextColor(22, 163, 74); // Green
+                doc.setTextColor(22, 163, 74); // Green
             } else {
-                 doc.setTextColor(220, 38, 38); // Red
+                doc.setTextColor(220, 38, 38); // Red
             }
             doc.text(formatCurrency(data.netProfit), 24, yPos + 30);
 
@@ -186,6 +189,13 @@ export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => 
                     data={previewData}
                     dateRange={dateRange}
                     onClose={() => setShowPreview(false)}
+                />
+            )}
+
+            {showCashPosition && (
+                <CashPositionReport
+                    dateRange={dateRange}
+                    onClose={() => setShowCashPosition(false)}
                 />
             )}
 
@@ -257,6 +267,25 @@ export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => 
                     >
                         {isPdfLoading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
                         Download PDF
+                    </button>
+                </div>
+
+                {/* Cash Position Card */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                        <div className="p-3 bg-indigo-100 rounded-lg text-indigo-600">
+                            <Wallet size={24} />
+                        </div>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-2">Cash Position</h3>
+                    <p className="text-slate-500 text-sm mb-6">
+                        Real-time cash balance tracking with historical monthly trends.
+                    </p>
+                    <button
+                        onClick={() => setShowCashPosition(true)}
+                        className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors text-sm"
+                    >
+                        View Liquidity
                     </button>
                 </div>
             </div>

@@ -31,13 +31,6 @@ export default function FinanceTab({
     }
   };
 
-  const handleTaxRateChange = (value: string) => {
-    const numValue = parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-      onNumberChange('tax_rate', numValue);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* 2-Column Grid: Bank Details & Payment Rules */}
@@ -143,22 +136,26 @@ export default function FinanceTab({
               </div>
             )}
 
-            {/* Tax Rate */}
+            {/* Initial Cash Balance */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tax Rate (%)
+                Initial Cash Balance (Rp)
               </label>
               <input
                 type="number"
                 min="0"
-                max="100"
-                step="0.1"
-                value={settings.tax_rate}
-                onChange={(e) => handleTaxRateChange(e.target.value)}
+                step="1000"
+                value={settings.initial_cash_balance}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  if (!isNaN(val) && val >= 0) {
+                    onNumberChange('initial_cash_balance', val);
+                  }
+                }}
                 className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 placeholder="0"
               />
-              <p className="text-xs text-gray-500 mt-1">Tax percentage applied to total price</p>
+              <p className="text-xs text-gray-500 mt-1">Starting balance for cash position report</p>
             </div>
           </div>
         </div>

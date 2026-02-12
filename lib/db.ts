@@ -342,7 +342,8 @@ function initializeSchema() {
       { key: 'site_name', value: 'Cerita Kita' },
       { key: 'site_logo', value: '/images/default-logo.png' },
       { key: 'business_phone', value: '+62 812 3456 7890' },
-      { key: 'business_address', value: 'Jalan Raya No. 123, Jakarta' }
+      { key: 'business_address', value: 'Jalan Raya No. 123, Jakarta' },
+      { key: 'initial_cash_balance', value: '0' }
     ];
 
     const insertStmt = db.prepare('INSERT INTO system_settings (key, value) VALUES (?, ?)');
