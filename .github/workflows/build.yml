@@ -61,6 +61,8 @@ jobs:
           debug: true
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
+            git fetch --all
+            git reset --hard origin/main
             docker compose pull
             docker compose up -d
             docker image prune -f
