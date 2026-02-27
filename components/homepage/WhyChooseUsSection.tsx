@@ -2,6 +2,7 @@
 
 import { Camera, Clock, CreditCard, MapPin, Award, Heart, Star, Shield, Users, Zap, type LucideIcon } from 'lucide-react';
 import { useHomepageData } from '@/hooks/useHomepageData';
+import { RamadanOrnaments } from './RamadanOrnaments';
 
 const iconMap: Record<string, LucideIcon> = {
     Camera, Clock, CreditCard, MapPin, Award, Heart, Star, Shield, Users, Zap
@@ -11,13 +12,14 @@ export function WhyChooseUsSection() {
     const { data, isLoading } = useHomepageData();
 
     if (isLoading) {
-        return <div className="h-[500px] bg-olive-800 animate-pulse" />;
+        return <div className="h-[500px] bg-ramadan-900 animate-pulse" />;
     }
 
     const valueProps = data?.valueProps || [];
 
     return (
-        <section className="bg-olive-800 py-20 lg:py-28">
+        <section className="bg-ramadan-900 py-20 lg:py-28 relative overflow-hidden">
+            <RamadanOrnaments variant="dark" density="normal" />
             <div className="max-w-7xl mx-auto px-6">
                 {/* Section Header */}
                 <div className="text-center mb-16">

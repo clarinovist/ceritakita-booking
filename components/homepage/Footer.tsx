@@ -1,6 +1,7 @@
 'use client';
 import { useHomepageData } from '@/hooks/useHomepageData';
 import Link from 'next/link';
+import { Moon } from 'lucide-react';
 
 export function Footer() {
     const currentYear = new Date().getFullYear();
@@ -10,15 +11,16 @@ export function Footer() {
     const footer = data?.footer || {};
 
     return (
-        <footer className="bg-olive-900 text-cream-200">
+        <footer className="bg-ramadan-950 text-cream-200">
             {/* Main Footer */}
             <div className="max-w-7xl mx-auto px-6 py-16 lg:py-20">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
                     {/* Brand */}
                     <div className="lg:col-span-2">
                         <Link href="/" className="inline-block mb-6">
-                            <h3 className="font-display text-3xl text-cream-100 tracking-wider">
+                            <h3 className="font-display text-3xl text-cream-100 tracking-wider inline-flex items-center gap-2">
                                 CERITAKITA
+                                <Moon className="w-5 h-5 text-gold-400 opacity-70" />
                             </h3>
                             <p className="text-cream-400 text-xs tracking-[0.3em] uppercase">
                                 Photography

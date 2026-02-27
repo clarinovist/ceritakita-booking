@@ -9,6 +9,7 @@ import {
   CTASection,
   Footer,
   GallerySection,
+  TopAnnouncementBanner,
 } from '@/components/homepage';
 
 import JsonLd from '@/components/seo/JsonLd';
@@ -26,6 +27,8 @@ export default function Home() {
   return (
     <main className="bg-olive-900">
       <JsonLd data={buildHomeJsonLd()} />
+      {/* Top Banner */}
+      <TopAnnouncementBanner />
       {/* Navigation */}
       <Navbar />
 

@@ -37,6 +37,20 @@ const config: Config = {
           500: "#b89856",
           600: "#9a7d42",
         },
+        // Ramadan - Deep midnight navy for Ramadan theme
+        ramadan: {
+          50: "#e8ecf4",
+          100: "#c5cfe3",
+          200: "#9eafd0",
+          300: "#7790bd",
+          400: "#5a78af",
+          500: "#3d60a1",
+          600: "#2d4a80",
+          700: "#1f3560",
+          800: "#132040",
+          900: "#0a1628",
+          950: "#060e1a",
+        },
         // Warm brown - Borders and subtle elements
         warmBrown: {
           300: "#a89580",
@@ -158,6 +172,7 @@ const config: Config = {
         'slide-down': 'slideDown 0.4s ease-out',
         'bounce-subtle': 'bounceSubtle 2s infinite',
         'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'twinkle': 'twinkle 4s ease-in-out infinite',
       },
 
       keyframes: {
@@ -176,6 +191,10 @@ const config: Config = {
         bounceSubtle: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-5px)' },
+        },
+        twinkle: {
+          '0%, 100%': { opacity: '0.3', transform: 'scale(1)' },
+          '50%': { opacity: '1', transform: 'scale(1.2)' },
         },
       },
 

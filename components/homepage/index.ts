@@ -19,3 +19,5 @@ export { TestimonialsSection } from './TestimonialsSection';
 export { CTASection } from './CTASection';
 export { GallerySection } from './GallerySection';
 export { Footer } from './Footer';
+export { TopAnnouncementBanner } from './TopAnnouncementBanner';
+export { RamadanOrnaments } from './RamadanOrnaments';

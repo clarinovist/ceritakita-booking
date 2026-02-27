@@ -1,7 +1,8 @@
 'use client';
 
-import { Gift } from 'lucide-react';
+import { Gift, Moon } from 'lucide-react';
 import { useHomepageData } from '@/hooks/useHomepageData';
+import { RamadanOrnaments } from './RamadanOrnaments';
 
 export function PromoSection() {
     const { data, isLoading } = useHomepageData();
@@ -20,6 +21,7 @@ export function PromoSection() {
         <section className="relative py-20 lg:py-24 overflow-hidden">
             {/* Background */}
             <div className="absolute inset-0 bg-gradient-to-br from-gold-500 via-gold-600 to-gold-500" />
+            <RamadanOrnaments variant="light" density="sparse" />
 
             {/* Decorative Elements */}
             <div className="absolute top-0 left-0 w-full h-full opacity-10">
@@ -35,13 +37,14 @@ export function PromoSection() {
                 </div>
 
                 {/* Title */}
-                <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-olive-900 tracking-wide mb-4">
-                    {promo.title || 'Promo Spesial Bulan Ini'}
+                <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-olive-900 tracking-wide mb-4 inline-flex items-center gap-3">
+                    <Moon className="w-8 h-8 md:w-10 md:h-10 text-olive-800 opacity-70" />
+                    {promo.title || 'Promo Berkah Ramadan'}
                 </h2>
 
                 {/* Description */}
                 <p className="text-olive-800 text-lg leading-relaxed max-w-2xl mx-auto mb-8">
-                    {promo.description || 'Jangan lewatkan penawaran terbatas!'}
+                    {promo.description || 'Dapatkan Diskon 20% untuk Paket Keluarga dan Abadikan Momen Berhargamu!'}
                 </p>
 
                 {/* CTA */}
