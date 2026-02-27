@@ -47,7 +47,7 @@ export function HeroSection() {
             <div className="relative z-20 h-full flex flex-col items-center justify-center text-center px-6">
                 <div className="relative inline-block">
                     <h1 className="font-display text-4xl md:text-6xl lg:text-7xl text-cream-100 tracking-wide mb-6 animate-slide-up relative z-10">
-                        Abadikan Momen Penuh Berkah
+                        {hero.tagline || 'Abadikan Momen Penuh Berkah'}
                     </h1>
                     {/* Inner Text Ornaments (Higher opacity) */}
                     <Moon className="absolute -top-12 -left-8 w-10 h-10 text-gold-400 opacity-90 animate-bounce-subtle z-0" />

@@ -197,3 +197,5 @@
     at async handleRequest (/Users/nugroho/Documents/ceritakita-booking/node_modules/next/dist/server/lib/router-server.js:359:24)
     at async requestHandlerImpl (/Users/nugroho/Documents/ceritakita-booking/node_modules/next/dist/server/lib/router-server.js:383:13)
     at async Server.requestListener (/Users/nugroho/Documents/ceritakita-booking/node_modules/next/dist/server/lib/start-server.js:141:13)
+[2026-02-12T11:59:48.797Z] [ERROR] Failed to record page view | Context: {"error":{"code":"SQLITE_IOERR_SHORT_READ"}}
+[2026-02-12T11:59:48.798Z] [ERROR] Failed to record page view | Context: {"error":{"code":"SQLITE_IOERR_SHORT_READ"}}
