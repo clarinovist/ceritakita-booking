@@ -59,13 +59,23 @@ export interface TemplatesSettings {
   whatsapp_message_template: string;
 }
 
+// 6. Email Report Settings
+export interface EmailReportSettings {
+  email_reports_enabled?: boolean;
+  email_reports_daily?: boolean;
+  email_reports_weekly?: boolean;
+  email_reports_monthly?: boolean;
+  email_reports_target_email?: string;
+}
+
 // Combined System Settings Interface
 export interface SystemSettings
   extends GeneralSettings,
   ContactSettings,
   FinanceSettings,
   BookingRulesSettings,
-  TemplatesSettings {
+  TemplatesSettings,
+  EmailReportSettings {
   seo?: SeoSettings;
 }
 

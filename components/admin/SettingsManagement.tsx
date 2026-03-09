@@ -6,6 +6,7 @@ import { UPLOAD_FOLDERS } from '@/lib/constants';
 import {
   Info, Home, DollarSign, Calendar,
   MessageSquare, CreditCard, Users, Activity,
+  Mail,
   type LucideIcon
 } from 'lucide-react';
 
@@ -14,6 +15,7 @@ import BrandingTab from './settings/BrandingTab';
 import FinanceTab from './settings/FinanceTab';
 import RulesTab from './settings/RulesTab';
 import TemplatesTab from './settings/TemplatesTab';
+import { EmailReportsSettings } from './settings/EmailReportsSettings';
 import UserManagement from './UserManagement';
 import PaymentMethodsManagement from './PaymentMethodsManagement';
 import { MonitoringDashboard } from './MonitoringDashboard';
@@ -21,7 +23,7 @@ import { InvoicePreviewModal } from './modals/InvoicePreviewModal';
 import { InvoiceSettings } from '@/lib/types/settings';
 
 // Tab type definition
-type TabType = 'general' | 'contact' | 'finance' | 'rules' | 'templates' | 'payment_methods' | 'users' | 'performance';
+type TabType = 'general' | 'contact' | 'finance' | 'rules' | 'templates' | 'reports' | 'payment_methods' | 'users' | 'performance';
 
 interface TabConfig {
   id: TabType;
@@ -35,6 +37,7 @@ const TABS: TabConfig[] = [
   { id: 'finance', label: 'Finance', icon: DollarSign },
   { id: 'rules', label: 'Booking Rules', icon: Calendar },
   { id: 'templates', label: 'Templates', icon: MessageSquare },
+  { id: 'reports', label: 'Email Reports', icon: Mail },
   { id: 'payment_methods', label: 'Payment Methods', icon: CreditCard },
   { id: 'users', label: 'Team Access', icon: Users },
   { id: 'performance', label: 'Performance', icon: Activity }
@@ -282,6 +285,13 @@ export default function SettingsManagement() {
             <TemplatesTab
               settings={settings}
               onChange={handleInputChange}
+            />
+          )}
+
+          {activeTab === 'reports' && (
+            <EmailReportsSettings
+              settings={settings}
+              onChange={handleInputChange as any}
             />
           )}
 
