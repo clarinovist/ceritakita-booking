@@ -107,7 +107,7 @@ export function EmailReportsSettings({ settings, onChange }: Props) {
                                         className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4"
                                     />
                                 </label>
-                                <p className="text-xs text-slate-500 mb-4">Summary of today's new bookings, payments, and upcoming sessions.</p>
+                                <p className="text-xs text-slate-500 mb-4">Summary of today&apos;s new bookings, payments, and upcoming sessions.</p>
                             </div>
                             <button
                                 type="button"
