@@ -179,8 +179,51 @@ export function buildDailyDigestEmail(data: DailyReportData): string {
                 ` : `<p>No new bookings today.</p>`}
 
                 <!-- Overdue Follow-ups -->
-                ${data.overdueFollowUps.length > 0 ? `
-                    <h2 style="${SECTION_TITLE_STYLES}">⚠️ Overdue Follow-ups (${data.overdueFollowUps.length})</h2>
+                ${(() => {
+                    if (data.overdueFollowUps.length === 0) return '';
+                    
+                    const totalOverdue = data.overdueFollowUps.length;
+                    
+                    // Summarize by Assignee
+                    const assigneeMap = data.overdueFollowUps.reduce((acc, lead) => {
+                        const assignee = lead.assigned_to || 'Unassigned';
+                        acc[assignee] = (acc[assignee] || 0) + 1;
+                        return acc;
+                    }, {} as Record<string, number>);
+                    
+                    const sortedAssignees = (Object.entries(assigneeMap) as [string, number][]).sort((a, b) => b[1] - a[1]);
+                    const topAssigneeEntry: [string, number] = sortedAssignees.length > 0 ? (sortedAssignees[0] as [string, number]) : ['None', 0];
+                    const topAssigneeText = `${topAssigneeEntry[0]} (${topAssigneeEntry[1]})`;
+                    
+                    // Summarize by Source
+                    const sourceMap = data.overdueFollowUps.reduce((acc, lead) => {
+                        const source = lead.source || 'Unknown';
+                        acc[source] = (acc[source] || 0) + 1;
+                        return acc;
+                    }, {} as Record<string, number>);
+                    
+                    const sortedSources = (Object.entries(sourceMap) as [string, number][]).sort((a, b) => b[1] - a[1]);
+                    const topSourceEntry: [string, number] = sortedSources.length > 0 ? (sortedSources[0] as [string, number]) : ['None', 0];
+                    
+                    return `
+                    <h2 style="${SECTION_TITLE_STYLES}">⚠️ Overdue Follow-ups Dashboard</h2>
+                    
+                    <div style="${METRIC_GRID_STYLES}">
+                        <div style="${METRIC_CARD_STYLES}; border-left: 4px solid #ef4444;">
+                            <div style="${METRIC_LABEL_STYLES}">Total Overdue</div>
+                            <div style="${METRIC_VALUE_STYLES}; color: #ef4444;">${totalOverdue}</div>
+                        </div>
+                        <div style="${METRIC_CARD_STYLES}">
+                            <div style="${METRIC_LABEL_STYLES}">Top Assignee</div>
+                            <div style="${METRIC_VALUE_STYLES}; font-size: 18px;">${topAssigneeText}</div>
+                        </div>
+                        <div style="${METRIC_CARD_STYLES}">
+                            <div style="${METRIC_LABEL_STYLES}">Top Source</div>
+                            <div style="${METRIC_VALUE_STYLES}; font-size: 18px;">${topSourceEntry[0]} (${topSourceEntry[1]})</div>
+                        </div>
+                    </div>
+
+                    <h3 style="font-size: 14px; color: #64748b; margin-bottom: 12px;">Top 5 Oldest Overdue</h3>
                     <table style="${TABLE_STYLES}">
                         <thead>
                             <tr>
@@ -190,16 +233,25 @@ export function buildDailyDigestEmail(data: DailyReportData): string {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.overdueFollowUps.map(l => `
+                            ${data.overdueFollowUps.slice(0, 5).map(l => {
+                                const dueDateText = l.next_follow_up 
+                                    ? new Date(l.next_follow_up).toLocaleDateString('id-ID')
+                                    : 'Unknown';
+                                return `
                                 <tr>
-                                    <td style="${TD_STYLES}">${l.name}</td>
+                                    <td style="${TD_STYLES}"><strong>${l.name}</strong><br/><span style="font-size: 12px; color: #ef4444;">Due: ${dueDateText}</span></td>
                                     <td style="${TD_STYLES}">${l.source}</td>
                                     <td style="${TD_STYLES}">${l.assigned_to || 'Unassigned'}</td>
                                 </tr>
-                            `).join('')}
+                                `;
+                            }).join('')}
                         </tbody>
                     </table>
-                ` : ''}
+                    <div style="text-align: right; margin-bottom: 24px; margin-top: -8px;">
+                        <a href="${process.env.NEXT_PUBLIC_SITE_URL || ''}/admin/crm" style="color: #2563eb; font-size: 14px; text-decoration: none; font-weight: 600;">View All in CRM &rarr;</a>
+                    </div>
+                    `;
+                })()}
 
                 <!-- Upcoming Bookings -->
                 ${data.upcomingBookings.length > 0 ? `

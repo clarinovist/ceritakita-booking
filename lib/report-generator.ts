@@ -99,6 +99,10 @@ export async function generateDailyReport(): Promise<DailyReportData> {
         if (!l.next_follow_up) return false;
         const followUpDate = new Date(l.next_follow_up);
         return followUpDate < today;
+    }).sort((a, b) => {
+        const dateA = new Date(a.next_follow_up as string).getTime();
+        const dateB = new Date(b.next_follow_up as string).getTime();
+        return dateA - dateB; // Oldest first
     });
 
     return {
