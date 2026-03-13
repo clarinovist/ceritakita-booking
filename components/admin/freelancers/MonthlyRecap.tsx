@@ -67,12 +67,12 @@ export const MonthlyRecap = () => {
         
         // Data rows
         recap.forEach(row => {
-            const escapedName = row.freelancer_name.replace(/"/g, '""');
-            csvContent += `"${escapedName}",${row.total_jobs},${row.total_fee}\n`;
+            const escapedName = (row.freelancer_name || "Unknown").replace(/"/g, '""');
+            csvContent += `"${escapedName}",${row.total_jobs || 0},${row.total_fee || 0}\n`;
         });
         
         // Total row
-        const totalAmount = recap.reduce((s, r) => s + r.total_fee, 0);
+        const totalAmount = recap.reduce((s, r) => s + (r.total_fee || 0), 0);
         csvContent += `"GRAND TOTAL","",${totalAmount}\n`;
 
         const encodedUri = encodeURI(csvContent);
@@ -85,8 +85,8 @@ export const MonthlyRecap = () => {
     };
 
     // Calculate Grand Totals
-    const grandTotalFees = recap.reduce((sum, item) => sum + item.total_fee, 0);
-    const grandTotalJobs = recap.reduce((sum, item) => sum + item.total_jobs, 0);
+    const grandTotalFees = recap.reduce((sum, item) => sum + (item.total_fee || 0), 0);
+    const grandTotalJobs = recap.reduce((sum, item) => sum + (item.total_jobs || 0), 0);
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
@@ -166,15 +166,15 @@ export const MonthlyRecap = () => {
                                 {recap.map((row) => (
                                     <tr key={row.freelancer_id} className="hover:bg-slate-50 transition-colors">
                                         <td className="px-6 py-4 font-bold text-blue-600">
-                                            {row.freelancer_name}
+                                            {row.freelancer_name || 'Unknown'}
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className="inline-flex items-center justify-center min-w-[32px] h-[32px] bg-slate-100 rounded-full font-bold text-slate-700">
-                                                {row.total_jobs}
+                                                {row.total_jobs || 0}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right font-mono text-base font-medium text-slate-800">
-                                            {row.total_fee.toLocaleString('id-ID')}
+                                            {(row.total_fee || 0).toLocaleString('id-ID')}
                                         </td>
                                     </tr>
                                 ))}
