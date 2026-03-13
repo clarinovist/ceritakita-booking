@@ -61,6 +61,7 @@ jobs:
           debug: true
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
+            echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             git fetch --all
             git reset --hard origin/main
             docker compose pull
