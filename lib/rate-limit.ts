@@ -143,7 +143,7 @@ export const rateLimiters = {
   moderate: (req: NextRequest) => {
     return rateLimitMiddleware({
       windowMs: 15 * 60 * 1000, // 15 minutes
-      maxRequests: 100
+      maxRequests: 300
     })(req);
   },
 
