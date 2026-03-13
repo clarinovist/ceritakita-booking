@@ -53,19 +53,14 @@ jobs:
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
-        env:
-          CR_PAT: ${{ secrets.CR_PAT }}
-          ACTOR: ${{ github.actor }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           debug: true
-          envs: CR_PAT,ACTOR
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
-            echo "$CR_PAT" | docker login ghcr.io -u $ACTOR --password-stdin
             git fetch --all
             git reset --hard origin/main
             docker compose pull
