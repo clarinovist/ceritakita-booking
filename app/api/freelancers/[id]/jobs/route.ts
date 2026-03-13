@@ -4,6 +4,8 @@ import { getFreelancerJobs } from '@/lib/services/freelancer-service';
 import { logger, createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
     req: NextRequest,
     { params }: { params: { id: string } }

@@ -4,6 +4,8 @@ import { getFreelancers, createFreelancer, getFreelancerRoles } from '@/lib/serv
 import { logger, createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
     try {
         const rateLimitResult = rateLimiters.moderate(req);
