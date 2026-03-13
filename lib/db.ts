@@ -517,6 +517,81 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_traffic_visitor_id ON website_traffic(visitor_id);
   `);
 
+  // --- FREELANCER TABLES ---
+
+  // Create freelancers table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS freelancers (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      phone TEXT,
+      default_fee INTEGER,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Create freelancer_roles table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS freelancer_roles (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      short_code TEXT NOT NULL,
+      is_active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Seed Freelancer Roles (if empty)
+  const freelancerRolesCount = db.prepare('SELECT COUNT(*) as count FROM freelancer_roles').get() as { count: number };
+  if (freelancerRolesCount.count === 0) {
+    const seedRoles = [
+      { name: 'Photographer', short_code: 'FG' },
+      { name: 'Makeup Artist', short_code: 'MUA' },
+      { name: 'Videographer', short_code: 'VG' },
+      { name: 'Assistant', short_code: 'AST' },
+      { name: 'Designer', short_code: 'DSG' },
+    ];
+
+    const insertStmt = db.prepare('INSERT INTO freelancer_roles (id, name, short_code) VALUES (?, ?, ?)');
+    const insertMany = db.transaction(() => {
+      seedRoles.forEach(role => Object.assign(role, { id: randomUUID() }));
+      seedRoles.forEach(role => insertStmt.run(randomUUID(), role.name, role.short_code));
+    });
+    insertMany();
+    console.log('✅ Database seeded: Freelancer Roles');
+  }
+
+  // Create freelancer_jobs table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS freelancer_jobs (
+      id TEXT PRIMARY KEY,
+      freelancer_id TEXT NOT NULL,
+      booking_id TEXT, -- Optional, can be independent of a specific booking via system
+      role_id TEXT NOT NULL,
+      work_date TEXT NOT NULL, -- The date the job was performed
+      fee INTEGER NOT NULL,
+      notes TEXT,
+      created_by TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      
+      FOREIGN KEY (freelancer_id) REFERENCES freelancers(id) ON DELETE CASCADE,
+      FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL,
+      FOREIGN KEY (role_id) REFERENCES freelancer_roles(id)
+    )
+  `);
+
+  // Create indexes for freelancer tables
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_freelancers_is_active ON freelancers(is_active);
+    CREATE INDEX IF NOT EXISTS idx_freelancer_roles_is_active ON freelancer_roles(is_active);
+    CREATE INDEX IF NOT EXISTS idx_freelancer_jobs_freelancer_id ON freelancer_jobs(freelancer_id);
+    CREATE INDEX IF NOT EXISTS idx_freelancer_jobs_booking_id ON freelancer_jobs(booking_id);
+    CREATE INDEX IF NOT EXISTS idx_freelancer_jobs_work_date ON freelancer_jobs(work_date);
+  `);
+
   // --- HOMEPAGE CMS TABLES ---
 
   // 1. Homepage Content (Key-Value Store)

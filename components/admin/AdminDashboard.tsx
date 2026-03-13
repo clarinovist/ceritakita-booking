@@ -17,6 +17,7 @@ import AdsPerformance from './AdsPerformance';
 import LeadPerformance, { type LeadAnalyticsData } from './analytics/LeadPerformance';
 import DateFilterToolbar from './DateFilterToolbar';
 import { FinanceModule } from './FinanceModule';
+import { FreelancerModule } from './FreelancerModule';
 
 // Tables
 import { BookingsTable } from './tables/BookingsTable';
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
     const getAvailableViewModes = (): ViewMode[] => {
         // Note: 'users' and 'payment-settings' are now handled within SettingsManagement, 
         // 'services', 'portfolio', 'addons', 'photographers' are now handled within CatalogManagement
-        const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'catalog', 'coupons', 'settings', 'homepage', 'finance'];
+        const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'catalog', 'coupons', 'settings', 'homepage', 'finance', 'freelancers'];
 
         if (userRole === 'admin') {
             return allModes;
@@ -92,6 +93,7 @@ export default function AdminDashboard() {
         if (userPermissions?.finance) allowedModes.push('finance');
         if (userPermissions?.settings) allowedModes.push('settings');
         if (userPermissions?.homepage_cms) allowedModes.push('homepage');
+        if (userPermissions?.freelancers) allowedModes.push('freelancers');
 
         // If user has permissions for modules inside settings, allow settings access
         if ((userPermissions?.users || userPermissions?.payment) && !allowedModes.includes('settings')) {
@@ -577,6 +579,13 @@ export default function AdminDashboard() {
                     {viewMode === 'homepage' && (
                         <div className="animate-in fade-in">
                             <HomepageCMS />
+                        </div>
+                    )}
+
+                    {/* FREELANCERS VIEW */}
+                    {viewMode === 'freelancers' && (
+                        <div className="animate-in fade-in">
+                            <FreelancerModule />
                         </div>
                     )}
 

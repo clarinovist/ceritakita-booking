@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { getExpenses } from '@/lib/storage-expenses';
 import { readData as readBookings } from '@/lib/storage-sqlite';
+import { getFreelancerJobs } from '@/lib/services/freelancer-service';
 import { createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
 
@@ -20,7 +21,24 @@ export async function GET(req: NextRequest) {
         const endDate = searchParams.get('endDate') || undefined;
 
         // 1. Get Expenses
-        const expenses = getExpenses(startDate, endDate);
+        const manualExpenses = getExpenses(startDate, endDate);
+        
+        // 1.b Get Freelancer Fees (treated as expenses)
+        const freelancerJobs = getFreelancerJobs(startDate, endDate);
+
+        // Map freelancer jobs to virtual expense objects for the frontend
+        const virtualExpensesFromFreelancers = freelancerJobs.map(job => ({
+            id: `fj-${job.id}`,
+            date: job.work_date,
+            category: 'salary' as const, // Map to existing 'salary' category
+            description: `Freelance Fee: ${job.freelancer_name} (${job.role_name})${job.booking_customer_name ? ` - ${job.booking_customer_name}` : ''}`,
+            amount: job.fee,
+            created_by: job.created_by || 'system',
+            created_at: job.created_at || new Date().toISOString(),
+            updated_at: job.updated_at || new Date().toISOString()
+        }));
+
+        const expenses = [...manualExpenses, ...virtualExpensesFromFreelancers];
         const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
 
         // 2. Get Revenue (from Bookings)

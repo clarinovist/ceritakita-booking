@@ -50,6 +50,7 @@ export interface UserPermissions {
     delete: boolean;
   };
   homepage_cms: boolean;
+  freelancers?: boolean;
 }
 
 export interface User {

@@ -33,6 +33,7 @@ export { default as UserManagement } from './UserManagement';
 export { MonitoringDashboard } from './MonitoringDashboard';
 /** Finance module container */
 export { FinanceModule } from './FinanceModule';
+export { FreelancerModule } from './FreelancerModule';
 
 // Hooks
 /** Hook for managing add-ons data and operations */

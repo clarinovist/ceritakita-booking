@@ -20,7 +20,8 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   payment: true,
   users: true,
   leads: { view: true, create: true, update: true, delete: true },
-  homepage_cms: true
+  homepage_cms: true,
+  freelancers: true
 };
 
 /**
@@ -41,7 +42,8 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   payment: false,
   users: false,
   leads: { view: true, create: true, update: true, delete: false },
-  homepage_cms: false
+  homepage_cms: false,
+  freelancers: false
 };
 
 /**
@@ -99,6 +101,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
     { id: 'settings', icon: 'Settings', label: 'Settings', permission: 'settings' },
     { id: 'finance', icon: 'Wallet', label: 'Finance', permission: 'finance' },
     { id: 'homepage', icon: 'Home', label: 'Homepage CMS', permission: 'homepage_cms' },
+    { id: 'freelancers', icon: 'Briefcase', label: 'Freelancers', permission: 'freelancers' },
   ];
 
   // Admin sees everything

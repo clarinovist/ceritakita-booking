@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Calendar, List, Tag, Camera, ShoppingBag,
   Users, Image as ImageIcon, CreditCard, LogOut, Menu, X, Target, Settings, Home,
-  ChevronRight
+  ChevronRight, Briefcase
 } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
@@ -64,7 +64,8 @@ export default function AdminSidebar({ viewMode, setViewMode }: AdminSidebarProp
       Users,
       CreditCard,
       Settings,
-      Home
+      Home,
+      Briefcase
     };
     return icons[iconName] || LayoutDashboard;
   };
