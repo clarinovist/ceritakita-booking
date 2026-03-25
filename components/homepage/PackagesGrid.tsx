@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 
 import { useHomepageData } from '@/hooks/useHomepageData';
-import { RamadanOrnaments } from './RamadanOrnaments';
+import { SeasonalOrnaments } from './SeasonalOrnaments';
 
 export function PackagesGrid() {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -18,7 +18,7 @@ export function PackagesGrid() {
 
     return (
         <section id="packages" className="bg-olive-900 py-20 px-6 relative overflow-hidden">
-            <RamadanOrnaments variant="dark" density="sparse" />
+            <SeasonalOrnaments variant="dark" density="sparse" />
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <div className="text-center mb-12">

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 
 import { useHomepageData } from '@/hooks/useHomepageData';
-import { RamadanOrnaments } from './RamadanOrnaments';
+import { SeasonalOrnaments } from './SeasonalOrnaments';
 // import { GalleryImage } from '@/types/homepage';
 
 export function GallerySection() {
@@ -31,9 +31,10 @@ export function GallerySection() {
     if (previewImages.length === 0) return null;
 
     return (
-        <section id="gallery" className="bg-olive-900 py-20 lg:py-28 overflow-hidden relative">
-            <RamadanOrnaments variant="dark" density="sparse" />
-            <div className="max-w-6xl mx-auto px-6">
+        <section className="relative py-24 lg:py-32 overflow-hidden bg-cream-100" id="gallery">
+            <SeasonalOrnaments variant="light" density="sparse" />
+            
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
 
                 {/* Section Header */}
                 <div className="text-center mb-12">

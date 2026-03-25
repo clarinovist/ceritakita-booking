@@ -12,8 +12,8 @@ export function TopAnnouncementBanner() {
         <div className="bg-gold-500 text-olive-900 py-3 px-4 relative z-50">
             <div className="max-w-7xl mx-auto flex items-center justify-between text-sm md:text-base font-medium">
                 <div className="flex-1 text-center">
-                    <span className="mr-2">🌟</span>
-                    Marhaban Ya Ramadan! Dapatkan promo spesial pemotretan berkah selama bulan suci.
+                    <span className="mr-2">🎓✨</span>
+                    Musim Wisuda & Pernikahan telah tiba! Jadwal April–Juni cepat penuh — booking sekarang.
                 </div>
                 <button
                     onClick={() => setIsVisible(false)}

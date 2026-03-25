@@ -1,7 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { useHomepageData } from '@/hooks/useHomepageData';
-import { RamadanOrnaments } from './RamadanOrnaments';
+import { SeasonalOrnaments } from './SeasonalOrnaments';
 
 export function AboutSection() {
     const { data, isLoading } = useHomepageData();
@@ -13,9 +13,9 @@ export function AboutSection() {
     const about = data?.about || {};
 
     return (
-        <section id="about" className="bg-cream-100 py-20 lg:py-28 relative overflow-hidden">
-            <RamadanOrnaments variant="light" density="sparse" />
-            <div className="max-w-7xl mx-auto px-6">
+        <section className="relative py-24 lg:py-32 overflow-hidden bg-olive-900" id="about">
+            <SeasonalOrnaments variant="dark" density="normal" />
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                     {/* Image */}
                     <div className="relative aspect-[4/3] overflow-hidden">

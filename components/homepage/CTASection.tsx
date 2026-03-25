@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useHomepageData } from '@/hooks/useHomepageData';
-import { RamadanOrnaments } from './RamadanOrnaments';
+import { SeasonalOrnaments } from './SeasonalOrnaments';
 
 export function CTASection() {
     const { data, isLoading } = useHomepageData();
@@ -26,9 +26,9 @@ export function CTASection() {
                     backgroundImage: `url('${cta.background_image || '/images/studio_interior.png'}')`,
                 }}
             >
-                <div className="absolute inset-0 bg-ramadan-800/85" />
+                <div className="absolute inset-0 bg-olive-900/85" />
             </div>
-            <RamadanOrnaments variant="dark" density="normal" />
+            <SeasonalOrnaments variant="dark" density="normal" />
 
             {/* Content */}
             <div className="relative max-w-4xl mx-auto px-6 text-center">

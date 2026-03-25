@@ -1,26 +1,36 @@
 'use client';
 
-import { Camera, Clock, CreditCard, MapPin, Award, Heart, Star, Shield, Users, Zap, type LucideIcon } from 'lucide-react';
+import * as React from 'react';
+import * as LucideIcons from 'lucide-react';
 import { useHomepageData } from '@/hooks/useHomepageData';
-import { RamadanOrnaments } from './RamadanOrnaments';
+import { SeasonalOrnaments } from './SeasonalOrnaments';
 
-const iconMap: Record<string, LucideIcon> = {
-    Camera, Clock, CreditCard, MapPin, Award, Heart, Star, Shield, Users, Zap
+const iconMap: Record<string, LucideIcons.LucideIcon> = {
+    Camera: LucideIcons.Camera,
+    Clock: LucideIcons.Clock,
+    CreditCard: LucideIcons.CreditCard,
+    MapPin: LucideIcons.MapPin,
+    Award: LucideIcons.Award,
+    Heart: LucideIcons.Heart,
+    Star: LucideIcons.Star,
+    Shield: LucideIcons.Shield,
+    Users: LucideIcons.Users,
+    Zap: LucideIcons.Zap
 };
 
 export function WhyChooseUsSection() {
     const { data, isLoading } = useHomepageData();
 
     if (isLoading) {
-        return <div className="h-[500px] bg-ramadan-900 animate-pulse" />;
+        return <div className="h-[500px] bg-olive-900 animate-pulse" />;
     }
 
     const valueProps = data?.valueProps || [];
 
     return (
-        <section className="bg-ramadan-900 py-20 lg:py-28 relative overflow-hidden">
-            <RamadanOrnaments variant="dark" density="normal" />
-            <div className="max-w-7xl mx-auto px-6">
+        <section className="relative py-24 lg:py-32 overflow-hidden bg-olive-900" id="why-us">
+            <SeasonalOrnaments variant="dark" density="sparse" />
+            <div className="max-w-7xl mx-auto px-6 relative z-10">
                 {/* Section Header */}
                 <div className="text-center mb-16">
                     <p className="text-gold-400 tracking-[0.2em] uppercase text-sm font-medium mb-4">
@@ -34,7 +44,7 @@ export function WhyChooseUsSection() {
                 {/* Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     {valueProps.map((prop, index) => {
-                        const Icon = iconMap[prop.icon] || Camera;
+                        const Icon = iconMap[prop.icon] || LucideIcons.Camera;
                         return (
                             <div
                                 key={prop.id || index}

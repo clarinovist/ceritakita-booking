@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useHomepageData } from '@/hooks/useHomepageData';
-import { RamadanOrnaments } from './RamadanOrnaments';
+import { SeasonalOrnaments } from './SeasonalOrnaments';
 
 export function TestimonialsSection() {
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -33,7 +33,7 @@ export function TestimonialsSection() {
     const current = testimonials[currentIndex];
 
     return (
-        <section className="relative py-32 overflow-hidden">
+        <section className="relative py-24 lg:py-32 overflow-hidden bg-cream-100" id="testimonials">
             {/* Background Image */}
             <div
                 className="absolute inset-0 bg-cover bg-center"
@@ -41,9 +41,9 @@ export function TestimonialsSection() {
                     backgroundImage: `url('${data?.testimonials_config?.background_image || '/images/family.png'}')`,
                 }}
             >
-                <div className="absolute inset-0 bg-ramadan-900/85" />
+                <div className="absolute inset-0 bg-olive-900/85" />
             </div>
-            <RamadanOrnaments variant="dark" density="normal" />
+            <SeasonalOrnaments variant="dark" density="normal" />
 
             {/* Content */}
             <div className="relative max-w-4xl mx-auto px-6 text-center">
