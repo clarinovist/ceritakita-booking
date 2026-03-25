@@ -8,9 +8,9 @@ import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWi
 export interface DailyReportData {
     date: string;
     metrics: {
-        revenueToday: number;
-        newBookingsCount: number;
-        newLeadsCount: number;
+        revenueThisMonth: number;
+        newBookingsThisMonthCount: number;
+        newLeadsThisMonthCount: number;
     };
     newBookings: Booking[];
     paymentsReceived: Array<{ booking: Booking; payment: Payment }>;
@@ -49,36 +49,57 @@ export interface MonthlyReportData {
 /**
  * Generates data for the Daily Digest email
  */
-export async function generateDailyReport(): Promise<DailyReportData> {
-    const today = new Date();
-    const todayStr = format(today, 'yyyy-MM-dd');
+export async function generateDailyReport(dateInput?: Date): Promise<DailyReportData> {
+    const now = dateInput || new Date();
+    // If the report runs in the morning (e.g., 8 AM local or 00:00 UTC), 
+    // it's almost certainly intended to recap the *previous* day's full data.
+    // Otherwise, it recaps the current day's progress.
+    const targetDate = now.getHours() < 12 ? subDays(now, 1) : now;
+    const targetDateStr = format(targetDate, 'yyyy-MM-dd');
 
     // Calculate upcoming window (next 3 days)
-    const upcomingStart = new Date(today);
-    const upcomingEnd = new Date(today);
+    const upcomingStart = new Date(targetDate);
+    const upcomingEnd = new Date(targetDate);
     upcomingEnd.setDate(upcomingEnd.getDate() + 3);
 
     const allBookings = readBookings();
     const allLeads = await getLeads();
 
-    // 1. New Bookings Today
-    const newBookings = allBookings.filter(b => b.created_at.startsWith(todayStr));
+    // 1. New Bookings This Month
+    const monthStart = startOfMonth(targetDate);
+    const monthEnd = endOfMonth(targetDate);
+    
+    const newBookings = allBookings.filter(b => {
+        const bDate = new Date(b.created_at);
+        return isWithinInterval(bDate, { start: monthStart, end: monthEnd });
+    });
+    // Sort descending so the latest bookings appear first
+    newBookings.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
-    // 2. Payments Received Today
+    // 2. Payments and Monthly Revenue
     const paymentsReceived: Array<{ booking: Booking; payment: Payment }> = [];
-    let revenueToday = 0;
+    let revenueThisMonth = 0;
 
     allBookings.forEach(booking => {
         booking.finance.payments.forEach(payment => {
-            if (payment.date.startsWith(todayStr)) {
+            // Keep tracking today's individual payments if needed
+            if (payment.date.startsWith(targetDateStr)) {
                 paymentsReceived.push({ booking, payment });
-                revenueToday += payment.amount;
+            }
+            
+            // Accumulate monthly revenue
+            const pDate = new Date(payment.date);
+            if (isWithinInterval(pDate, { start: monthStart, end: monthEnd })) {
+                revenueThisMonth += payment.amount;
             }
         });
     });
 
-    // 3. New Leads Today
-    const newLeads = allLeads.filter(l => l.created_at.startsWith(todayStr));
+    // 3. New Leads This Month
+    const newLeads = allLeads.filter(l => {
+        const lDate = new Date(l.created_at);
+        return isWithinInterval(lDate, { start: monthStart, end: monthEnd });
+    });
 
     // 4. Upcoming Bookings (Next 3 days)
     const upcomingBookings = allBookings.filter(b => {
@@ -98,7 +119,7 @@ export async function generateDailyReport(): Promise<DailyReportData> {
 
         if (!l.next_follow_up) return false;
         const followUpDate = new Date(l.next_follow_up);
-        return followUpDate < today;
+        return followUpDate < targetDate;
     }).sort((a, b) => {
         const dateA = new Date(a.next_follow_up as string).getTime();
         const dateB = new Date(b.next_follow_up as string).getTime();
@@ -106,11 +127,11 @@ export async function generateDailyReport(): Promise<DailyReportData> {
     });
 
     return {
-        date: todayStr,
+        date: targetDateStr,
         metrics: {
-            revenueToday,
-            newBookingsCount: newBookings.length,
-            newLeadsCount: newLeads.length
+            revenueThisMonth,
+            newBookingsThisMonthCount: newBookings.length,
+            newLeadsThisMonthCount: newLeads.length
         },
         newBookings,
         paymentsReceived,

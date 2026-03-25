@@ -142,22 +142,22 @@ export function buildDailyDigestEmail(data: DailyReportData): string {
                 <!-- Metrics -->
                 <div style="${METRIC_GRID_STYLES}">
                     <div style="${METRIC_CARD_STYLES}">
-                        <div style="${METRIC_LABEL_STYLES}">Revenue Today</div>
-                        <div style="${METRIC_VALUE_STYLES}">${formatMoney(data.metrics.revenueToday)}</div>
+                        <div style="${METRIC_LABEL_STYLES}">Revenue This Month</div>
+                        <div style="${METRIC_VALUE_STYLES}">${formatMoney(data.metrics.revenueThisMonth)}</div>
                     </div>
                     <div style="${METRIC_CARD_STYLES}">
-                        <div style="${METRIC_LABEL_STYLES}">New Bookings</div>
-                        <div style="${METRIC_VALUE_STYLES}">${data.metrics.newBookingsCount}</div>
+                        <div style="${METRIC_LABEL_STYLES}">New Bookings This Month</div>
+                        <div style="${METRIC_VALUE_STYLES}">${data.metrics.newBookingsThisMonthCount}</div>
                     </div>
                     <div style="${METRIC_CARD_STYLES}">
-                        <div style="${METRIC_LABEL_STYLES}">New Leads</div>
-                        <div style="${METRIC_VALUE_STYLES}">${data.metrics.newLeadsCount}</div>
+                        <div style="${METRIC_LABEL_STYLES}">New Leads This Month</div>
+                        <div style="${METRIC_VALUE_STYLES}">${data.metrics.newLeadsThisMonthCount}</div>
                     </div>
                 </div>
 
                 <!-- New Bookings -->
                 ${data.newBookings.length > 0 ? `
-                    <h2 style="${SECTION_TITLE_STYLES}">New Bookings (${data.newBookings.length})</h2>
+                    <h2 style="${SECTION_TITLE_STYLES}">New Bookings This Month (Latest 5 of ${data.newBookings.length})</h2>
                     <table style="${TABLE_STYLES}">
                         <thead>
                             <tr>
@@ -167,7 +167,7 @@ export function buildDailyDigestEmail(data: DailyReportData): string {
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.newBookings.map(b => `
+                            ${data.newBookings.slice(0, 5).map(b => `
                                 <tr>
                                     <td style="${TD_STYLES}">${b.customer.name}</td>
                                     <td style="${TD_STYLES}">${b.customer.category}</td>
@@ -223,31 +223,7 @@ export function buildDailyDigestEmail(data: DailyReportData): string {
                         </div>
                     </div>
 
-                    <h3 style="font-size: 14px; color: #64748b; margin-bottom: 12px;">Top 5 Oldest Overdue</h3>
-                    <table style="${TABLE_STYLES}">
-                        <thead>
-                            <tr>
-                                <th style="${TH_STYLES}">Lead Name</th>
-                                <th style="${TH_STYLES}">Source</th>
-                                <th style="${TH_STYLES}">Assigned To</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.overdueFollowUps.slice(0, 5).map(l => {
-                                const dueDateText = l.next_follow_up 
-                                    ? new Date(l.next_follow_up).toLocaleDateString('id-ID')
-                                    : 'Unknown';
-                                return `
-                                <tr>
-                                    <td style="${TD_STYLES}"><strong>${l.name}</strong><br/><span style="font-size: 12px; color: #ef4444;">Due: ${dueDateText}</span></td>
-                                    <td style="${TD_STYLES}">${l.source}</td>
-                                    <td style="${TD_STYLES}">${l.assigned_to || 'Unassigned'}</td>
-                                </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                    <div style="text-align: right; margin-bottom: 24px; margin-top: -8px;">
+                    <div style="text-align: right; margin-bottom: 24px; margin-top: 16px;">
                         <a href="${process.env.NEXT_PUBLIC_SITE_URL || ''}/admin/crm" style="color: #2563eb; font-size: 14px; text-decoration: none; font-weight: 600;">View All in CRM &rarr;</a>
                     </div>
                     `;

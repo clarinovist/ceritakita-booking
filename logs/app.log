@@ -2848,3 +2848,19 @@
 [2026-03-13T03:53:29.747Z] [INFO] Retrieved bookings from database | Context: {"count":47}
 [2026-03-13T03:53:29.761Z] [INFO] Bookings retrieved successfully | Context: {"count":47}
 [2026-03-13T03:53:29.760Z] [INFO] Retrieved bookings from database | Context: {"count":47}
+[2026-03-25T05:11:51.816Z] [WARN] Unauthorized attempt to trigger email report
+[2026-03-25T05:12:15.897Z] [INFO] Retrieved bookings from database | Context: {"count":53}
+[2026-03-25T05:12:15.890Z] [INFO] Generating daily email report
+[2026-03-25T05:12:16.686Z] [INFO] Email sent successfully | Context: {"id":"2a2bad53-afcf-4115-87a1-7a10ba62b40e","to":["nugroho.pramono@gmail.com"],"subject":"🟢 CeritaKita Daily Digest - 2026-03-25"}
+[2026-03-25T05:13:45.529Z] [INFO] Generating daily email report
+[2026-03-25T05:13:45.531Z] [INFO] Retrieved bookings from database | Context: {"count":53}
+[2026-03-25T05:13:46.212Z] [INFO] Email sent successfully | Context: {"id":"79a995d7-a2fa-41f4-b984-51ecae085ee1","to":["nugroho.pramono@gmail.com"],"subject":"🟢 CeritaKita Daily Digest - 2026-03-25"}
+[2026-03-25T05:15:32.680Z] [INFO] Generating daily email report
+[2026-03-25T05:15:32.682Z] [INFO] Retrieved bookings from database | Context: {"count":53}
+[2026-03-25T05:15:33.368Z] [INFO] Email sent successfully | Context: {"id":"5be48145-d354-4c3e-85c9-86c63e30e0b9","to":["nugroho.pramono@gmail.com"],"subject":"🟢 CeritaKita Daily Digest - 2026-03-25"}
+[2026-03-25T05:18:53.521Z] [INFO] Retrieved bookings from database | Context: {"count":53}
+[2026-03-25T05:18:53.519Z] [INFO] Generating daily email report
+[2026-03-25T05:18:54.106Z] [INFO] Email sent successfully | Context: {"id":"086a5251-6530-4a73-8a31-8de1de8953b4","to":["nugroho.pramono@gmail.com"],"subject":"🟢 CeritaKita Daily Digest - 2026-03-25"}
+[2026-03-25T05:21:57.148Z] [INFO] Generating daily email report
+[2026-03-25T05:21:57.152Z] [INFO] Retrieved bookings from database | Context: {"count":53}
+[2026-03-25T05:21:58.126Z] [INFO] Email sent successfully | Context: {"id":"83e3f20a-c0d9-48bf-b58b-922a9a3d9007","to":["nugroho.pramono@gmail.com"],"subject":"🟢 CeritaKita Daily Digest - 2026-03-25"}
