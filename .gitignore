@@ -48,3 +48,10 @@ node_modules/
 # uploaded files
 /uploads/
 .aider*
+
+# local Picoclaw workspace support
+/docs/technical-review.md
+/memory/
+/ops/ceritakita-healthcheck.sh
+/ops/project-report.sh
+/skills/ceritakita-booking/
