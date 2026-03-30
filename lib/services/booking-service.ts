@@ -269,7 +269,7 @@ export class BookingService {
         });
 
         // 9. Send Customer Email Confirmation
-        if (newBooking.customer.email) {
+        if (newBooking.customer.email && settings.customer_email_enabled) {
             const customerEmail = newBooking.customer.email;
             
             // Format subject
@@ -279,14 +279,26 @@ export class BookingService {
             // Build HTML
             const html = buildCustomerBookingEmail(newBooking);
             
-            // Default From (kalau ada env RESEND_FROM_EMAIL kita pakai itu, kalau tidak fallback default)
-            const fromEmail = process.env.RESEND_FROM_EMAIL || 'CeritaKita Booking <onboarding@resend.dev>';
+            // Sender Configuration
+            const senderName = settings.customer_email_sender_name || 'Ceritakita Studio';
+            const fromEnv = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';
             
+            // If fromEnv already has a name like "Name <email>", extract just the email
+            let finalFrom = `${senderName} <${fromEnv}>`;
+            if (fromEnv.includes('<')) {
+                const emailMatch = fromEnv.match(/<(.+)>/);
+                if (emailMatch) {
+                    finalFrom = `${senderName} <${emailMatch[1]}>`;
+                } else {
+                    finalFrom = fromEnv; // fallback if regex fails
+                }
+            }
+
             sendEmail({
                 to: customerEmail,
                 subject,
                 html,
-                from: fromEmail
+                from: finalFrom
             }).catch(e => {
                 logger.error('Failed to send customer confirmation email', { 
                     bookingId: newBooking.id, 
