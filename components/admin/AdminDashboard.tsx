@@ -172,6 +172,7 @@ export default function AdminDashboard() {
         bookingsHook.setBookingFormData({
             customer_name: '',
             customer_whatsapp: '',
+            customer_email: '',
             service_id: '',
             booking_date: '',
             booking_time: '',
@@ -271,6 +272,7 @@ export default function AdminDashboard() {
                 customer: {
                     name: bookingsHook.bookingFormData.customer_name,
                     whatsapp: bookingsHook.bookingFormData.customer_whatsapp,
+                    email: bookingsHook.bookingFormData.customer_email,
                     category: selectedService?.name || '',
                     serviceId: bookingsHook.bookingFormData.service_id
                 },

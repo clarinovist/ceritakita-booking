@@ -4,6 +4,7 @@ import { type Lead, type LeadFormData, type LeadStatus, type LeadSource, type Ad
 interface BookingFormData {
     customer_name: string;
     customer_whatsapp: string;
+    customer_email: string;
     service_id: string;
     booking_date: string;
     booking_time: string;
@@ -28,6 +29,7 @@ const initialLeadFormData: LeadFormData = {
 const initialBookingFormData: BookingFormData = {
     customer_name: '',
     customer_whatsapp: '',
+    customer_email: '',
     service_id: '',
     booking_date: '',
     booking_time: '',
@@ -314,6 +316,7 @@ export function useLeads(services: Service[] = []) {
         setBookingFormData({
             customer_name: lead.name,
             customer_whatsapp: lead.whatsapp,
+            customer_email: lead.email || '',
             service_id: '',
             booking_date: '',
             booking_time: '',
@@ -414,6 +417,7 @@ export function useLeads(services: Service[] = []) {
                 customer: {
                     name: bookingFormData.customer_name,
                     whatsapp: bookingFormData.customer_whatsapp,
+                    email: bookingFormData.customer_email,
                     category: selectedService?.name || '',
                     serviceId: bookingFormData.service_id
                 },

@@ -8,6 +8,7 @@ export const customerSchema = z.object({
     .min(8, 'WhatsApp number too short')
     .max(20, 'WhatsApp number too long')
     .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format'),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
   category: z.string().min(1, 'Category is required'),
   serviceId: z.string().optional(),
 });

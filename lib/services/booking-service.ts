@@ -15,6 +15,8 @@ import {
 } from '@/lib/coupons';
 import { generateWhatsAppMessage, generateWhatsAppLink } from '@/lib/whatsapp-template';
 import { sendNewBookingNotification } from '@/lib/telegram';
+import { sendEmail } from '@/lib/email';
+import { buildCustomerBookingEmail } from '@/lib/email-templates';
 import { logger, AppError } from '@/lib/logger';
 import { safeNumber, safeProperty } from '@/lib/type-utils';
 import { Booking } from '@/lib/types';
@@ -266,7 +268,34 @@ export class BookingService {
             logger.error('Failed to send Telegram notification', { bookingId: newBooking.id }, e as Error);
         });
 
-        // 8. Generate WhatsApp response
+        // 9. Send Customer Email Confirmation
+        if (newBooking.customer.email) {
+            const customerEmail = newBooking.customer.email;
+            
+            // Format subject
+            const serviceName = newBooking.customer.category;
+            const subject = `Konfirmasi Pesanan Ceritakita - ${serviceName}`;
+            
+            // Build HTML
+            const html = buildCustomerBookingEmail(newBooking);
+            
+            // Default From (kalau ada env RESEND_FROM_EMAIL kita pakai itu, kalau tidak fallback default)
+            const fromEmail = process.env.RESEND_FROM_EMAIL || 'CeritaKita Booking <onboarding@resend.dev>';
+            
+            sendEmail({
+                to: customerEmail,
+                subject,
+                html,
+                from: fromEmail
+            }).catch(e => {
+                logger.error('Failed to send customer confirmation email', { 
+                    bookingId: newBooking.id, 
+                    email: customerEmail 
+                }, e as Error);
+            });
+        }
+
+        // 10. Generate WhatsApp response
         let whatsappResponse = {};
         try {
             if (settings.whatsapp_admin_number && settings.whatsapp_message_template) {

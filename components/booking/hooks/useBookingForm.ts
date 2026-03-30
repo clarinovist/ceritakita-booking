@@ -27,6 +27,7 @@ export const useBookingForm = () => {
     const [formData, setFormData] = useState<BookingFormData>({
         name: '',
         whatsapp: '',
+        email: '',
         date: '',
         time: '',
         category: '',
@@ -286,6 +287,7 @@ export const useBookingForm = () => {
                 customer: {
                     name: formData.name,
                     whatsapp: formData.whatsapp,
+                    email: formData.email,
                     category: formData.category,
                     serviceId: selectedService?.id
                 },

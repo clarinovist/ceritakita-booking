@@ -25,6 +25,7 @@ interface FormData {
   // Step 4: Customer Information
   name: string;
   whatsapp: string;
+  email: string;
   notes: string;
 
   // Step 5: Payment
@@ -115,6 +116,7 @@ export function MultiStepFormProvider({
     // Step 4
     name: initialData?.name || '',
     whatsapp: initialData?.whatsapp || '',
+    email: initialData?.email || '',
     notes: initialData?.notes || '',
 
     // Step 5
@@ -287,6 +289,7 @@ export function MultiStepFormProvider({
     if (currentStep === 4) {
       const nameError = fieldValidators.name(formData.name);
       const whatsappError = fieldValidators.whatsapp(formData.whatsapp);
+      const emailError = fieldValidators.email(formData.email);
 
       if (nameError) {
         newErrors.push({ field: 'name', message: nameError });
@@ -294,6 +297,10 @@ export function MultiStepFormProvider({
       }
       if (whatsappError) {
         newErrors.push({ field: 'whatsapp', message: whatsappError });
+        isValid = false;
+      }
+      if (emailError) {
+        newErrors.push({ field: 'email', message: emailError });
         isValid = false;
       }
 
@@ -356,6 +363,7 @@ export function MultiStepFormProvider({
       location_link: '',
       name: '',
       whatsapp: '',
+      email: '',
       notes: '',
       dp_amount: '',
       proofFile: null,
@@ -394,6 +402,7 @@ export function MultiStepFormProvider({
         customer: {
           name: formData.name,
           whatsapp: formData.whatsapp,
+          email: formData.email,
           category: formData.serviceName,
           serviceId: formData.serviceId,
         },

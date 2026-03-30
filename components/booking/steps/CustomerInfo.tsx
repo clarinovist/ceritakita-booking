@@ -10,6 +10,7 @@ interface CustomerInfoProps {
     formData?: {
         name: string;
         whatsapp: string;
+        email: string;
         notes: string;
     };
     handleChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -58,6 +59,19 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
     useEffect(() => {
         if (!isContextMode) return;
 
+        if (touched.email && formData.email) {
+            const error = fieldValidators.email(formData.email);
+            if (error) {
+                setFieldError('email', error);
+            } else {
+                clearFieldError('email');
+            }
+        }
+    }, [formData.email, touched.email, isContextMode, setFieldError, clearFieldError]);
+
+    useEffect(() => {
+        if (!isContextMode) return;
+
         if (touched.notes && formData.notes) {
             const error = fieldValidators.notes(formData.notes);
             if (error) {
@@ -88,6 +102,15 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
         }
     };
 
+    const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (isContextMode) {
+            updateFormData({ email: e.target.value });
+            if (!touched.email) setTouched(prev => ({ ...prev, email: true }));
+        } else if (propHandleChange) {
+            propHandleChange(e);
+        }
+    };
+
     const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
         if (isContextMode) {
             updateFormData({ notes: e.target.value });
@@ -99,6 +122,7 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
 
     const nameError = isContextMode ? errors[4]?.find(e => e.field === 'name') : null;
     const whatsappError = isContextMode ? errors[4]?.find(e => e.field === 'whatsapp') : null;
+    const emailError = isContextMode ? errors[4]?.find(e => e.field === 'email') : null;
     const notesError = isContextMode ? errors[4]?.find(e => e.field === 'notes') : null;
 
     // Format WhatsApp number for display (context mode only)
@@ -192,6 +216,42 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
                 </div>
             )}
 
+            {/* Email */}
+            {isContextMode ? (
+                <FieldValidationWrapper
+                    error={emailError?.message || null}
+                    label="Email (Opsional)"
+                >
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email || ''}
+                        onChange={handleEmailChange}
+                        onBlur={() => setTouched(prev => ({ ...prev, email: true }))}
+                        placeholder="Contoh: alamat@email.com"
+                        className="w-full p-3 bg-white border border-olive-200 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 touch-target"
+                        aria-describedby={emailError ? 'email-error' : undefined}
+                        aria-invalid={!!emailError}
+                        autoComplete="email"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                        Opsional. Digunakan untuk mengirim konfirmasi dan tanda terima pembayaran.
+                    </p>
+                </FieldValidationWrapper>
+            ) : (
+                <div className="space-y-1">
+                    <label className="text-xs text-gray-500 font-medium">Email (Opsional)</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email || ''}
+                        onChange={handleEmailChange}
+                        placeholder="Alamat Email"
+                        className="w-full p-3 bg-cream-50 border border-olive-200 rounded-lg focus:ring-2 focus:ring-gold-500 outline-none"
+                    />
+                </div>
+            )}
+
             {/* Notes */}
             {isContextMode ? (
                 <FieldValidationWrapper
@@ -233,10 +293,11 @@ export const CustomerInfo = ({ formData: propFormData, handleChange: propHandleC
             )}
 
             {/* Validation Summary (context mode only) */}
-            {isContextMode && (nameError || whatsappError || notesError) && (
+            {isContextMode && (nameError || whatsappError || emailError || notesError) && (
                 <div className="space-y-2">
                     {nameError && <ValidationMessage message={nameError.message} type="error" />}
                     {whatsappError && <ValidationMessage message={whatsappError.message} type="error" />}
+                    {emailError && <ValidationMessage message={emailError.message} type="error" />}
                     {notesError && <ValidationMessage message={notesError.message} type="error" />}
                 </div>
             )}

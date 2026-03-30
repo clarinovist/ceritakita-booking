@@ -104,6 +104,7 @@ export function BookingDetailModal({
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <p className="font-bold text-lg">{booking.customer.name}</p>
                   <p>WA: {booking.customer.whatsapp}</p>
+                  {booking.customer.email && <p>Email: {booking.customer.email}</p>}
                   <p>Category: {booking.customer.category}</p>
                 </div>
               </div>

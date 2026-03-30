@@ -60,6 +60,9 @@ export interface CustomerData {
   /** WhatsApp contact number */
   whatsapp: string;
 
+  /** Email address (optional) */
+  email?: string;
+
   /** Service category */
   category: string;
 
@@ -133,6 +136,9 @@ export interface BookingFormData {
   /** WhatsApp number */
   whatsapp: string;
 
+  /** Email address */
+  email: string;
+
   /** Booking date */
   date: string;
 
@@ -157,6 +163,7 @@ export interface BookingPayload {
   customer: {
     name: string;
     whatsapp: string;
+    email?: string;
     category: string;
     serviceId?: string;
   };

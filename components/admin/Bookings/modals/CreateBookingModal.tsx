@@ -6,6 +6,7 @@ import type { Service, Photographer, Addon } from '@/lib/types';
 interface BookingFormData {
   customer_name: string;
   customer_whatsapp: string;
+  customer_email: string;
   service_id: string;
   booking_date: string;
   booking_time: string;
@@ -84,6 +85,16 @@ export function CreateBookingModal({
                   value={formData.customer_whatsapp}
                   onChange={e => setFormData({ ...formData, customer_whatsapp: e.target.value })}
                   placeholder="e.g. 081234567890"
+                  className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-bold text-gray-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  value={formData.customer_email || ''}
+                  onChange={e => setFormData({ ...formData, customer_email: e.target.value })}
+                  placeholder="e.g. customer@email.com (Optional)"
                   className="w-full p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>

@@ -38,6 +38,7 @@ export const useBookings = () => {
     const [bookingFormData, setBookingFormData] = useState({
         customer_name: '',
         customer_whatsapp: '',
+        customer_email: '',
         service_id: '',
         booking_date: '',
         booking_time: '',

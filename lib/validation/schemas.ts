@@ -62,6 +62,8 @@ export const customerInfoSchema = z.object({
   }, {
     message: 'Nomor WhatsApp minimal 10 digit, maksimal 15 digit',
   }),
+
+  email: z.string().email('Format email tidak valid').optional().or(z.literal('')),
   
   notes: z.string().optional().refine((val) => {
     if (!val) return true;
@@ -143,6 +145,8 @@ export const completeBookingSchema = z.object({
   }, {
     message: 'Nomor WhatsApp minimal 10 digit',
   }),
+
+  email: z.string().email('Format email tidak valid').optional().or(z.literal('')),
   
   notes: z.string().optional(),
   
@@ -237,6 +241,13 @@ export const fieldValidators = {
     const cleaned = value.replace(/\D/g, '');
     if (cleaned.length < 10) return 'Nomor WhatsApp minimal 10 digit';
     if (cleaned.length > 15) return 'Nomor WhatsApp maksimal 15 digit';
+    return null;
+  },
+
+  email: (value: string) => {
+    if (!value) return null; // Optional
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) return 'Format email tidak valid';
     return null;
   },
   

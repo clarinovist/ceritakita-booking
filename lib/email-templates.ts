@@ -1,4 +1,5 @@
 import { DailyReportData, WeeklyReportData, MonthlyReportData } from './report-generator';
+import { Booking } from '@/lib/types';
 
 const BRAND_COLOR = '#2563eb'; // Blue-600
 
@@ -435,6 +436,137 @@ export function buildMonthlyReportEmail(data: MonthlyReportData): string {
             
             <div style="${FOOTER_STYLES}">
                 CeritaKita Monthly Financials
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+}
+
+/**
+ * Generate Customer Booking Confirmation Email
+ */
+export function buildCustomerBookingEmail(booking: Booking): string {
+    const { customer, finance, addons, id } = booking;
+    
+    // Check if DP/First Payment is provided
+    const dpPayment = finance.payments?.[0];
+    const dpAmount = dpPayment ? dpPayment.amount : 0;
+    const remainingBalance = finance.total_price - dpAmount;
+    
+    // Helper formats
+    const dateFormatted = new Date(booking.booking.date).toLocaleDateString('id-ID', {
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
+    });
+    
+    const timeFormatted = new Date(booking.booking.date).toLocaleTimeString('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Konfirmasi Pesanan Ceritakita</title>
+    </head>
+    <body style="${BASE_STYLES}">
+        <div style="${CONTAINER_STYLES}">
+            <div style="${HEADER_STYLES}">
+                <h1 style="margin:0; font-size:24px;">Konfirmasi Pesanan Ceritakita</h1>
+                <p style="margin-top:8px; margin-bottom:0; opacity:0.9;">Booking ID: ${(id.split('-')[0] || id).toUpperCase()}</p>
+            </div>
+            
+            <div style="${CONTENT_STYLES}">
+                <p>Halo <strong>${customer.name}</strong>,</p>
+                <p>Terima kasih telah melakukan pemesanan di Ceritakita! Berikut adalah detail reservasi Anda:</p>
+                
+                <h2 style="${SECTION_TITLE_STYLES}">Detail Sesi 📸</h2>
+                <table style="${TABLE_STYLES}">
+                    <tbody>
+                        <tr>
+                            <td style="${TD_STYLES}; width: 35%; color: #64748b;">Layanan</td>
+                            <td style="${TD_STYLES}; font-weight: 500;">${customer.category}</td>
+                        </tr>
+                        <tr>
+                            <td style="${TD_STYLES}; color: #64748b;">Tanggal</td>
+                            <td style="${TD_STYLES}; font-weight: 500;">${dateFormatted}</td>
+                        </tr>
+                        <tr>
+                            <td style="${TD_STYLES}; color: #64748b;">Waktu</td>
+                            <td style="${TD_STYLES}; font-weight: 500;">${timeFormatted} WIB</td>
+                        </tr>
+                        ${booking.booking.location_link ? `
+                        <tr>
+                            <td style="${TD_STYLES}; color: #64748b;">Lokasi/Maps</td>
+                            <td style="${TD_STYLES}"><a href="${booking.booking.location_link}" style="color: ${BRAND_COLOR};">Buka di Maps</a></td>
+                        </tr>` : ''}
+                    </tbody>
+                </table>
+                
+                <h2 style="${SECTION_TITLE_STYLES}">Rincian Harga (Invoice) 💳</h2>
+                <table style="${TABLE_STYLES}">
+                    <tbody>
+                        <tr>
+                            <td style="${TD_STYLES}; color: #64748b;">Harga Layanan Dasar</td>
+                            <td style="${TD_STYLES}; text-align: right;">${formatMoney(finance.service_base_price || 0)}</td>
+                        </tr>
+                        ${(finance.base_discount || 0) > 0 ? `
+                        <tr>
+                            <td style="${TD_STYLES}; color: #059669;">Diskon Layanan</td>
+                            <td style="${TD_STYLES}; text-align: right; color: #059669;">-${formatMoney(finance.base_discount || 0)}</td>
+                        </tr>` : ''}
+                        
+                        ${addons && addons.length > 0 ? `
+                        <tr>
+                            <td colspan="2" style="padding-top: 12px; padding-bottom: 4px; color: #0f172a; font-weight: 600;">Add-ons Tambahan:</td>
+                        </tr>
+                        ${addons.map(addon => `
+                        <tr>
+                            <td style="padding: 4px 12px; color: #64748b; font-size: 13px;">- ${addon.addon_name} (x${addon.quantity})</td>
+                            <td style="padding: 4px 12px; text-align: right; font-size: 13px;">${formatMoney(addon.price_at_booking * addon.quantity)}</td>
+                        </tr>
+                        `).join('')}
+                        ` : ''}
+                        
+                        ${(finance.coupon_discount || 0) > 0 ? `
+                        <tr>
+                            <td style="${TD_STYLES}; color: #059669; font-weight: 600;">Kupon (${finance.coupon_code})</td>
+                            <td style="${TD_STYLES}; text-align: right; color: #059669; font-weight: 600;">-${formatMoney(finance.coupon_discount || 0)}</td>
+                        </tr>` : ''}
+                        
+                        <tr style="background-color: #f8fafc;">
+                            <td style="${TD_STYLES}; font-weight: bold; font-size: 16px; border-top: 2px solid #e2e8f0;">Total Tagihan</td>
+                            <td style="${TD_STYLES}; text-align: right; font-weight: bold; font-size: 16px; border-top: 2px solid #e2e8f0;">${formatMoney(finance.total_price)}</td>
+                        </tr>
+                        <tr>
+                            <td style="${TD_STYLES}; color: #64748b;">DP / Down Payment (Telah diproses)</td>
+                            <td style="${TD_STYLES}; text-align: right; color: #64748b;">${formatMoney(dpAmount)}</td>
+                        </tr>
+                        <tr>
+                            <td style="${TD_STYLES}; font-weight: 600;">Sisa Pembayaran (H-1 Sesi)</td>
+                            <td style="${TD_STYLES}; text-align: right; font-weight: 600; color: #dc2626;">${formatMoney(remainingBalance < 0 ? 0 : remainingBalance)}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <p style="margin-top: 24px; font-size: 14px; color: #64748b; text-align: center;">
+                    <em>Pastikan jadwal yang tertera sudah sesuai. Kami akan segera menghubungi Anda melalui WhatsApp yang terdaftar untuk langkah selanjutnya.</em>
+                </p>
+                
+                <div style="text-align: center;">
+                    <a href="https://wa.me/${process.env.ADMIN_WHATSAPP || ''}" style="${BUTTON_STYLES}">Hubungi Admin (WhatsApp)</a>
+                </div>
+            </div>
+            
+            <div style="${FOOTER_STYLES}">
+                <p style="margin: 0; padding-bottom: 8px;">Studio Ceritakita Indonesia</p>
+                <p style="margin: 0; font-size: 11px;">Ini adalah email otomatis, mohon untuk tidak membalas email ini secara langsung.</p>
             </div>
         </div>
     </body>
