@@ -57,10 +57,12 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
     const targetDate = now.getHours() < 12 ? subDays(now, 1) : now;
     const targetDateStr = format(targetDate, 'yyyy-MM-dd');
 
-    // Calculate upcoming window (next 3 days)
-    const upcomingStart = new Date(targetDate);
-    const upcomingEnd = new Date(targetDate);
+    // Calculate upcoming window (next 3 days) - selalu gunakan waktu asli request (now)
+    const upcomingStart = new Date(now);
+    upcomingStart.setHours(0, 0, 0, 0);
+    const upcomingEnd = new Date(now);
     upcomingEnd.setDate(upcomingEnd.getDate() + 3);
+    upcomingEnd.setHours(23, 59, 59, 999);
 
     const allBookings = readBookings();
     const allLeads = await getLeads();

@@ -122,20 +122,7 @@ export function formatDailyReport(data: DailyReportData): string {
         lines.push(`📅 _Tidak ada jadwal dalam 3 hari ke depan_`);
     }
 
-    // Overdue follow-ups
-    if (data.overdueFollowUps.length > 0) {
-        lines.push('');
-        lines.push(`⚠️ *Follow-up Terlambat: ${data.overdueFollowUps.length} leads*`);
-        data.overdueFollowUps.slice(0, 3).forEach((l: any) => {
-            const tgl = l.next_follow_up
-                ? format(new Date(l.next_follow_up), 'd MMM', { locale: localeId })
-                : '-';
-            lines.push(`• ${l.name || l.customer_name || 'Lead'} _(due ${tgl})_`);
-        });
-        if (data.overdueFollowUps.length > 3) {
-            lines.push(`  _...dan ${data.overdueFollowUps.length - 3} lainnya_`);
-        }
-    }
+    // Overdue follow-ups telah dihapus sesuai permintaan
 
     lines.push('');
     lines.push(`_Generated: ${format(new Date(), 'HH:mm', { locale: localeId })} WIB_`);
@@ -235,9 +222,7 @@ export function formatStatusMessage(data: DailyReportData): string {
     lines.push(`💰 *Revenue Bulan Ini:* ${formatRupiah(data.metrics.revenueThisMonth)}`);
     lines.push(`📅 *Jadwal Mendatang:* ${data.upcomingBookings.length} sesi`);
 
-    if (data.overdueFollowUps.length > 0) {
-        lines.push(`⚠️ *Follow-up Terlambat:* ${data.overdueFollowUps.length} leads`);
-    }
+    // Overdue follow-ups section removed
 
     return lines.join('\n');
 }
