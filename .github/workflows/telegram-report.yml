@@ -1,0 +1,91 @@
+# Telegram Report Scheduler
+# Mengirim laporan otomatis ke Telegram group CeritaKita Booking
+#
+# Jadwal (UTC+7/WIB):
+#   - 08:00 WIB = 01:00 UTC → laporan harian pagi
+#   - 20:00 WIB = 13:00 UTC → rekap harian malam
+#   - Setiap Senin 08:00 WIB = 01:00 UTC → rekap mingguan
+#   - Tanggal 1 tiap bulan 08:00 WIB = 01:00 UTC → laporan bulanan P&L
+
+name: Telegram Report Scheduler
+
+on:
+  schedule:
+    # Laporan harian pagi — setiap hari jam 08:00 WIB (01:00 UTC)
+    - cron: '0 1 * * *'
+    # Rekap harian malam — setiap hari jam 20:00 WIB (13:00 UTC)
+    - cron: '0 13 * * *'
+    # Rekap mingguan — setiap Senin jam 08:00 WIB (01:00 UTC)
+    - cron: '0 1 * * 1'
+    # Laporan bulanan — tanggal 1 tiap bulan jam 08:00 WIB (01:00 UTC)
+    - cron: '0 1 1 * *'
+
+  # Bisa juga di-trigger manual dari GitHub Actions UI untuk testing
+  workflow_dispatch:
+    inputs:
+      report_type:
+        description: 'Jenis laporan yang akan dikirim'
+        required: true
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - weekly
+          - monthly
+
+jobs:
+  send-telegram-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tentukan jenis laporan berdasarkan jadwal
+        id: determine-type
+        run: |
+          # Jika dispatch manual, gunakan input
+          if [ -n "${{ github.event.inputs.report_type }}" ]; then
+            echo "type=${{ github.event.inputs.report_type }}" >> $GITHUB_OUTPUT
+            echo "Dispatch manual: ${{ github.event.inputs.report_type }}"
+            exit 0
+          fi
+
+          # Tentukan berdasarkan tanggal dan hari
+          DAY_OF_MONTH=$(date -u +%-d)
+          DAY_OF_WEEK=$(date -u +%u)  # 1=Senin, 7=Minggu
+          HOUR=$(date -u +%-H)
+
+          if [ "$DAY_OF_MONTH" = "1" ] && [ "$HOUR" -lt "12" ]; then
+            echo "type=monthly" >> $GITHUB_OUTPUT
+            echo "Mengirim laporan bulanan (tanggal 1)"
+          elif [ "$DAY_OF_WEEK" = "1" ] && [ "$HOUR" -lt "12" ]; then
+            echo "type=weekly" >> $GITHUB_OUTPUT
+            echo "Mengirim laporan mingguan (Senin pagi)"
+          else
+            echo "type=daily" >> $GITHUB_OUTPUT
+            echo "Mengirim laporan harian"
+          fi
+
+      - name: Kirim laporan ke Telegram
+        run: |
+          REPORT_TYPE="${{ steps.determine-type.outputs.type }}"
+          echo "Mengirim laporan tipe: $REPORT_TYPE"
+
+          HTTP_STATUS=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -X POST \
+            -H "x-cron-secret: ${{ secrets.REPORT_CRON_SECRET }}" \
+            "${{ secrets.APP_URL }}/api/telegram/send-report?type=$REPORT_TYPE")
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response:"
+          cat /tmp/response.json
+
+          if [ "$HTTP_STATUS" != "200" ]; then
+            echo "❌ Gagal mengirim laporan. HTTP Status: $HTTP_STATUS"
+            exit 1
+          fi
+
+          SUCCESS=$(cat /tmp/response.json | python3 -c "import sys,json; print(json.load(sys.stdin).get('success', False))")
+          if [ "$SUCCESS" != "True" ]; then
+            echo "❌ API mengembalikan success=false"
+            exit 1
+          fi
+
+          echo "✅ Laporan $REPORT_TYPE berhasil dikirim ke Telegram"
