@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Ambil command (hapus @mention bot jika ada, misalnya /laporan@CeritaKitaBot)
-        const command = text.split('@')[0].toLowerCase().trim();
+        const command = (text.split('@')[0] || '').toLowerCase().trim();
 
         logger.info('Telegram webhook: menerima command', { chatId, command });
 
