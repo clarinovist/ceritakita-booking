@@ -37,7 +37,7 @@ const TABS: TabConfig[] = [
   { id: 'finance', label: 'Finance', icon: DollarSign },
   { id: 'rules', label: 'Booking Rules', icon: Calendar },
   { id: 'templates', label: 'Templates', icon: MessageSquare },
-  { id: 'reports', label: 'Email Reports', icon: Mail },
+  { id: 'reports', label: 'Emails', icon: Mail },
   { id: 'payment_methods', label: 'Payment Methods', icon: CreditCard },
   { id: 'users', label: 'Team Access', icon: Users },
   { id: 'performance', label: 'Performance', icon: Activity }
