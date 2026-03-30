@@ -14,6 +14,7 @@ import {
     getCouponByCode
 } from '@/lib/coupons';
 import { generateWhatsAppMessage, generateWhatsAppLink } from '@/lib/whatsapp-template';
+import { sendNewBookingNotification } from '@/lib/telegram';
 import { logger, AppError } from '@/lib/logger';
 import { safeNumber, safeProperty } from '@/lib/type-utils';
 import { Booking } from '@/lib/types';
@@ -258,6 +259,11 @@ export class BookingService {
             bookingId: newBooking.id,
             customer: newBooking.customer.name,
             total: newBooking.finance.total_price
+        });
+
+        // 8. Send Telegram Notification
+        sendNewBookingNotification(newBooking).catch(e => {
+            logger.error('Failed to send Telegram notification', { bookingId: newBooking.id }, e as Error);
         });
 
         // 8. Generate WhatsApp response

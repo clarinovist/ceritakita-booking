@@ -5,6 +5,7 @@ import { updateBookingSchema } from '@/lib';
 import { rateLimiters } from '@/lib/rate-limit';
 import { logger, createErrorResponse, createValidationError } from '@/lib/logger';
 import { safeString, safeNumber } from '@/lib/type-utils';
+import { sendNewPaymentNotification } from '@/lib/telegram';
 
 /**
  * Valid status transition matrix
@@ -167,6 +168,15 @@ export async function PUT(req: NextRequest) {
 
         // Addon update handling
         let finalFinance = updates.finance || currentBooking.finance;
+        let newPaymentNotificationAmount = 0;
+
+        if (updates.finance && updates.finance.payments) {
+            const oldPaid = calculateTotalPaid(currentBooking);
+            const newPaid = updates.finance.payments.reduce((sum: number, p: any) => sum + p.amount, 0);
+            if (newPaid > oldPaid) {
+                newPaymentNotificationAmount = newPaid - oldPaid;
+            }
+        }
 
         if (updates.addons !== undefined) {
             // Calculate new addons_total
@@ -236,6 +246,12 @@ export async function PUT(req: NextRequest) {
             requestId,
             updates: Object.keys(updates)
         });
+
+        if (newPaymentNotificationAmount > 0) {
+            sendNewPaymentNotification(updatedBooking, newPaymentNotificationAmount).catch(e => {
+                logger.error('Failed to send Telegram payment notification', { bookingId: id }, e as Error);
+            });
+        }
 
         return NextResponse.json(updatedBooking);
     } catch (error) {

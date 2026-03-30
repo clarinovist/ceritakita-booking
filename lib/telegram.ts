@@ -61,13 +61,54 @@ export async function sendTelegramMessage(
 /**
  * Format angka sebagai Rupiah
  */
-function formatRupiah(amount: number): string {
+export function formatRupiah(amount: number): string {
     return new Intl.NumberFormat('id-ID', {
         style: 'currency',
         currency: 'IDR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0,
     }).format(amount);
+}
+
+/**
+ * Format dan kirim notifikasi order masuk
+ */
+export async function sendNewBookingNotification(booking: any): Promise<void> {
+    try {
+        const lines: string[] = [];
+        lines.push(`🔥 *Order Baru Masuk!*`);
+        lines.push(`Nama: ${booking.customer.name}`);
+        if (booking.customer.whatsapp) lines.push(`WA: ${booking.customer.whatsapp}`);
+        lines.push(`Layanan: ${booking.customer.category || '-'}`);
+        try {
+            const dateStr = format(new Date(booking.booking.date), 'dd MMM yyyy HH:mm', { locale: localeId });
+            lines.push(`Tgl: ${dateStr}`);
+        } catch {
+            lines.push(`Tgl: ${booking.booking.date}`);
+        }
+        lines.push(`Total: ${formatRupiah(booking.finance.total_price)}`);
+        
+        await sendTelegramMessage(lines.join('\n'));
+    } catch (e) {
+        console.error('Telegram notification error:', e);
+    }
+}
+
+/**
+ * Format dan kirim notifikasi pembayaran masuk
+ */
+export async function sendNewPaymentNotification(booking: any, paymentAmount: number): Promise<void> {
+    try {
+        const lines: string[] = [];
+        lines.push(`💳 *Pembayaran Masuk!*`);
+        lines.push(`Nama: ${booking.customer.name}`);
+        lines.push(`Layanan: ${booking.customer.category || '-'}`);
+        lines.push(`Nominal: ${formatRupiah(paymentAmount)}`);
+        
+        await sendTelegramMessage(lines.join('\n'));
+    } catch (e) {
+        console.error('Telegram notification error:', e);
+    }
 }
 
 /**
