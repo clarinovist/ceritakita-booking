@@ -183,6 +183,7 @@ export const LeadsTable = ({
                       {lead.whatsapp}
                     </div>
                   )}
+                  {lead.email && <div className="text-xs text-gray-400">{lead.email}</div>}
                 </div>
               </div>
               <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase shadow-sm ${getLeadStatusColor(lead.status)}`}>
@@ -332,6 +333,7 @@ export const LeadsTable = ({
                         {lead.whatsapp}
                       </div>
                     )}
+                    {lead.email && <div className="text-xs text-gray-400">{lead.email}</div>}
                   </div>
                 </td>
                 <td className="px-4 py-3">

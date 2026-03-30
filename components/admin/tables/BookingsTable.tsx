@@ -104,6 +104,7 @@ export const BookingsTable = ({
                                     </div>
                                     <div className="text-xs text-gray-500 font-medium">
                                         {b.customer.category} • {b.customer.whatsapp}
+                                        {b.customer.email && ` • ${b.customer.email}`}
                                     </div>
                                 </div>
                                 <div className="text-right">
@@ -189,7 +190,7 @@ export const BookingsTable = ({
                             <th className="px-4 py-3">Date</th>
                             <th className="px-4 py-3">Time</th>
                             <th className="px-4 py-3">Customer</th>
-                            <th className="px-4 py-3">Phone</th>
+                            <th className="px-4 py-3">Contact</th>
                             <th className="px-4 py-3">Category</th>
                             <th className="px-4 py-3">Price</th>
                             <th className="px-4 py-3">Status</th>
@@ -222,7 +223,10 @@ export const BookingsTable = ({
                                             )}
                                         </div>
                                     </td>
-                                    <td className="px-4 py-3">{b.customer.whatsapp}</td>
+                                    <td className="px-4 py-3">
+                                        <div>{b.customer.whatsapp}</div>
+                                        {b.customer.email && <div className="text-xs text-gray-400">{b.customer.email}</div>}
+                                    </td>
                                     <td className="px-4 py-3">{b.customer.category}</td>
                                     <td className="px-4 py-3 font-medium">Rp {b.finance.total_price.toLocaleString()}</td>
                                     <td className="px-4 py-3">
