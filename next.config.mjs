@@ -5,6 +5,13 @@ const nextConfig = {
   // Reduces Docker image size by ~60%
   output: 'standalone',
 
+  // Use a stable build ID to avoid version mismatch between containers
+  // Defaults to Git hash if available during build, or a timestamp
+  generateBuildId: async () => {
+    // Return current commit hash if available, else use timestamp
+    return process.env.GIT_HASH || `build-${Date.now()}`;
+  },
+
   // Enable ESLint during builds
   eslint: {
     ignoreDuringBuilds: false,
