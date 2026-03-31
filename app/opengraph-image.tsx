@@ -43,7 +43,7 @@ export default async function OpenGraphImage() {
             right: 0,
             bottom: 0,
             background:
-              "radial-gradient(800px 400px at 15% 30%, rgba(212,184,150,0.25), rgba(0,0,0,0)), radial-gradient(800px 400px at 85% 70%, rgba(37,99,235,0.22), rgba(0,0,0,0))",
+              "radial-gradient(circle at 15% 30%, rgba(212,184,150,0.25), rgba(0,0,0,0)), radial-gradient(circle at 85% 70%, rgba(37,99,235,0.22), rgba(0,0,0,0))",
           }}
         />
         <div

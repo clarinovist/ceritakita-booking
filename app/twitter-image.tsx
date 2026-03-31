@@ -43,7 +43,7 @@ export default async function TwitterImage() {
             right: 0,
             bottom: 0,
             background:
-              "radial-gradient(760px 360px at 20% 25%, rgba(212,184,150,0.25), rgba(0,0,0,0)), radial-gradient(760px 360px at 80% 75%, rgba(37,99,235,0.22), rgba(0,0,0,0))",
+              "radial-gradient(circle at 20% 25%, rgba(212,184,150,0.25), rgba(0,0,0,0)), radial-gradient(circle at 80% 75%, rgba(37,99,235,0.22), rgba(0,0,0,0))",
           }}
         />
         <div

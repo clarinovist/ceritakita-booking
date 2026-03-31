@@ -105,6 +105,8 @@ export const viewport: Viewport = {
   themeColor: "#2563eb",
 };
 
+import { DeploymentMismatchHandler } from "@/components/DeploymentMismatchHandler";
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -117,6 +119,7 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <DeploymentMismatchHandler />
         <DynamicAnalytics seoSettings={seoSettings} />
         <Suspense>
           <TrafficTracker />
