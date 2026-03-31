@@ -38,13 +38,13 @@ export function GallerySection() {
 
                 {/* Section Header */}
                 <div className="text-center mb-12">
-                    <p className="text-gold-400 tracking-[0.2em] uppercase text-sm font-medium mb-4">
+                    <p className="text-gold-600 tracking-[0.2em] uppercase text-sm font-medium mb-4">
                         Portfolio
                     </p>
-                    <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-cream-100 tracking-wide mb-6">
+                    <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-olive-900 tracking-wide mb-6">
                         Captured Moments
                     </h2>
-                    <p className="text-cream-300/60 text-sm max-w-2xl mx-auto text-lg leading-relaxed">
+                    <p className="text-olive-700/80 text-sm max-w-2xl mx-auto text-lg leading-relaxed">
                         Koleksi momen berharga yang telah kami abadikan. Temukan inspirasi untuk acara spesial Anda di galeri lengkap kami.
                     </p>
                 </div>

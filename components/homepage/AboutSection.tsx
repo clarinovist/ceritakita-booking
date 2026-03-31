@@ -30,13 +30,13 @@ export function AboutSection() {
 
                     {/* Content */}
                     <div>
-                        <p className="text-gold-600 tracking-[0.2em] uppercase text-sm font-medium mb-4">
+                        <p className="text-gold-400 tracking-[0.2em] uppercase text-sm font-medium mb-4">
                             {about.label || 'Tentang Kami'}
                         </p>
-                        <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-olive-800 tracking-wide mb-6">
+                        <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-cream-100 tracking-wide mb-6">
                             {about.headline || 'Studio Foto untuk Setiap Cerita Anda'}
                         </h2>
-                        <div className="space-y-4 text-olive-600 leading-relaxed">
+                        <div className="space-y-4 text-cream-300/80 leading-relaxed">
                             <p>
                                 {about.body_1 || 'CeritaKita hadir untuk mengabadikan momen-momen penting dalam hidup Anda.'}
                             </p>
