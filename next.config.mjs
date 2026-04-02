@@ -42,6 +42,7 @@ const nextConfig = {
 
   // Exclude better-sqlite3 from client-side bundle
   experimental: {
+    instrumentationHook: true,
     serverComponentsExternalPackages: ['better-sqlite3'],
   },
 
