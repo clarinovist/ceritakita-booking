@@ -56,6 +56,7 @@ function initializeSchema() {
       booking_date TEXT NOT NULL,
       booking_notes TEXT,
       booking_location_link TEXT,
+      drive_link TEXT,
 
       -- Finance
       total_price INTEGER NOT NULL DEFAULT 0,
@@ -110,6 +111,12 @@ function initializeSchema() {
 
   try {
     db.exec(`ALTER TABLE bookings ADD COLUMN coupon_code TEXT`);
+  } catch {
+    // Column already exists
+  }
+
+  try {
+    db.exec(`ALTER TABLE bookings ADD COLUMN drive_link TEXT`);
   } catch {
     // Column already exists
   }

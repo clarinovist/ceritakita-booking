@@ -1,5 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
+import QRCode from 'react-qr-code';
 import { SystemSettings } from '@/lib/types/settings';
 import { Booking } from '@/lib/types';
 
@@ -251,6 +252,32 @@ export const InvoiceTemplate = ({ settings, data, previewMode = false }: Invoice
 
             {/* Footer */}
             <div className="border-t border-slate-200 pt-8 pb-4">
+                {booking.booking.drive_link && (
+                    <div className="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200 flex gap-6 items-center print:bg-transparent print:border-slate-300 print:break-inside-avoid">
+                        <div className="bg-white p-3 rounded-lg border border-slate-200 shrink-0">
+                            <QRCode 
+                                value={booking.booking.drive_link} 
+                                size={96}
+                                level="M"
+                            />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-slate-900 mb-1 text-lg">Your Session Photos</h4>
+                            <p className="text-sm text-slate-600 mb-2 leading-relaxed">
+                                Scan the QR code or use the link below to view and download your high-resolution photos from Google Drive.
+                            </p>
+                            <a 
+                                href={booking.booking.drive_link} 
+                                className="text-sm font-medium text-slate-800 underline hover:text-slate-900 break-all"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                {booking.booking.drive_link}
+                            </a>
+                        </div>
+                    </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-8 text-sm">
                     <div>
                         <h4 className="font-bold text-slate-900 mb-2">Payment Details</h4>

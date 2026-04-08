@@ -80,6 +80,9 @@ export interface BookingData {
 
   /** Location link */
   location_link: string;
+
+  /** Google Drive link for customer photos */
+  drive_link?: string;
 }
 
 export interface RescheduleHistory {

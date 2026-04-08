@@ -122,6 +122,27 @@ export function BookingDetailModal({
                 </div>
               </div>
 
+              <div>
+                <h3 className="font-semibold text-gray-500 text-sm uppercase mb-2">Google Drive Photos</h3>
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/..."
+                    defaultValue={booking.booking.drive_link || ''}
+                    onBlur={(e) => onUpdate(booking.id, { 
+                      booking: { ...booking.booking, drive_link: e.target.value }
+                    })}
+                    disabled={booking.status === 'Completed'}
+                    className={`w-full p-2 border rounded text-sm ${booking.status === 'Completed' ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                  />
+                  {booking.booking.drive_link && (
+                    <a href={booking.booking.drive_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block mt-2 text-sm">
+                      Test Link
+                    </a>
+                  )}
+                </div>
+              </div>
+
               {/* Immutability Warning for Completed Bookings */}
               {booking.status === 'Completed' && (
                 <div className="bg-blue-50 p-4 rounded border border-blue-200">

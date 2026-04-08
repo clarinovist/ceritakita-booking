@@ -16,6 +16,7 @@ interface BookingRow {
   booking_date: string;
   booking_notes?: string | null;
   booking_location_link?: string | null;
+  drive_link?: string | null;
   total_price: number;
   service_base_price?: number | null;
   base_discount?: number | null;
@@ -65,6 +66,7 @@ function rowToBooking(row: BookingRow, payments: Payment[], addons?: BookingAddo
       date: safeString(row.booking_date),
       notes: safeString(row.booking_notes, ''),
       location_link: safeString(row.booking_location_link, ''),
+      drive_link: row.drive_link ? safeString(row.drive_link) : undefined,
     },
     finance: {
       total_price: safeNumber(row.total_price),
@@ -348,10 +350,10 @@ export async function writeData(bookings: Booking[]): Promise<void> {
           INSERT INTO bookings (
             id, created_at, status,
             customer_name, customer_whatsapp, customer_category, customer_service_id,
-            booking_date, booking_notes, booking_location_link,
+            booking_date, booking_notes, booking_location_link, drive_link,
             total_price, service_base_price, base_discount, addons_total, coupon_discount, coupon_code,
             photographer_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `);
 
         const insertPayment = db.prepare(`
@@ -375,6 +377,7 @@ export async function writeData(bookings: Booking[]): Promise<void> {
             booking.booking.date,
             booking.booking.notes || null,
             booking.booking.location_link || null,
+            booking.booking.drive_link || null,
             safeNumber(booking.finance.total_price),
             booking.finance.service_base_price ?? null,
             booking.finance.base_discount ?? null,
@@ -433,10 +436,10 @@ export async function createBooking(booking: Booking): Promise<void> {
               INSERT INTO bookings (
                 id, created_at, status,
                 customer_name, customer_whatsapp, customer_category, customer_service_id,
-                booking_date, booking_notes, booking_location_link,
+                booking_date, booking_notes, booking_location_link, drive_link,
                 total_price, service_base_price, base_discount, addons_total, coupon_discount, coupon_code,
                 photographer_id
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
 
         stmt.run(
@@ -450,6 +453,7 @@ export async function createBooking(booking: Booking): Promise<void> {
           booking.booking.date,
           booking.booking.notes || null,
           booking.booking.location_link || null,
+          booking.booking.drive_link || null,
           safeNumber(booking.finance.total_price),
           booking.finance.service_base_price ?? null,
           booking.finance.base_discount ?? null,
@@ -531,6 +535,7 @@ export async function updateBooking(booking: Booking): Promise<void> {
                 booking_date = ?,
                 booking_notes = ?,
                 booking_location_link = ?,
+                drive_link = ?,
                 total_price = ?,
                 service_base_price = ?,
                 base_discount = ?,
@@ -551,6 +556,7 @@ export async function updateBooking(booking: Booking): Promise<void> {
           booking.booking.date,
           booking.booking.notes || null,
           booking.booking.location_link || null,
+          booking.booking.drive_link || null,
           safeNumber(booking.finance.total_price),
           booking.finance.service_base_price ?? null,
           booking.finance.base_discount ?? null,
