@@ -5,6 +5,20 @@ All notable changes to the CeritaKita Studio Booking System will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.0.0...v1.1.0) (2026-04-09)
+
+
+### Features
+
+* add explicit save button for Google Drive link with success feedback ([c0763ef](https://github.com/clarinovist/ceritakita-booking/commit/c0763efdc0baa2bf7e039d998ddc0765e7981f32))
+
+
+### Bug Fixes
+
+* allow drive link updates on completed bookings and resolve input value sync bug ([75147dd](https://github.com/clarinovist/ceritakita-booking/commit/75147dd948042404c1d12badc4864d4ba242d9f7))
+* explicit dimensions for QR code svg to prevent print collapsing ([fd6a114](https://github.com/clarinovist/ceritakita-booking/commit/fd6a114340ac6d2bc80c5752c51c33fb0aa9b00c))
+* persist drive_link correctly on booking update ([78358c8](https://github.com/clarinovist/ceritakita-booking/commit/78358c8b850e69a412aa78bec14e63c4e06cde74))
+
 ## 1.0.0 (2026-04-08)
 
 
