@@ -254,11 +254,12 @@ export const InvoiceTemplate = ({ settings, data, previewMode = false }: Invoice
             <div className="border-t border-slate-200 pt-8 pb-4">
                 {booking.booking.drive_link && (
                     <div className="mb-8 p-6 bg-slate-50 rounded-xl border border-slate-200 flex gap-6 items-center print:bg-transparent print:border-slate-300 print:break-inside-avoid">
-                        <div className="bg-white p-3 rounded-lg border border-slate-200 shrink-0">
+                        <div className="bg-white p-3 rounded-lg border border-slate-200 shrink-0 flex items-center justify-center w-[120px] h-[120px]">
                             <QRCode 
                                 value={booking.booking.drive_link} 
                                 size={96}
                                 level="M"
+                                style={{ height: "96px", width: "96px" }}
                             />
                         </div>
                         <div>
