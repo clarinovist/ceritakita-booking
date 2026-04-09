@@ -126,14 +126,14 @@ export function BookingDetailModal({
                 <h3 className="font-semibold text-gray-500 text-sm uppercase mb-2">Google Drive Photos</h3>
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <input
+                    key={`drive-${booking.id}-${booking.booking.drive_link || 'empty'}`}
                     type="url"
                     placeholder="https://drive.google.com/..."
                     defaultValue={booking.booking.drive_link || ''}
                     onBlur={(e) => onUpdate(booking.id, { 
                       booking: { ...booking.booking, drive_link: e.target.value }
                     })}
-                    disabled={booking.status === 'Completed'}
-                    className={`w-full p-2 border rounded text-sm ${booking.status === 'Completed' ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                    className="w-full p-2 border rounded text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   />
                   {booking.booking.drive_link && (
                     <a href={booking.booking.drive_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block mt-2 text-sm">
