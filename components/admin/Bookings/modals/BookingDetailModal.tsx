@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { formatDateTime } from '@/utils/dateFormatter';
-import type { Booking, Addon } from '@/lib/types';
+import type { Booking, Addon, BookingUpdate } from '@/lib/types';
 import type { Photographer } from '@/lib/photographers';
 
 interface BookingDetailModalProps {
@@ -13,7 +13,7 @@ interface BookingDetailModalProps {
   onClose: () => void;
   onDelete: (id: string) => void;
   onUpdateStatus: (id: string, status: Booking['status']) => void;
-  onUpdate: (id: string, updates: Partial<Booking>) => void;
+  onUpdate: (id: string, updates: BookingUpdate) => void;
   onUpdateFinance: (id: string, finance: Booking['finance']) => void;
   onOpenRescheduleModal: (bookingId: string, currentDate: string) => void;
   calculateFinance: (booking: Booking) => { total: number; paid: number; balance: number; isPaidOff: boolean };

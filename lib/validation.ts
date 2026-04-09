@@ -21,6 +21,7 @@ export const bookingSchema = z.object({
   }, 'Invalid date format'),
   notes: z.string().max(500, 'Notes too long').optional().default(''),
   location_link: z.string().url('Invalid URL').optional().or(z.literal('')),
+  drive_link: z.string().url('Invalid URL').optional().or(z.literal('')),
 });
 
 // Payment validation schema

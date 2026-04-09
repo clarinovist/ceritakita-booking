@@ -221,8 +221,9 @@ export async function PUT(req: NextRequest) {
                     ...currentBooking.booking,
                     ...updates.booking,
                     date: updates.booking.date ? safeString(updates.booking.date) : currentBooking.booking.date,
-                    notes: updates.booking.notes ? safeString(updates.booking.notes) : currentBooking.booking.notes,
-                    location_link: updates.booking.location_link ? safeString(updates.booking.location_link) : currentBooking.booking.location_link
+                    notes: updates.booking.notes !== undefined ? safeString(updates.booking.notes) : currentBooking.booking.notes,
+                    location_link: updates.booking.location_link !== undefined ? safeString(updates.booking.location_link) : currentBooking.booking.location_link,
+                    drive_link: updates.booking.drive_link !== undefined ? safeString(updates.booking.drive_link) : currentBooking.booking.drive_link
                 }
             }),
             finance: finalFinance,
