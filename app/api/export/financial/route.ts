@@ -23,8 +23,8 @@ export async function GET(req: NextRequest) {
     const format = searchParams.get('format');
     const isJson = format === 'json';
 
-    // Fetch all bookings
-    const bookings = readData();
+    // Fetch bookings with database-level filtering
+    const bookings = readData(startDate || undefined, endDate || undefined);
 
     // Create workbook (only needed for excel, but logic is shared)
     const workbook = XLSX.utils.book_new();
@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
     let totalBookings = 0;
     let totalRevenue = 0;
     let totalPaidAll = 0;
+    let totalOutstandingSum = 0;
 
     // Arrays for details
     // We use any[] here to accommodate both JSON and Excel structures conditionally
@@ -45,21 +46,15 @@ export async function GET(req: NextRequest) {
 
     // Single loop over bookings
     for (const b of bookings) {
-       // Filter Logic
-       if (startDate || endDate) {
-           const bDate = b.booking.date.split('T')[0] ?? '';
-           if (startDate && bDate < startDate) continue;
-           if (endDate && bDate > endDate) continue;
-       }
-
        // Common Calculations
-       const bTotalPaid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
-       const bBalance = b.finance.total_price - bTotalPaid;
+       const bTotalPaid = b.finance.payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+       const bBalance = Math.max(0, b.finance.total_price - bTotalPaid);
 
        // Update Totals
        totalBookings++;
        totalRevenue += b.finance.total_price;
        totalPaidAll += bTotalPaid;
+       totalOutstandingSum += bBalance;
 
        // Update Category Map
        const category = b.customer.category;
@@ -172,7 +167,7 @@ export async function GET(req: NextRequest) {
        }
     }
 
-    const totalOutstanding = totalRevenue - totalPaidAll;
+    const totalOutstanding = totalOutstandingSum;
 
     const summaryData = Array.from(categoryMap.entries()).map(([category, stats]) => ({
       category,

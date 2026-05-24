@@ -74,15 +74,11 @@ export async function GET(req: NextRequest) {
             });
 
             // Outstanding calculation
-            // Only for active/rescheduled bookings in the period?
-            // Or all time outstanding?
-            // Usually, dashboard shows CURRENT outstanding.
-            if (booking.status === 'Active' || booking.status === 'Rescheduled') {
-                const paid = booking.finance.payments.reduce((s, p) => s + p.amount, 0);
-                const remaining = booking.finance.total_price - paid;
-                if (remaining > 0) {
-                    outstandingRevenue += remaining;
-                }
+            // Dashboard shows CURRENT outstanding for all non-cancelled bookings.
+            if (booking.status !== 'Cancelled') {
+                const paid = (booking.finance.payments || []).reduce((s, p) => s + (p.amount || 0), 0);
+                const remaining = Math.max(0, booking.finance.total_price - paid);
+                outstandingRevenue += remaining;
             }
         });
 

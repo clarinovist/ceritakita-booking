@@ -108,15 +108,15 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
         return total + bookingTotal;
     }, 0);
 
-    // Calculate outstanding balance for REALIZED REVENUE only
-    // This tracks how much of the completed sessions' value hasn't been paid yet
-    // FIX: Calculate per booking to avoid negative outstanding (overpayments) reducing the total debt
-    const outstandingBalance = completedSessions.reduce((total, b) => {
-        const bookingTotal = b.finance.total_price || 0;
-        const bookingPaid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
-        const bookingOutstanding = Math.max(0, bookingTotal - bookingPaid);
-        return total + bookingOutstanding;
-    }, 0);
+    // Calculate outstanding balance for all non-cancelled bookings in the period
+    const outstandingBalance = sessionBookings
+        .filter(b => b.status !== 'Cancelled')
+        .reduce((total, b) => {
+            const bookingTotal = b.finance.total_price || 0;
+            const bookingPaid = (b.finance.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+            const bookingOutstanding = Math.max(0, bookingTotal - bookingPaid);
+            return total + bookingOutstanding;
+        }, 0);
 
     const categories = [
         'Wedding', 'Prewedding Bronze', 'Prewedding Gold', 'Prewedding Silver',
