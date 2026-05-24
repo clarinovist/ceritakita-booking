@@ -399,6 +399,15 @@ export function getTrafficStats(startDate?: string, endDate?: string): TrafficSt
 
     const rows = stmt.all(start, end) as TrafficStats[];
 
+    // Create a Map for O(1) lookups
+    const rowsMap = new Map<string, TrafficStats>();
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (row && row.date) {
+        rowsMap.set(row.date, row);
+      }
+    }
+
     // Fill in missing dates with 0
     const results: TrafficStats[] = [];
     const currentDate = new Date(start as string);
@@ -406,7 +415,7 @@ export function getTrafficStats(startDate?: string, endDate?: string): TrafficSt
 
     while (currentDate <= lastDate) {
       const dateStr = currentDate.toISOString().split('T')[0];
-      const found = rows.find(r => r.date === dateStr);
+      const found = dateStr ? rowsMap.get(dateStr) : undefined;
 
       if (found) {
         results.push(found);
