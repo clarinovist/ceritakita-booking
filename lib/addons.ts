@@ -250,6 +250,34 @@ export function getBookingAddonsForBookings(bookingIds: string[]): Map<string, B
   return resultMap;
 }
 
+// Cache for prepared statements to optimize bulk inserts
+const insertStmtCache = new Map<number, any>();
+
+function getInsertStmt(db: any, numAddons: number) {
+  if (insertStmtCache.has(numAddons)) {
+    return insertStmtCache.get(numAddons);
+  }
+
+  let placeholders = '(?, ?, ?, ?)';
+  for (let i = 1; i < numAddons; i++) {
+    placeholders += ', (?, ?, ?, ?)';
+  }
+
+  const stmt = db.prepare(`
+    INSERT INTO booking_addons (booking_id, addon_id, quantity, price_at_booking)
+    VALUES ${placeholders}
+  `);
+
+  // Prevent unbounded cache growth
+  // Since max chunk size is 100, we only need 100 entries. 150 gives us safe headroom.
+  if (insertStmtCache.size > 150) {
+    insertStmtCache.clear();
+  }
+
+  insertStmtCache.set(numAddons, stmt);
+  return stmt;
+}
+
 /**
  * Set add-ons for a booking (replaces existing add-ons)
  */
@@ -262,13 +290,22 @@ export function setBookingAddons(bookingId: string, addons: { addon_id: string; 
 
     // Insert new add-ons
     if (addons.length > 0) {
-      const insertStmt = db.prepare(`
-        INSERT INTO booking_addons (booking_id, addon_id, quantity, price_at_booking)
-        VALUES (?, ?, ?, ?)
-      `);
+      const chunkSize = 100;
+      for (let i = 0; i < addons.length; i += chunkSize) {
+        const chunkEnd = Math.min(i + chunkSize, addons.length);
+        const currentChunkSize = chunkEnd - i;
 
-      for (const addon of addons) {
-        insertStmt.run(bookingId, addon.addon_id, addon.quantity, addon.price);
+        const params = new Array(currentChunkSize * 4);
+        let paramIdx = 0;
+        for (let j = i; j < chunkEnd; j++) {
+          params[paramIdx++] = bookingId;
+          params[paramIdx++] = addons[j].addon_id;
+          params[paramIdx++] = addons[j].quantity;
+          params[paramIdx++] = addons[j].price;
+        }
+
+        const stmt = getInsertStmt(db, currentChunkSize);
+        stmt.run(...params);
       }
     }
   });
