@@ -168,56 +168,75 @@ export async function backfillAdsHistory(
     const today = new Date();
     const url = `https://graph.facebook.com/${apiVersion}/${adAccountId}/insights`;
 
-    // Fetch data for each day in the past N days
-    for (let i = days - 1; i >= 0; i--) {
-      const targetDate = new Date(today);
-      targetDate.setDate(today.getDate() - i);
-      const dateStr = targetDate.toISOString().split('T')[0];
+    // Process days in batches to avoid rate limiting
+    const batchSize = 5;
+    const allDays = Array.from({ length: days }, (_, i) => days - 1 - i);
 
-      try {
-        const params = new URLSearchParams({
-          access_token: accessToken,
-          fields: 'spend,impressions,inline_link_clicks,reach',
-          time_range: JSON.stringify({ since: dateStr, until: dateStr }),
-          level: 'account',
-        });
+    for (let i = 0; i < allDays.length; i += batchSize) {
+      const batch = allDays.slice(i, i + batchSize);
 
-        const apiUrl = `${url}?${params.toString()}`;
-        const response = await fetch(apiUrl);
+      const batchPromises = batch.map(async (dayOffset) => {
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() - dayOffset);
+        const dateStr = targetDate.toISOString().split('T')[0];
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          errors.push(`${dateStr}: ${errorData?.error?.message || 'API error'}`);
-          logger.warn('Backfill API error for date', { date: dateStr, error: errorData });
-          continue;
+        try {
+          const params = new URLSearchParams({
+            access_token: accessToken,
+            fields: 'spend,impressions,inline_link_clicks,reach',
+            time_range: JSON.stringify({ since: dateStr, until: dateStr }),
+            level: 'account',
+          });
+
+          const apiUrl = `${url}?${params.toString()}`;
+          const response = await fetch(apiUrl);
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            logger.warn('Backfill API error for date', { date: dateStr, error: errorData });
+            return { success: false, dateStr, error: `${dateStr}: ${errorData?.error?.message || 'API error'}` };
+          }
+
+          const data = await response.json();
+
+          // Extract data or use zeros if no data
+          const insights = data.data?.[0];
+          const adsData: AdsData = {
+            spend: parseFloat(insights?.spend || '0'),
+            impressions: parseInt(insights?.impressions || '0'),
+            inlineLinkClicks: parseInt(insights?.inline_link_clicks || '0'),
+            reach: parseInt(insights?.reach || '0'),
+            date_start: dateStr,
+            date_end: dateStr,
+          };
+
+          return { success: true, dateStr, data: adsData };
+        } catch (dayError) {
+          const errMsg = dayError instanceof Error ? dayError.message : String(dayError);
+          logger.error('Backfill error for specific day', { date: dateStr, error: errMsg });
+          return { success: false, dateStr, error: `${dateStr}: ${errMsg}` };
         }
+      });
 
-        const data = await response.json();
+      const results = await Promise.all(batchPromises);
 
-        // Extract data or use zeros if no data
-        const insights = data.data?.[0];
-        const adsData: AdsData = {
-          spend: parseFloat(insights?.spend || '0'),
-          impressions: parseInt(insights?.impressions || '0'),
-          inlineLinkClicks: parseInt(insights?.inline_link_clicks || '0'),
-          reach: parseInt(insights?.reach || '0'),
-          date_start: dateStr,
-          date_end: dateStr,
-        };
+      for (const result of results) {
+        if (result.success && result.data) {
+          adsDataList.push(result.data);
+          daysBackfilled++;
+        } else if (!result.success && result.error) {
+          errors.push(result.error);
+        }
+      }
 
-        // Collect data to save in batch later
-        adsDataList.push(adsData);
-        daysBackfilled++;
-
-        // Small delay to avoid rate limiting (100ms between requests)
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-      } catch (dayError) {
-        const errMsg = dayError instanceof Error ? dayError.message : String(dayError);
-        errors.push(`${dateStr}: ${errMsg}`);
-        logger.error('Backfill error for specific day', { date: dateStr, error: errMsg });
+      // Small delay between batches to avoid rate limiting
+      if (i + batchSize < allDays.length) {
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
     }
+
+    // Sort by date_start to maintain order
+    adsDataList.sort((a, b) => (a.date_start || '').localeCompare(b.date_start || ''));
 
     // Save all collected data in one batch
     if (adsDataList.length > 0) {

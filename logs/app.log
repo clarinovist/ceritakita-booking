@@ -2864,3 +2864,12 @@
 [2026-03-25T05:21:57.148Z] [INFO] Generating daily email report
 [2026-03-25T05:21:57.152Z] [INFO] Retrieved bookings from database | Context: {"count":53}
 [2026-03-25T05:21:58.126Z] [INFO] Email sent successfully | Context: {"id":"83e3f20a-c0d9-48bf-b58b-922a9a3d9007","to":["nugroho.pramono@gmail.com"],"subject":"🟢 CeritaKita Daily Digest - 2026-03-25"}
+[2026-05-24T21:56:53.334Z] [INFO] Starting ads history backfill | Context: {"days":30}
+[2026-05-24T21:57:00.906Z] [INFO] Saved batched ads performance logs | Context: {"count":30}
+[2026-05-24T21:57:00.907Z] [INFO] Completed ads history backfill | Context: {"daysBackfilled":30,"totalDays":30,"errors":0}
+[2026-05-24T21:59:02.996Z] [INFO] Starting ads history backfill | Context: {"days":30}
+[2026-05-24T21:59:04.975Z] [INFO] Saved batched ads performance logs | Context: {"count":30}
+[2026-05-24T21:59:04.975Z] [INFO] Completed ads history backfill | Context: {"daysBackfilled":30,"totalDays":30,"errors":0}
+[2026-05-24T21:59:27.120Z] [INFO] Starting ads history backfill | Context: {"days":30}
+[2026-05-24T21:59:29.066Z] [INFO] Saved batched ads performance logs | Context: {"count":30}
+[2026-05-24T21:59:29.066Z] [INFO] Completed ads history backfill | Context: {"daysBackfilled":30,"totalDays":30,"errors":0}
