@@ -4,6 +4,7 @@ import { getBookingAddons, getBookingAddonsForBookings, setBookingAddons, type B
 import { logger, AppError } from '@/lib/logger';
 import { normalizeBookingStatus, safeString, safeNumber, executeTransaction } from '@/lib/type-utils';
 import { Booking, Payment, RescheduleHistory } from '@/lib/types';
+import type { Database } from 'better-sqlite3';
 
 interface BookingRow {
   id: string;
@@ -44,6 +45,17 @@ interface RescheduleHistoryRow {
   rescheduled_at: string;
   reason?: string | null;
 }
+
+// Helper types for bulk insert operations
+type PaymentInsertValues = [
+  string, // booking_id
+  string, // date
+  number, // amount
+  string | null, // note
+  string | null, // proof_filename
+  string | null, // proof_url
+  string // storage_backend
+];
 
 /**
  * Convert database row to Booking object with type safety
@@ -329,6 +341,26 @@ export function readBooking(id: string): Booking | null {
 }
 
 /**
+ * Helper to bulk insert payments
+ * Exported for testing but primarily used internally
+ */
+export function bulkInsertPayments(db: Database, payments: PaymentInsertValues[], chunkSize = 100) {
+  if (!payments || payments.length === 0) return;
+
+  for (let i = 0; i < payments.length; i += chunkSize) {
+    const chunk = payments.slice(i, i + chunkSize);
+    const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(',');
+    const flatValues = chunk.flat();
+
+    const stmt = db.prepare(`
+      INSERT INTO payments (booking_id, date, amount, note, proof_filename, proof_url, storage_backend)
+      VALUES ${placeholders}
+    `);
+    stmt.run(...flatValues);
+  }
+}
+
+/**
  * Write/Update bookings
  * This replaces the entire booking (used for updates)
  * Uses transaction with rollback support
@@ -345,31 +377,18 @@ export async function writeData(bookings: Booking[]): Promise<void> {
         db.prepare('DELETE FROM payments').run();
         db.prepare('DELETE FROM bookings').run();
 
-        // Insert all bookings
-        const insertBooking = db.prepare(`
-          INSERT INTO bookings (
-            id, created_at, status,
-            customer_name, customer_whatsapp, customer_category, customer_service_id,
-            booking_date, booking_notes, booking_location_link, drive_link,
-            total_price, service_base_price, base_discount, addons_total, coupon_discount, coupon_code,
-            photographer_id
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
+        // Check if there's anything to insert
+        if (bookings.length === 0) return;
 
-        const insertPayment = db.prepare(`
-          INSERT INTO payments (booking_id, date, amount, note, proof_filename, proof_url, storage_backend)
-          VALUES (?, ?, ?, ?, ?, ?, ?)
-        `);
-
-        for (const booking of bookings) {
-          // Validate and normalize status
-          const normalizedStatus = normalizeBookingStatus(booking.status);
-
-          // Insert booking
-          insertBooking.run(
+        // Insert all bookings using a single bulk insert
+        const chunkSize = 100; // Limit parameters (18 per booking)
+        for (let i = 0; i < bookings.length; i += chunkSize) {
+          const chunk = bookings.slice(i, i + chunkSize);
+          const placeholders = chunk.map(() => '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').join(',');
+          const flatValues = chunk.flatMap(booking => [
             booking.id,
             booking.created_at,
-            normalizedStatus,
+            normalizeBookingStatus(booking.status),
             safeString(booking.customer.name),
             safeString(booking.customer.whatsapp),
             safeString(booking.customer.category),
@@ -385,21 +404,39 @@ export async function writeData(bookings: Booking[]): Promise<void> {
             booking.finance.coupon_discount ?? null,
             booking.finance.coupon_code || null,
             booking.photographer_id || null
-          );
+          ]);
 
-          // Insert payments
-          for (const payment of booking.finance.payments) {
-            insertPayment.run(
-              booking.id,
-              payment.date,
-              safeNumber(payment.amount),
-              payment.note || null,
-              payment.proof_filename || null,
-              payment.proof_url || null,
-              payment.storage_backend || 'local'
-            );
+          const insertBookingStmt = db.prepare(`
+            INSERT INTO bookings (
+              id, created_at, status,
+              customer_name, customer_whatsapp, customer_category, customer_service_id,
+              booking_date, booking_notes, booking_location_link, drive_link,
+              total_price, service_base_price, base_discount, addons_total, coupon_discount, coupon_code,
+              photographer_id
+            ) VALUES ${placeholders}
+          `);
+          insertBookingStmt.run(...flatValues);
+        }
+
+        // Collect and bulk insert payments
+        const allPayments: PaymentInsertValues[] = [];
+        for (const booking of bookings) {
+          if (booking.finance.payments && booking.finance.payments.length > 0) {
+            for (const payment of booking.finance.payments) {
+              allPayments.push([
+                booking.id,
+                payment.date,
+                safeNumber(payment.amount),
+                payment.note || null,
+                payment.proof_filename || null,
+                payment.proof_url || null,
+                payment.storage_backend || 'local'
+              ]);
+            }
           }
         }
+
+        bulkInsertPayments(db, allPayments, 100);
       });
 
       transaction();
@@ -465,13 +502,9 @@ export async function createBooking(booking: Booking): Promise<void> {
 
         // Insert payments
         if (booking.finance.payments.length > 0) {
-          const paymentStmt = db.prepare(`
-                INSERT INTO payments (booking_id, date, amount, note, proof_filename, proof_url, storage_backend)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-              `);
-
+          const paymentValues: PaymentInsertValues[] = [];
           for (const payment of booking.finance.payments) {
-            paymentStmt.run(
+            paymentValues.push([
               booking.id,
               payment.date,
               safeNumber(payment.amount),
@@ -479,8 +512,9 @@ export async function createBooking(booking: Booking): Promise<void> {
               payment.proof_filename || null,
               payment.proof_url || null,
               payment.storage_backend || 'local'
-            );
+            ]);
           }
+          bulkInsertPayments(db, paymentValues, 100);
         }
 
         // Insert add-ons
@@ -571,13 +605,9 @@ export async function updateBooking(booking: Booking): Promise<void> {
         db.prepare('DELETE FROM payments WHERE booking_id = ?').run(booking.id);
 
         if (booking.finance.payments.length > 0) {
-          const paymentStmt = db.prepare(`
-                INSERT INTO payments (booking_id, date, amount, note, proof_filename, proof_url, storage_backend)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-              `);
-
+          const paymentValues: PaymentInsertValues[] = [];
           for (const payment of booking.finance.payments) {
-            paymentStmt.run(
+            paymentValues.push([
               booking.id,
               payment.date,
               safeNumber(payment.amount),
@@ -585,8 +615,9 @@ export async function updateBooking(booking: Booking): Promise<void> {
               payment.proof_filename || null,
               payment.proof_url || null,
               payment.storage_backend || 'local'
-            );
+            ]);
           }
+          bulkInsertPayments(db, paymentValues, 100);
         }
 
         // Update add-ons
