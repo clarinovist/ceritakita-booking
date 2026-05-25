@@ -6,12 +6,13 @@ import {
   updateLead,
   deleteLead
 } from '@/lib/leads';
-import type { LeadUpdateData } from '@/lib/types';
+import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
+import { leadIdSchema, leadUpdateSchema } from '@/lib/validation/leads';
 
 interface Context {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
@@ -22,23 +23,24 @@ export async function GET(_request: NextRequest, { params }: Context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
-    const { id } = await params;
-    const lead = await getLeadById(id);
+    const paramData = leadIdSchema.safeParse(await params);
+    if (!paramData.success) {
+      const validationError = createValidationError(paramData.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
 
+    const lead = await getLeadById(paramData.data.id);
     if (!lead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      throw new AppError('Lead not found', 404, 'NOT_FOUND');
     }
 
     return NextResponse.json(lead);
   } catch (error) {
-    console.error('Error fetching lead:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch lead' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -50,26 +52,32 @@ export async function PUT(request: NextRequest, { params }: Context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
-    const { id } = await params;
-    const data: LeadUpdateData = await request.json();
+    const paramData = leadIdSchema.safeParse(await params);
+    if (!paramData.success) {
+      const validationError = createValidationError(paramData.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
 
-    // Check if lead exists
-    const existingLead = await getLeadById(id);
+    const body = await request.json();
+    const validationResult = leadUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
+
+    const existingLead = await getLeadById(paramData.data.id);
     if (!existingLead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      throw new AppError('Lead not found', 404, 'NOT_FOUND');
     }
 
-    const updatedLead = await updateLead(id, data);
+    const updatedLead = await updateLead(paramData.data.id, validationResult.data);
     return NextResponse.json(updatedLead);
   } catch (error) {
-    console.error('Error updating lead:', error);
-    return NextResponse.json(
-      { error: 'Failed to update lead' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -81,32 +89,28 @@ export async function DELETE(_request: NextRequest, { params }: Context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
-    const { id } = await params;
+    const paramData = leadIdSchema.safeParse(await params);
+    if (!paramData.success) {
+      const validationError = createValidationError(paramData.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
 
-    // Check if lead exists
-    const existingLead = await getLeadById(id);
+    const existingLead = await getLeadById(paramData.data.id);
     if (!existingLead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      throw new AppError('Lead not found', 404, 'NOT_FOUND');
     }
 
-    const success = await deleteLead(id);
-
+    const success = await deleteLead(paramData.data.id);
     if (!success) {
-      return NextResponse.json(
-        { error: 'Failed to delete lead' },
-        { status: 500 }
-      );
+      throw new AppError('Failed to delete lead', 500, 'DELETE_FAILED');
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting lead:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete lead' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

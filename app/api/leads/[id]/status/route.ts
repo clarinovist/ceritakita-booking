@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { updateLeadStatus, getLeadById } from '@/lib/leads';
-import type { LeadStatus } from '@/lib/types';
+import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
+import { leadIdSchema, leadStatusUpdateSchema } from '@/lib/validation/leads';
 
 interface Context {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
@@ -18,34 +19,31 @@ export async function PATCH(request: NextRequest, { params }: Context) {
   try {
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
-    const { id } = await params;
-    const { status } = await request.json();
-
-    // Validate status
-    const validStatuses: LeadStatus[] = ['New', 'Contacted', 'Follow Up', 'Won', 'Lost', 'Converted'];
-    if (!validStatuses.includes(status)) {
-      return NextResponse.json(
-        { error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` },
-        { status: 400 }
-      );
+    const paramData = leadIdSchema.safeParse(await params);
+    if (!paramData.success) {
+      const validationError = createValidationError(paramData.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
 
-    // Check if lead exists
-    const existingLead = await getLeadById(id);
+    const body = await request.json();
+    const validationResult = leadStatusUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
+
+    const existingLead = await getLeadById(paramData.data.id);
     if (!existingLead) {
-      return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
+      throw new AppError('Lead not found', 404, 'NOT_FOUND');
     }
 
-    const updatedLead = await updateLeadStatus(id, status);
+    const updatedLead = await updateLeadStatus(paramData.data.id, validationResult.data.status);
     return NextResponse.json(updatedLead);
   } catch (error) {
-    console.error('Error updating lead status:', error);
-    return NextResponse.json(
-      { error: 'Failed to update lead status' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }

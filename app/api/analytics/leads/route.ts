@@ -1,52 +1,52 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
+import { analyticsLeadsQuerySchema } from '@/lib/validation/leads';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-    // Authentication check
-    const authError = await requireAuth(req);
-    if (authError) return authError;
+  const authError = await requireAuth(req);
+  if (authError) return authError;
 
-    const { searchParams } = new URL(req.url);
-    const start = searchParams.get('start');
-    const end = searchParams.get('end');
+  const { searchParams } = new URL(req.url);
+  const query = {
+    start: searchParams.get('start'),
+    end: searchParams.get('end')
+  };
 
-    if (!start || !end) {
-        return NextResponse.json({ error: 'Missing date range (start, end)' }, { status: 400 });
-    }
+  const validationResult = analyticsLeadsQuerySchema.safeParse(query);
+  if (!validationResult.success) {
+    const validationError = createValidationError(validationResult.error.issues);
+    return NextResponse.json(validationError.error, { status: validationError.statusCode });
+  }
 
-    // Ensure robust date handling
-    // If end date is just YYYY-MM-DD, we want to include the whole day, so append time if missing
-    const startDateStr = start.includes('T') ? start : `${start} 00:00:00`;
-    const endDateStr = end.includes('T') ? end : `${end} 23:59:59`;
+  const { start, end } = validationResult.data;
+  const startDateStr = start.includes('T') ? start : `${start} 00:00:00`;
+  const endDateStr = end.includes('T') ? end : `${end} 23:59:59`;
 
-    try {
-        const db = getDb();
+  try {
+    const db = getDb();
 
-        // 1. Total Leads
-        const totalLeadsQuery = db.prepare(`
+    const totalLeadsQuery = db.prepare(`
       SELECT COUNT(*) as count 
       FROM leads 
       WHERE created_at >= ? AND created_at <= ?
     `);
-        const totalLeadsResult = totalLeadsQuery.get(startDateStr, endDateStr) as { count: number };
-        const totalLeads = totalLeadsResult.count;
+    const totalLeadsResult = totalLeadsQuery.get(startDateStr, endDateStr) as { count: number };
+    const totalLeads = totalLeadsResult.count;
 
-        // 2. Total Won
-        const totalWonQuery = db.prepare(`
+    const totalWonQuery = db.prepare(`
       SELECT COUNT(*) as count 
       FROM leads 
       WHERE status IN ('Won', 'Converted') 
       AND created_at >= ? AND created_at <= ?
     `);
-        const totalWonResult = totalWonQuery.get(startDateStr, endDateStr) as { count: number };
-        const totalWon = totalWonResult.count;
+    const totalWonResult = totalWonQuery.get(startDateStr, endDateStr) as { count: number };
+    const totalWon = totalWonResult.count;
 
-        // 3. By Agent Stats
-        // Left join users to get names. Handle unassigned as well.
-        const agentStatsQuery = db.prepare(`
+    const agentStatsQuery = db.prepare(`
       SELECT 
         u.username,
         l.assigned_to,
@@ -59,39 +59,38 @@ export async function GET(req: NextRequest) {
       ORDER BY total DESC
     `);
 
-        const agentStatsRaw = agentStatsQuery.all(startDateStr, endDateStr) as Array<{
-            username: string | null,
-            assigned_to: string | null,
-            total: number,
-            won: number
-        }>;
+    const agentStatsRaw = agentStatsQuery.all(startDateStr, endDateStr) as Array<{
+      username: string | null,
+      assigned_to: string | null,
+      total: number,
+      won: number
+    }>;
 
-        // Process and format
-        const by_agent = agentStatsRaw.map(stat => {
-            const name = stat.username || (stat.assigned_to ? 'Unknown Admin' : 'Unassigned');
-            const conversion_rate = stat.total > 0 ? (stat.won / stat.total) * 100 : 0;
+    const by_agent = agentStatsRaw.map(stat => {
+      const name = stat.username || (stat.assigned_to ? 'Unknown Admin' : 'Unassigned');
+      const conversion_rate = stat.total > 0 ? (stat.won / stat.total) * 100 : 0;
 
-            return {
-                name,
-                assigned_to: stat.assigned_to, // Keep ID for reference if needed
-                total: stat.total,
-                won: stat.won,
-                conversion_rate
-            };
-        });
+      return {
+        name,
+        assigned_to: stat.assigned_to,
+        total: stat.total,
+        won: stat.won,
+        conversion_rate
+      };
+    });
 
-        // Calculate global conversion rate
-        const globalConversionRate = totalLeads > 0 ? (totalWon / totalLeads) * 100 : 0;
+    const globalConversionRate = totalLeads > 0 ? (totalWon / totalLeads) * 100 : 0;
 
-        return NextResponse.json({
-            total_leads: totalLeads,
-            total_won: totalWon,
-            conversion_rate: globalConversionRate,
-            by_agent
-        });
-
-    } catch (error) {
-        console.error('Analytics API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
-    }
+    return NextResponse.json({
+      total_leads: totalLeads,
+      total_won: totalWon,
+      conversion_rate: globalConversionRate,
+      by_agent
+    });
+  } catch (error) {
+    const { error: errorResponse, statusCode } = createErrorResponse(
+      error instanceof Error ? error : new AppError('Internal Server Error')
+    );
+    return NextResponse.json(errorResponse, { status: statusCode });
+  }
 }
