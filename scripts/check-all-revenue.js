@@ -58,7 +58,7 @@ bookings.forEach(booking => {
 
   const totalPrice = booking.total_price || 0;
   const paidAmount = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-  const outstanding = Math.max(0, totalPrice - paidAmount);
+  const outstanding = totalPrice - paidAmount;
 
   totalRevenue += totalPrice;
   totalPaid += paidAmount;

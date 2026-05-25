@@ -112,11 +112,11 @@ export default function DashboardMetrics({ sessionBookings, createdBookings, all
     const outstandingBalance = sessionBookings
         .filter(b => b.status !== 'Cancelled')
         .reduce((total, b) => {
-            const bookingTotal = b.finance.total_price || 0;
-            const bookingPaid = (b.finance.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
-            const bookingOutstanding = Math.max(0, bookingTotal - bookingPaid);
-            return total + bookingOutstanding;
-        }, 0);
+        const bookingTotal = b.finance.total_price || 0;
+        const bookingPaid = (b.finance.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+        const bookingOutstanding = Math.max(0, bookingTotal - bookingPaid);
+        return total + bookingOutstanding;
+    }, 0);
 
     const categories = [
         'Wedding', 'Prewedding Bronze', 'Prewedding Gold', 'Prewedding Silver',

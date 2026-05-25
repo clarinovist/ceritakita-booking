@@ -3,7 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { formatDateTime } from '@/utils/dateFormatter';
-import type { Booking, Addon, BookingUpdate } from '@/lib/types';
+import type { Booking, Addon } from '@/lib/types';
 import type { Photographer } from '@/lib/photographers';
 
 interface BookingDetailModalProps {
@@ -13,7 +13,7 @@ interface BookingDetailModalProps {
   onClose: () => void;
   onDelete: (id: string) => void;
   onUpdateStatus: (id: string, status: Booking['status']) => void;
-  onUpdate: (id: string, updates: BookingUpdate) => void;
+  onUpdate: (id: string, updates: Partial<Booking>) => void;
   onUpdateFinance: (id: string, finance: Booking['finance']) => void;
   onOpenRescheduleModal: (bookingId: string, currentDate: string) => void;
   calculateFinance: (booking: Booking) => { total: number; paid: number; balance: number; isPaidOff: boolean };
@@ -41,26 +41,11 @@ export function BookingDetailModal({
   getOrReconstructBreakdown,
 }: BookingDetailModalProps) {
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null);
-  const [driveLinkInput, setDriveLinkInput] = React.useState(booking?.booking?.drive_link || '');
-  const [isSaved, setIsSaved] = React.useState(false);
-
-  React.useEffect(() => {
-    setDriveLinkInput(booking?.booking?.drive_link || '');
-    setIsSaved(false);
-  }, [booking?.id, booking?.booking?.drive_link]);
 
   if (!booking || !booking.booking) return null;
 
   const finance = calculateFinance(booking);
   const breakdown = getOrReconstructBreakdown(booking);
-
-  const handleSaveDriveLink = () => {
-    onUpdate(booking.id, { 
-      booking: { ...booking.booking, drive_link: driveLinkInput }
-    });
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
-  };
 
   return (
     <>
@@ -140,23 +125,16 @@ export function BookingDetailModal({
               <div>
                 <h3 className="font-semibold text-gray-500 text-sm uppercase mb-2">Google Drive Photos</h3>
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      placeholder="https://drive.google.com/..."
-                      value={driveLinkInput}
-                      onChange={(e) => setDriveLinkInput(e.target.value)}
-                      className="flex-1 p-2 border rounded text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    />
-                    <button
-                      onClick={handleSaveDriveLink}
-                      className={`px-4 py-2 rounded text-sm font-medium transition-colors ${
-                        isSaved ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'
-                      }`}
-                    >
-                      {isSaved ? 'Tersimpan ✓' : 'Simpan'}
-                    </button>
-                  </div>
+                  <input
+                    type="url"
+                    placeholder="https://drive.google.com/..."
+                    defaultValue={booking.booking.drive_link || ''}
+                    onBlur={(e) => onUpdate(booking.id, {
+                      booking: { ...booking.booking, drive_link: e.target.value }
+                    })}
+                    disabled={booking.status === 'Completed'}
+                    className={`w-full p-2 border rounded text-sm ${booking.status === 'Completed' ? 'bg-gray-100 cursor-not-allowed' : 'bg-white'}`}
+                  />
                   {booking.booking.drive_link && (
                     <a href={booking.booking.drive_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline block mt-2 text-sm">
                       Test Link

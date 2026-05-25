@@ -44,7 +44,6 @@ export interface BookingUpdate {
     date: string;
     notes: string;
     location_link: string;
-    drive_link?: string;
   };
 
   /** Updated customer data */
@@ -57,14 +56,6 @@ export interface BookingUpdate {
 
   /** Updated photographer ID */
   photographer_id?: string;
-
-  /** Updated add-ons */
-  addons?: Array<{
-    addon_id: string;
-    addon_name: string;
-    quantity: number;
-    price_at_booking: number;
-  }>;
 }
 
 // File upload types

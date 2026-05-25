@@ -1,0 +1,2 @@
+sed -i 's/const outstandingBalance = completedSessions.reduce((total, b) => {/const outstandingBalance = sessionBookings\n        .filter(b => b.status !== '"'"'Cancelled'"'"')\n        .reduce((total, b) => {/' components/DashboardMetrics.tsx
+sed -i 's/const bookingPaid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);/const bookingPaid = (b.finance.payments || []).reduce((sum, p) => sum + (p.amount || 0), 0);/' components/DashboardMetrics.tsx
