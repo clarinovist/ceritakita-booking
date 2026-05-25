@@ -3,18 +3,28 @@ import { requireAuth } from '@/lib/auth';
 import { uploadToB2 } from '@/lib/b2-s3-client';
 import { randomUUID } from 'crypto';
 import { getDb } from '@/lib/db';
-import { logger, createErrorResponse } from '@/lib/logger';
+import { AppError, logger, createErrorResponse, createValidationError } from '@/lib/logger';
+import {
+  portfolioQuerySchema,
+  portfolioDeleteSchema,
+  portfolioPatchSchema,
+  validateImageUpload,
+} from '@/lib/validation/api-routes';
 
-// GET - Fetch portfolio images for a service
 export async function GET(req: NextRequest) {
   let serviceId: string | null = null;
   try {
     const { searchParams } = new URL(req.url);
-    serviceId = searchParams.get('serviceId');
+    const validationResult = portfolioQuerySchema.safeParse({
+      serviceId: searchParams.get('serviceId'),
+    });
 
-    if (!serviceId) {
-      return NextResponse.json({ error: 'serviceId required' }, { status: 400 });
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
+
+    serviceId = validationResult.data.serviceId;
 
     const db = getDb();
     const images = db.prepare(`
@@ -31,7 +41,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST - Upload portfolio image
 export async function POST(req: NextRequest) {
   let serviceId: string | null = null;
   try {
@@ -39,30 +48,30 @@ export async function POST(req: NextRequest) {
     if (authCheck) return authCheck;
 
     const formData = await req.formData();
-    const file = formData.get('file') as File;
-    serviceId = formData.get('serviceId') as string;
+    const file = formData.get('file') as File | null;
 
-    if (!file || !serviceId) {
-      return NextResponse.json({ error: 'File and serviceId required' }, { status: 400 });
+    const validationResult = portfolioQuerySchema.safeParse({
+      serviceId: formData.get('serviceId'),
+    });
+
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type' }, { status: 400 });
+    const fileValidation = validateImageUpload(file, 'File');
+    if (!fileValidation.success) {
+      const appError = new AppError(fileValidation.error, 400, fileValidation.code);
+      const { error: errorResponse, statusCode } = createErrorResponse(appError);
+      return NextResponse.json(errorResponse, { status: statusCode });
     }
 
-    // Convert file to buffer
-    const bytes = await file.arrayBuffer();
+    serviceId = validationResult.data.serviceId;
+    const bytes = await file!.arrayBuffer();
     const buffer = Buffer.from(bytes);
+    const key = `portfolio/${serviceId}/${randomUUID()}-${file!.name}`;
+    const imageUrl = await uploadToB2(buffer, key, file!.type);
 
-    // Generate unique key
-    const key = `portfolio/${serviceId}/${randomUUID()}-${file.name}`;
-
-    // Upload to B2
-    const imageUrl = await uploadToB2(buffer, key, file.type);
-
-    // Save to database
     const db = getDb();
     const newId = randomUUID();
     db.prepare(`
@@ -82,7 +91,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// DELETE - Remove portfolio image
 export async function DELETE(req: NextRequest) {
   let id: string | null = null;
   try {
@@ -90,18 +98,20 @@ export async function DELETE(req: NextRequest) {
     if (authCheck) return authCheck;
 
     const body = await req.json();
-    id = body.id;
-
-    if (!id) {
-      return NextResponse.json({ error: 'ID required' }, { status: 400 });
+    const validationResult = portfolioDeleteSchema.safeParse(body);
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
 
+    id = validationResult.data.id;
     const db = getDb();
+    const existing = db.prepare('SELECT image_url FROM portfolio_images WHERE id = ?').get(id) as { image_url: string } | undefined;
 
-    // Get image URL for potential deletion from B2 (optional)
-    db.prepare('SELECT image_url FROM portfolio_images WHERE id = ?').get(id);
+    if (!existing) {
+      throw new AppError('Portfolio image not found', 404, 'NOT_FOUND');
+    }
 
-    // Delete from database
     db.prepare('DELETE FROM portfolio_images WHERE id = ?').run(id);
 
     return NextResponse.json({ success: true });
@@ -112,7 +122,6 @@ export async function DELETE(req: NextRequest) {
   }
 }
 
-// PATCH - Update portfolio image (toggle visibility)
 export async function PATCH(req: NextRequest) {
   let id: string | null = null;
   try {
@@ -120,21 +129,25 @@ export async function PATCH(req: NextRequest) {
     if (authCheck) return authCheck;
 
     const body = await req.json();
-    id = body.id;
-    const { is_active } = body;
-
-    if (!id || is_active === undefined) {
-      return NextResponse.json({ error: 'ID and is_active required' }, { status: 400 });
+    const validationResult = portfolioPatchSchema.safeParse(body);
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
 
+    id = validationResult.data.id;
     const db = getDb();
+    const existing = db.prepare('SELECT id FROM portfolio_images WHERE id = ?').get(id) as { id: string } | undefined;
 
-    // Update is_active
+    if (!existing) {
+      throw new AppError('Portfolio image not found', 404, 'NOT_FOUND');
+    }
+
     db.prepare(`
       UPDATE portfolio_images 
       SET is_active = ? 
       WHERE id = ?
-    `).run(is_active ? 1 : 0, id);
+    `).run(validationResult.data.is_active ? 1 : 0, id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

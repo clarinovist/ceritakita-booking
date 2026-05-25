@@ -3,7 +3,8 @@ import { requireAuth } from '@/lib/auth';
 import { uploadToB2 } from '@/lib/b2-s3-client';
 import { randomUUID } from 'crypto';
 import { getDb } from '@/lib/db';
-import { logger, createErrorResponse } from '@/lib/logger';
+import { AppError, logger, createErrorResponse, createValidationError } from '@/lib/logger';
+import { paymentSettingsSchema, validateImageUpload } from '@/lib/validation/api-routes';
 
 interface PaymentMethod {
   id: string;
@@ -14,12 +15,11 @@ interface PaymentMethod {
   updated_at: string;
 }
 
-// GET - Fetch payment settings (returns first active payment method)
 export async function GET() {
   try {
     const db = getDb();
     const method = db.prepare('SELECT * FROM payment_methods WHERE is_active = 1 ORDER BY display_order ASC LIMIT 1').get() as PaymentMethod | null;
-    
+
     if (method) {
       return NextResponse.json({
         id: method.id,
@@ -30,8 +30,7 @@ export async function GET() {
         updated_at: method.updated_at
       });
     }
-    
-    // Return empty default if no payment methods exist
+
     return NextResponse.json({
       id: 'default',
       bank_name: '',
@@ -47,29 +46,33 @@ export async function GET() {
   }
 }
 
-// POST - Update payment settings (creates/updates payment method)
 export async function POST(req: NextRequest) {
   try {
     const authCheck = await requireAuth(req);
     if (authCheck) return authCheck;
 
     const formData = await req.formData();
-    const bankName = formData.get('bank_name') as string;
-    const accountName = formData.get('account_name') as string;
-    const accountNumber = formData.get('account_number') as string;
     const qrisFile = formData.get('qris_file') as File | null;
 
-    if (!bankName || !accountName || !accountNumber) {
-      return NextResponse.json({ error: 'Bank name, account name, and account number required' }, { status: 400 });
+    const validationResult = paymentSettingsSchema.safeParse({
+      bank_name: formData.get('bank_name'),
+      account_name: formData.get('account_name'),
+      account_number: formData.get('account_number'),
+    });
+
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
 
     let qrisImageUrl: string | null = null;
 
-    // Upload QRIS image if provided
     if (qrisFile) {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(qrisFile.type)) {
-        return NextResponse.json({ error: 'Invalid QRIS file type' }, { status: 400 });
+      const uploadValidation = validateImageUpload(qrisFile, 'QRIS file');
+      if (!uploadValidation.success) {
+        const appError = new AppError(uploadValidation.error, 400, uploadValidation.code);
+        const { error: errorResponse, statusCode } = createErrorResponse(appError);
+        return NextResponse.json(errorResponse, { status: statusCode });
       }
 
       const bytes = await qrisFile.arrayBuffer();
@@ -78,26 +81,23 @@ export async function POST(req: NextRequest) {
       qrisImageUrl = await uploadToB2(buffer, key, qrisFile.type);
     }
 
+    const { bank_name, account_name, account_number } = validationResult.data;
     const db = getDb();
     const methodId = randomUUID();
-    
-    // Check if payment methods exist
     const existing = db.prepare('SELECT id FROM payment_methods WHERE is_active = 1 LIMIT 1').get() as { id: string } | null;
-    
+
     if (existing) {
-      // Update existing
       db.prepare(`
         UPDATE payment_methods
         SET name = ?, account_name = ?, account_number = ?,
             qris_image_url = COALESCE(?, qris_image_url), updated_at = ?
         WHERE id = ?
-      `).run(bankName, accountName, accountNumber, qrisImageUrl, new Date().toISOString(), existing.id);
+      `).run(bank_name, account_name, account_number, qrisImageUrl, new Date().toISOString(), existing.id);
     } else {
-      // Create new
       db.prepare(`
         INSERT INTO payment_methods (id, name, provider_name, account_name, account_number, qris_image_url, display_order, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(methodId, bankName, bankName, accountName, accountNumber, qrisImageUrl, 0, new Date().toISOString());
+      `).run(methodId, bank_name, bank_name, account_name, account_number, qrisImageUrl, 0, new Date().toISOString());
     }
 
     return NextResponse.json({ success: true });
