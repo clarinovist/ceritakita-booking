@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import {
-    createLeadInteraction,
-    getLeadInteractions
+  createLeadInteraction,
+  getLeadInteractions
 } from '@/lib/lead-interactions';
 import { getLeadById } from '@/lib/leads';
 import { sendContactEvent } from '@/lib/meta-capi';
-import type { LeadInteractionFormData } from '@/lib/types/leads';
+import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
+import { leadIdSchema, leadInteractionSchema } from '@/lib/validation/leads';
 
 interface Context {
-    params: {
-        id: string;
-    };
+  params: Promise<{
+    id: string;
+  }>;
 }
 
 /**
@@ -20,23 +21,24 @@ interface Context {
  * Get all interactions for a lead
  */
 export async function GET(_request: NextRequest, { params }: Context) {
-    try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const { id } = await params;
-        const interactions = await getLeadInteractions(id);
-
-        return NextResponse.json(interactions);
-    } catch (error) {
-        console.error('Error fetching interactions:', error);
-        return NextResponse.json(
-            { error: 'Failed to fetch interactions' },
-            { status: 500 }
-        );
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
+
+    const paramData = leadIdSchema.safeParse(await params);
+    if (!paramData.success) {
+      const validationError = createValidationError(paramData.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
+
+    const interactions = await getLeadInteractions(paramData.data.id);
+    return NextResponse.json(interactions);
+  } catch (error) {
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
+  }
 }
 
 /**
@@ -44,52 +46,50 @@ export async function GET(_request: NextRequest, { params }: Context) {
  * Create a new interaction log and optionally send to Meta CAPI
  */
 export async function POST(request: NextRequest, { params }: Context) {
-    try {
-        const session = await getServerSession(authOptions);
-        if (!session) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-
-        const { id } = await params;
-        const data: LeadInteractionFormData & { send_to_meta?: boolean } = await request.json();
-
-        // Validate lead exists
-        const lead = await getLeadById(id);
-        if (!lead) {
-            return NextResponse.json({ error: 'Lead not found' }, { status: 404 });
-        }
-
-        // Create interaction log
-        const interaction = await createLeadInteraction(
-            id,
-            {
-                interaction_type: data.interaction_type,
-                interaction_content: data.interaction_content
-            },
-            (session.user as any)?.id || 'unknown'
-        );
-
-        // Send to Meta CAPI if requested (quality interactions only)
-        if (data.send_to_meta && data.interaction_type === 'WhatsApp') {
-            const metaResult = await sendContactEvent(
-                lead.name,
-                lead.whatsapp,
-                lead.email || undefined
-            );
-
-            // Note: In a real implementation we might update the interaction to link the meta_event_id
-            // but we do this fire-and-forget style here to not block the UI
-            if (metaResult.success && metaResult.event_id) {
-                // Optionally update the DB async later
-            }
-        }
-
-        return NextResponse.json(interaction, { status: 201 });
-    } catch (error) {
-        console.error('Error creating interaction:', error);
-        return NextResponse.json(
-            { error: 'Failed to create interaction' },
-            { status: 500 }
-        );
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
+
+    const paramData = leadIdSchema.safeParse(await params);
+    if (!paramData.success) {
+      const validationError = createValidationError(paramData.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
+
+    const body = await request.json();
+    const validationResult = leadInteractionSchema.safeParse(body);
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
+    }
+
+    const lead = await getLeadById(paramData.data.id);
+    if (!lead) {
+      throw new AppError('Lead not found', 404, 'NOT_FOUND');
+    }
+
+    const interaction = await createLeadInteraction(
+      paramData.data.id,
+      {
+        interaction_type: validationResult.data.interaction_type,
+        interaction_content: validationResult.data.interaction_content
+      },
+      (session.user as { id?: string } | undefined)?.id || 'unknown'
+    );
+
+    if (validationResult.data.send_to_meta && validationResult.data.interaction_type === 'WhatsApp') {
+      await sendContactEvent(
+        lead.name,
+        lead.whatsapp,
+        lead.email || undefined
+      );
+    }
+
+    return NextResponse.json(interaction, { status: 201 });
+  } catch (error) {
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
+  }
 }

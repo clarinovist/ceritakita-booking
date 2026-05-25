@@ -6,9 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RateLimitConfig {
-  windowMs: number;      // Time window in milliseconds
-  maxRequests: number;   // Max requests per window
-  key?: string;          // Custom key for grouping
+  windowMs: number;
+  maxRequests: number;
+  key?: string;
 }
 
 interface RateLimitData {
@@ -16,10 +16,8 @@ interface RateLimitData {
   resetTime: number;
 }
 
-// In-memory store (consider Redis for production)
 const store = new Map<string, RateLimitData>();
 
-// Cleanup old entries periodically
 setInterval(() => {
   const now = Date.now();
   store.forEach((data, key) => {
@@ -27,27 +25,28 @@ setInterval(() => {
       store.delete(key);
     }
   });
-}, 60000); // Cleanup every minute
+}, 60000);
 
-/**
- * Generate rate limit key from request
- */
+function getClientIp(req: NextRequest): string {
+  const forwardedFor = req.headers.get('x-forwarded-for');
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim() || 'unknown-ip';
+  }
+
+  return req.headers.get('x-real-ip') || 'unknown-ip';
+}
+
 function getRateLimitKey(req: NextRequest, customKey?: string): string {
-  if (customKey) return customKey;
-
-  const ip = req.headers.get('x-forwarded-for') ||
-    req.headers.get('x-real-ip') ||
-    'unknown-ip';
-
+  const ip = getClientIp(req);
   const path = new URL(req.url).pathname;
+
+  if (customKey) {
+    return `${customKey}:${ip}`;
+  }
 
   return `rl:${ip}:${path}`;
 }
 
-/**
- * Check rate limit for a request
- * Returns true if allowed, false if rate limited
- */
 export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
   allowed: boolean;
   headers: Record<string, string>;
@@ -58,7 +57,6 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
   const existing = store.get(key);
 
   if (!existing || existing.resetTime < now) {
-    // New window
     store.set(key, {
       count: 1,
       resetTime: now + config.windowMs
@@ -75,7 +73,6 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
   }
 
   if (existing.count >= config.maxRequests) {
-    // Rate limited
     return {
       allowed: false,
       headers: {
@@ -87,7 +84,6 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
     };
   }
 
-  // Increment count
   existing.count++;
   store.set(key, existing);
 
@@ -101,9 +97,6 @@ export function checkRateLimit(req: NextRequest, config: RateLimitConfig): {
   };
 }
 
-/**
- * Express-style middleware for rate limiting
- */
 export function rateLimitMiddleware(config: RateLimitConfig) {
   return (req: NextRequest): NextResponse | null => {
     const result = checkRateLimit(req, config);
@@ -122,59 +115,46 @@ export function rateLimitMiddleware(config: RateLimitConfig) {
       );
     }
 
-    return null; // Continue processing
+    return null;
   };
 }
 
-/**
- * Pre-configured rate limiters for common scenarios
- */
 export const rateLimiters = {
-  // Auth Login: For login attempts
   authlogin: (req: NextRequest) => {
     return rateLimitMiddleware({
-      windowMs: 60 * 1000, // 1 minute
+      windowMs: 60 * 1000,
       maxRequests: 60,
       key: 'rl:auth:login'
     })(req);
   },
 
-  // Moderate: For API endpoints
   moderate: (req: NextRequest) => {
     return rateLimitMiddleware({
-      windowMs: 15 * 60 * 1000, // 15 minutes
+      windowMs: 15 * 60 * 1000,
       maxRequests: 300
     })(req);
   },
 
-  // Lenient: For general requests
   lenient: (req: NextRequest) => {
     return rateLimitMiddleware({
-      windowMs: 60 * 1000, // 1 minute
+      windowMs: 60 * 1000,
       maxRequests: 300
     })(req);
   },
 
-  // File uploads: More restrictive due to size
   fileUpload: (req: NextRequest) => {
     return rateLimitMiddleware({
-      windowMs: 60 * 60 * 1000, // 1 hour
+      windowMs: 60 * 60 * 1000,
       maxRequests: 10,
       key: 'rl:upload'
     })(req);
   }
 };
 
-/**
- * Reset rate limit for a specific key (useful for testing or manual intervention)
- */
 export function resetRateLimit(key: string): void {
   store.delete(key);
 }
 
-/**
- * Get current rate limit status for a key
- */
 export function getRateLimitStatus(key: string): RateLimitData | null {
   return store.get(key) || null;
 }

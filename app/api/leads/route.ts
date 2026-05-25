@@ -7,7 +7,9 @@ import {
   createLead,
   getLeadStats
 } from '@/lib/leads';
-import type { LeadFormData, LeadFilters, LeadStatus, LeadSource } from '@/lib/types';
+import type { LeadFilters } from '@/lib/types';
+import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
+import { leadCreateSchema, leadFiltersSchema } from '@/lib/validation/leads';
 
 /**
  * GET /api/leads
@@ -15,55 +17,37 @@ import type { LeadFormData, LeadFilters, LeadStatus, LeadSource } from '@/lib/ty
  */
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
-    // Parse query parameters
     const { searchParams } = new URL(request.url);
-    const filters: LeadFilters = {};
+    const queryParams = Object.fromEntries(searchParams.entries());
+    const validationResult = leadFiltersSchema.safeParse(queryParams);
 
-    if (searchParams.get('status')) {
-      filters.status = searchParams.get('status') as LeadStatus;
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
 
-    if (searchParams.get('source')) {
-      filters.source = searchParams.get('source') as LeadSource;
-    }
+    const { stats, page, limit, ...filters } = validationResult.data;
 
-    if (searchParams.get('assigned_to')) {
-      filters.assigned_to = searchParams.get('assigned_to') as string;
+    if (stats === 'true') {
+      const statsData = await getLeadStats();
+      return NextResponse.json(statsData);
     }
-
-    if (searchParams.get('search')) {
-      filters.search = searchParams.get('search') as string;
-    }
-
-    // Check if stats request
-    if (searchParams.get('stats') === 'true') {
-      const stats = await getLeadStats();
-      return NextResponse.json(stats);
-    }
-
-    // Check pagination
-    const page = searchParams.get('page') ? parseInt(searchParams.get('page')!) : undefined;
-    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined;
 
     if (page || limit) {
-      const result = await getLeadsPaginated(filters, page || 1, limit || 20);
+      const result = await getLeadsPaginated(filters as LeadFilters, page || 1, limit || 20);
       return NextResponse.json(result);
     }
 
-    const leads = await getLeads(filters);
+    const leads = await getLeads(filters as LeadFilters);
     return NextResponse.json(leads);
   } catch (error) {
-    console.error('Error fetching leads:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch leads' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
 
@@ -73,37 +57,33 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
     const session = await getServerSession(authOptions);
     if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
     }
 
-    const data: LeadFormData = await request.json();
+    const body = await request.json();
+    const validationResult = leadCreateSchema.safeParse(body);
 
-    // Basic validation
-    if (!data.name || !data.whatsapp || !data.source || !data.status) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name, whatsapp, source, status' },
-        { status: 400 }
-      );
+    if (!validationResult.success) {
+      const validationError = createValidationError(validationResult.error.issues);
+      return NextResponse.json(validationError.error, { status: validationError.statusCode });
     }
 
-    const lead = await createLead(data);
+    const lead = await createLead(validationResult.data);
     return NextResponse.json(lead, { status: 201 });
   } catch (error) {
-    console.error('Error creating lead:', error);
-
     if (error instanceof Error && error.message.includes('UNIQUE constraint failed')) {
-      return NextResponse.json(
-        { error: 'Lead with this WhatsApp number already exists' },
-        { status: 409 }
+      const duplicateError = new AppError(
+        'Lead with this WhatsApp number already exists',
+        409,
+        'DUPLICATE_LEAD'
       );
+      const { error: errorResponse, statusCode } = createErrorResponse(duplicateError);
+      return NextResponse.json(errorResponse, { status: statusCode });
     }
 
-    return NextResponse.json(
-      { error: 'Failed to create lead' },
-      { status: 500 }
-    );
+    const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
+    return NextResponse.json(errorResponse, { status: statusCode });
   }
 }
