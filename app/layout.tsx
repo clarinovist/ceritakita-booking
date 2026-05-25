@@ -1,54 +1,62 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import DynamicAnalytics from "@/components/analytics/DynamicAnalytics";
 import { TrafficTracker } from "@/components/analytics/TrafficTracker";
+import { DeploymentMismatchHandler } from "@/components/DeploymentMismatchHandler";
+import { getDb } from "@/lib/db";
 import type { SeoSettings } from "@/lib/types/settings";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
 });
+
 const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
 });
 
-import { Suspense } from "react";
-import { getDb } from "@/lib/db";
-
 async function getLayoutSettings() {
   const db = getDb();
 
-  // Fetch all settings including seo
-  const settings = db.prepare<string[]>(`
-    SELECT key, value FROM system_settings 
-    WHERE key IN ('site_name', 'site_logo', 'meta_title', 'meta_description', 'seo')
-  `).all() as { key: string; value: string }[];
+  const settings = db
+    .prepare(`
+      SELECT key, value FROM system_settings
+      WHERE key IN ('site_name', 'site_logo', 'meta_title', 'meta_description', 'seo')
+    `)
+    .all() as { key: string; value: string }[];
 
   const settingsMap = settings.reduce((acc, curr) => {
     acc[curr.key] = curr.value;
     return acc;
   }, {} as Record<string, string>);
 
-  // Parse SEO settings if they exist
-  let seoSettings: SeoSettings | undefined = undefined;
+  let seoSettings: SeoSettings | undefined;
   if (settingsMap.seo) {
     try {
       seoSettings = JSON.parse(settingsMap.seo);
-    } catch (e) {
-      console.error('Failed to parse SEO settings', e);
+    } catch (error) {
+      console.error("Failed to parse SEO settings", error);
     }
   }
 
   return {
     siteName: settingsMap.site_name || "CeritaKita Studio",
-    metaTitle: settingsMap.meta_title || `${settingsMap.site_name || "CeritaKita Studio"} - Booking Sesi Foto`,
-    metaDescription: settingsMap.meta_description || "Booking sesi foto profesional bersama CeritaKita Studio. Pilih layanan, tentukan jadwal, dan abadikan momen terbaik Anda.",
-    seoSettings
+    metaTitle:
+      settingsMap.meta_title ||
+      `${settingsMap.site_name || "CeritaKita Studio"} - Booking Sesi Foto`,
+    metaDescription:
+      settingsMap.meta_description ||
+      "Booking sesi foto profesional bersama CeritaKita Studio. Pilih layanan, tentukan jadwal, dan abadikan momen terbaik Anda.",
+    seoSettings,
   };
 }
 
@@ -80,7 +88,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: metaDescription,
       type: "website",
       locale: "id_ID",
-      siteName: siteName,
+      siteName,
     },
     twitter: {
       card: "summary_large_image",
@@ -105,8 +113,6 @@ export const viewport: Viewport = {
   themeColor: "#2563eb",
 };
 
-import { DeploymentMismatchHandler } from "@/components/DeploymentMismatchHandler";
-
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -116,9 +122,7 @@ export default async function RootLayout({
 
   return (
     <html lang="id" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <DeploymentMismatchHandler />
         <DynamicAnalytics seoSettings={seoSettings} />
         <Suspense>
