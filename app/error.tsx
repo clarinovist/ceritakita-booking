@@ -1,29 +1,38 @@
 'use client'; // Error components must be Client Components
 
 import { useEffect } from 'react';
+import {
+  clearDeploymentRecoveryMarker,
+  reloadForDeploymentMismatch,
+} from '@/lib/client/deployment-recovery';
+
+function isDeploymentMismatchError(error: Error & { digest?: string }) {
+  return (
+    error.message?.includes('Failed to find Server Action') ||
+    error.message?.includes('Action not found')
+  );
+}
 
 export default function ErrorBoundary({
   error,
-  reset: _reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const isActionError = 
-    error.message?.includes('Failed to find Server Action') || 
-    error.message?.includes('Action not found') ||
-    error.digest?.includes('NEXT_REDIRECT'); // Some versions might hide message but have digest
+  const isActionError = isDeploymentMismatchError(error);
 
   useEffect(() => {
-    // If the error is regarding a missing server action due to a new deployment, auto-reload
     if (isActionError) {
-      console.warn('Server Action mismatch detected. Refreshing for latest build in 1s...');
       const timer = setTimeout(() => {
-        window.location.assign(window.location.href);
+        const didReload = reloadForDeploymentMismatch();
+        if (didReload) {
+          console.warn('Server Action mismatch detected. Refreshing for latest build in 1s...');
+        }
       }, 1000);
       return () => clearTimeout(timer);
     }
-    // Log the error
+
+    clearDeploymentRecoveryMarker();
     console.error('Unhandled application error:', error);
   }, [error, isActionError]);
 
@@ -45,7 +54,10 @@ export default function ErrorBoundary({
       
       <button
         onClick={() => {
-          window.location.assign(window.location.href);
+          const didReload = reloadForDeploymentMismatch();
+          if (!didReload) {
+            window.location.reload();
+          }
         }}
         className="px-6 py-2 bg-[#8C8F70] text-white rounded-md hover:bg-[#72755a] transition-colors flex items-center gap-2"
       >

@@ -1,32 +1,36 @@
 'use client';
 
 import { useEffect } from 'react';
+import { reloadForDeploymentMismatch } from '@/lib/client/deployment-recovery';
+
+function isDeploymentMismatchMessage(message: string) {
+  return (
+    message.includes('Failed to find Server Action') ||
+    message.includes('Action not found')
+  );
+}
 
 export function DeploymentMismatchHandler() {
   useEffect(() => {
+    const triggerRecovery = (message: string, context: string) => {
+      if (!isDeploymentMismatchMessage(message)) {
+        return;
+      }
+
+      const didReload = reloadForDeploymentMismatch();
+      if (didReload) {
+        console.warn(`${context} Refreshing for latest build...`);
+      }
+    };
+
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
       const message = event.reason?.message || '';
-      
-      const isActionError = 
-        message.includes('Failed to find Server Action') || 
-        message.includes('Action not found');
-
-      if (isActionError) {
-        console.warn('Server Action mismatch detected in background. Refreshing for latest build...');
-        
-        // Use assign to ensure a full reload from server
-        setTimeout(() => {
-          window.location.assign(window.location.href);
-        }, 500);
-      }
+      triggerRecovery(message, 'Server Action mismatch detected in background.');
     };
 
     const handleError = (event: ErrorEvent) => {
       const message = event.message || '';
-      if (message.includes('Failed to find Server Action') || message.includes('Action not found')) {
-        console.warn('Server Action error detected. Refreshing...');
-        window.location.assign(window.location.href);
-      }
+      triggerRecovery(message, 'Server Action error detected.');
     };
 
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
