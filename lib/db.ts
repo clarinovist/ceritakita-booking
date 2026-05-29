@@ -333,6 +333,22 @@ function initializeSchema() {
     )
   `);
 
+  // Create wa_clicks table for WhatsApp redirect tracking
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS wa_clicks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source TEXT NOT NULL DEFAULT 'unknown',
+      package TEXT NOT NULL DEFAULT 'General',
+      utm_campaign TEXT,
+      utm_medium TEXT,
+      utm_content TEXT,
+      ip TEXT,
+      user_agent TEXT,
+      referrer TEXT,
+      clicked_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
   // Create system_settings table for dynamic business info
   db.exec(`
     CREATE TABLE IF NOT EXISTS system_settings (
@@ -392,6 +408,9 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_coupon_usage_booking_id ON coupon_usage(booking_id);
     CREATE INDEX IF NOT EXISTS idx_portfolio_service_id ON portfolio_images(service_id);
     CREATE INDEX IF NOT EXISTS idx_ads_performance_log_date ON ads_performance_log(date_record);
+    CREATE INDEX IF NOT EXISTS idx_wa_clicks_source ON wa_clicks(source);
+    CREATE INDEX IF NOT EXISTS idx_wa_clicks_clicked_at ON wa_clicks(clicked_at);
+    CREATE INDEX IF NOT EXISTS idx_wa_clicks_package ON wa_clicks(package);
     CREATE INDEX IF NOT EXISTS idx_system_settings_audit_key ON system_settings_audit(key);
     CREATE INDEX IF NOT EXISTS idx_system_settings_audit_updated_at ON system_settings_audit(updated_at);
   `);

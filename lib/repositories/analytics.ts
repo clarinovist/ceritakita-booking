@@ -544,3 +544,143 @@ export interface TrafficSourceData {
   percent: number;
   [key: string]: any;
 }
+
+// ─────────────────────────────────────────────────────────────
+// WA Click Tracking (wa_clicks table)
+// ─────────────────────────────────────────────────────────────
+
+export interface WaClickData {
+  source: string;
+  package: string;
+  utmCampaign?: string;
+  utmMedium?: string;
+  utmContent?: string;
+  ip?: string;
+  userAgent?: string;
+  referrer?: string;
+}
+
+/**
+ * Save a WhatsApp click redirect event to wa_clicks table
+ */
+export function saveWaClick(data: WaClickData): void {
+  const db = getDb();
+
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO wa_clicks (
+        source, package, utm_campaign, utm_medium, utm_content,
+        ip, user_agent, referrer, clicked_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `);
+
+    stmt.run(
+      data.source,
+      data.package,
+      data.utmCampaign ?? null,
+      data.utmMedium ?? null,
+      data.utmContent ?? null,
+      data.ip ?? null,
+      data.userAgent ?? null,
+      data.referrer ?? null
+    );
+
+    logger.info('Saved WA click log', {
+      source: data.source,
+      package: data.package,
+      ip: data.ip,
+    });
+  } catch (error) {
+    logger.error('Failed to save WA click log', {
+      error: error instanceof Error ? error.message : String(error),
+      data,
+    });
+    throw error;
+  }
+}
+
+export interface WaClickRow {
+  id: number;
+  source: string;
+  package: string;
+  utm_campaign: string | null;
+  utm_medium: string | null;
+  utm_content: string | null;
+  ip: string | null;
+  user_agent: string | null;
+  referrer: string | null;
+  clicked_at: string;
+}
+
+/**
+ * Get WA click statistics grouped by source and day
+ */
+export function getWaClicksByDay(since?: string, until?: string): WaClickRow[] {
+  const db = getDb();
+
+  let sql = `
+    SELECT
+      source,
+      package,
+      DATE(clicked_at) as day,
+      COUNT(*) as clicks
+    FROM wa_clicks
+  `;
+
+  const params: (string | null)[] = [];
+
+  if (since || until) {
+    const conditions: string[] = [];
+    if (since) {
+      conditions.push('DATE(clicked_at) >= ?');
+      params.push(since);
+    }
+    if (until) {
+      conditions.push('DATE(clicked_at) <= ?');
+      params.push(until);
+    }
+    sql += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  sql += ' GROUP BY source, package, DATE(clicked_at) ORDER BY day DESC, clicks DESC';
+
+  try {
+    const stmt = db.prepare(sql);
+    return stmt.all(...params) as WaClickRow[];
+  } catch (error) {
+    logger.error('Failed to get WA click stats by day', { error });
+    return [];
+  }
+}
+
+/**
+ * Get total WA clicks count for a date range
+ */
+export function getWaClicksCount(since?: string, until?: string): number {
+  const db = getDb();
+
+  let sql = 'SELECT COUNT(*) as count FROM wa_clicks';
+  const params: (string | null)[] = [];
+
+  if (since || until) {
+    const conditions: string[] = [];
+    if (since) {
+      conditions.push('DATE(clicked_at) >= ?');
+      params.push(since);
+    }
+    if (until) {
+      conditions.push('DATE(clicked_at) <= ?');
+      params.push(until);
+    }
+    sql += ' WHERE ' + conditions.join(' AND ');
+  }
+
+  try {
+    const stmt = db.prepare(sql);
+    const result = stmt.get(...params) as { count: number } | undefined;
+    return result?.count ?? 0;
+  } catch (error) {
+    logger.error('Failed to get WA click count', { error });
+    return 0;
+  }
+}

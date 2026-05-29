@@ -36,7 +36,10 @@ export {
     saveAdsLog,
     saveAdsLogBatch,
     backfillAdsHistory,
-    getAdsLog
+    getAdsLog,
+    saveWaClick,
+    getWaClicksByDay,
+    getWaClicksCount,
 } from '@/lib/repositories/analytics';
 
 // Re-export Settings Repository
