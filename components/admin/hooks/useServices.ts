@@ -19,18 +19,22 @@ export const useServices = () => {
         benefits: []
     });
 
-    const fetchData = async () => {
+    const fetchData = async (signal?: AbortSignal) => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/services');
+            const res = await fetch('/api/services', { signal });
             if (res.ok) {
                 const data = await res.json();
-                setServices(data);
+                if (!signal?.aborted) {
+                    setServices(data);
+                }
             } else {
                 const errorData = await res.json().catch(() => ({}));
                 const msg = errorData.error || `Failed to fetch services (${res.status})`;
-                setError(msg);
+                if (!signal?.aborted) {
+                    setError(msg);
+                }
                 logger.error('Failed to fetch services - non‑OK response', {
                     status: res.status,
                     statusText: res.statusText,
@@ -38,10 +42,14 @@ export const useServices = () => {
                 });
             }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unexpected error occurred');
-            console.error(err);
+            if ((err as Error).name !== 'AbortError') {
+                setError(err instanceof Error ? err.message : 'An unexpected error occurred');
+                console.error(err);
+            }
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     };
 

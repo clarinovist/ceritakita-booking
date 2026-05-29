@@ -14,15 +14,19 @@ export const usePhotographers = () => {
         is_active: true
     });
 
-    const fetchData = async () => {
+    const fetchData = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch('/api/photographers');
+            const res = await fetch('/api/photographers', { signal });
             if (res.ok) {
                 const data = await res.json();
-                setPhotographers(data);
+                if (!signal?.aborted) {
+                    setPhotographers(data);
+                }
             }
         } catch (err) {
-            console.error(err);
+            if ((err as Error).name !== 'AbortError') {
+                console.error(err);
+            }
         }
     };
 

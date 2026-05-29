@@ -1,38 +1,13 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import React, { useEffect, useState } from 'react';
 import { useSession, getCsrfToken } from "next-auth/react";
 
 // Components
 import AdminSidebar from '../AdminSidebar';
-import DashboardMetrics from '../DashboardMetrics';
-import CouponManagement from '../CouponManagement';
-import SettingsManagement from './SettingsManagement';
-import CatalogManagement from './CatalogManagement';
-import HomepageCMS from './HomepageCMS';
-import AdsPerformance from './AdsPerformance';
-import LeadPerformance from './analytics/LeadPerformance';
-import DateFilterToolbar from './DateFilterToolbar';
-import { FinanceModule } from './FinanceModule';
-import { FreelancerModule } from './FreelancerModule';
-
-// Tables
-import { BookingsTable } from './tables/BookingsTable';
-import { LeadsTable } from './tables/LeadsTable';
-import { LeadsKanban } from './leads/LeadsKanban';
-import { LayoutList, Kanban as KanbanIcon } from 'lucide-react';
-
-// Modals
-import { ServiceModal } from './modals/ServiceModal';
-import { BookingDetailModal } from './Bookings/modals/BookingDetailModal';
-import { RescheduleModal } from './Bookings/modals/RescheduleModal';
-import { CreateBookingModal } from './Bookings/modals/CreateBookingModal';
-import { LeadModal } from './modals/LeadModal';
-import { AddonModal } from './modals/AddonModal';
-import { PhotographerModal } from './modals/PhotographerModal';
+import { AdminCommandBar } from './AdminCommandBar';
+import { AdminViews } from './AdminViews';
+import { AdminModals } from './AdminModals';
 
 // Hooks
 import { useBookings } from './hooks/useBookings';
@@ -52,9 +27,9 @@ export default function AdminDashboard() {
     const { data: session } = useSession();
     const user = session?.user as User | undefined;
 
-// 🔐 Permissions (used: availableModes as availableViewModes — isAdmin removed since unused)
+    // 🔐 Permissions
     const { availableModes: availableViewModes } = useAdminPermissions(user);
-    const [viewMode, setViewMode] = useState<ViewMode>(availableViewModes[0] || 'table');
+    const [viewMode, setViewMode] = useState<ViewMode>('table');
     const [leadsViewMode, setLeadsViewMode] = useState<'table' | 'board'>('table');
 
     // Custom hooks
@@ -69,19 +44,26 @@ export default function AdminDashboard() {
     // 📊 Analytics (extracted)
     const adminAnalytics = useAdminAnalytics(bookingsHook.dateRange);
 
-    // Old inline permission + analytics logic — replaced by hooks above
-    /* REMOVED: 40 lines permission + 30 lines analytics fetch */
-
     // Reset view mode if current mode becomes unavailable
     useEffect(() => {
-        if (availableViewModes.length > 0 && !availableViewModes.includes(viewMode)) {
-            const firstMode = availableViewModes[0];
-            if (firstMode) {
-                setViewMode(firstMode);
+        if (availableViewModes.length > 0) {
+            if (!viewMode || !availableViewModes.includes(viewMode)) {
+                const firstMode = availableViewModes[0];
+                if (firstMode) {
+                    setViewMode(firstMode);
+                }
             }
         }
     }, [availableViewModes, viewMode]);
-    // Fetch analytics data when on Ads view    useEffect(() => {        if (viewMode === 'ads') {            adminAnalytics.fetchAnalytics();        }    }, [viewMode, adminAnalytics.fetchAnalytics]);
+
+    // Fetch analytics data when on Ads view
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        if (viewMode === 'ads') {
+            adminAnalytics.fetchAnalytics();
+        }
+    }, [viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // Fetch all data on mount
     useEffect(() => {
         bookingsHook.fetchData();
@@ -302,365 +284,54 @@ export default function AdminDashboard() {
         }
     };
 
-    const events = useMemo(() =>
-        bookingsHook.bookings
-            .filter(b => b.status === 'Active' || b.status === 'Rescheduled')
-            .map(b => ({
-                id: b.id,
-                title: `${b.customer.name} (${b.customer.category})`,
-                start: b.booking.date,
-                backgroundColor: b.customer.category.includes('Outdoor') ? '#10B981' : '#3B82F6',
-                extendedProps: { booking: b }
-            })),
-        [bookingsHook.bookings]
-    );
-
     return (
         <div className="min-h-screen bg-gray-50 flex">
             <AdminSidebar viewMode={viewMode as string} setViewMode={(mode: string) => setViewMode(mode as ViewMode)} />
 
             <div className="flex-1 ml-0 md:ml-72 p-4 md:p-8 overflow-x-hidden bg-slate-50">
-
-                {/* Command Bar - Refactored for Mobile */}
-                <div className="bg-white/90 backdrop-blur-md border-b border-slate-200/60 sticky top-0 z-40 -mx-4 -mt-4 px-4 py-3 md:-mx-8 md:-mt-8 md:px-8 md:py-4 mb-4 md:mb-8 flex flex-col md:flex-row justify-between items-center gap-3 transition-all">
-                    {/* Left Side: View Title and Toggle */}
-                    <div className="flex items-center justify-between w-full md:w-auto gap-4 pl-12 md:pl-0">
-                        <div>
-                            <h2 className="text-lg md:text-2xl font-bold text-slate-800 capitalize tracking-tight leading-tight">
-                                {viewMode === 'dashboard' ? 'Overview' : viewMode.replace(/_/g, ' ')}
-                            </h2>
-                            <p className="hidden xs:block text-[10px] md:text-xs text-slate-500 font-medium mt-0.5">
-                                {new Date().toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}
-                            </p>
-                        </div>
-
-                        {/* Mobile Only: Profile Mini */}
-                        <div className="md:hidden flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-md ring-2 ring-white">
-                                <span className="font-bold text-[10px]">
-                                    {session?.user?.name?.charAt(0).toUpperCase() || 'A'}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Global Date Filter for relevant views - Visible and Scrollable on Mobile */}
-                    {(viewMode === 'dashboard' || viewMode === 'ads' || viewMode === 'table') && (
-                        <div className="w-full md:max-w-md overflow-x-auto no-scrollbar py-1">
-                            <DateFilterToolbar
-                                dateRange={bookingsHook.dateRange}
-                                onDateRangeChange={bookingsHook.setDateRange}
-                                className="shadow-sm border-slate-100 scale-95 origin-left md:scale-100"
-                            />
-                        </div>
-                    )}
-
-                    {/* Leads Specific Controls */}
-                    {viewMode === 'leads' && (
-                        <div className="flex items-center justify-between w-full md:w-auto gap-3">
-                            <div className="flex items-center gap-2">
-                                <span className="bg-blue-50 text-blue-700 font-bold px-2 py-1 rounded-lg text-[10px] uppercase border border-blue-100">
-                                    {leadsHook.pagination.total} Leads
-                                </span>
-                                <button
-                                    onClick={() => leadsHook.handleOpenLeadModal()}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm min-h-[44px]"
-                                >
-                                    <span>+</span> Add Lead
-                                </button>
-                            </div>
-
-                            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-                                <button
-                                    onClick={() => setLeadsViewMode('table')}
-                                    className={`p-1.5 rounded transition-all ${leadsViewMode === 'table' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
-                                >
-                                    <LayoutList size={16} />
-                                </button>
-                                <button
-                                    onClick={() => setLeadsViewMode('board')}
-                                    className={`p-1.5 rounded transition-all ${leadsViewMode === 'board' ? 'bg-white shadow text-blue-600' : 'text-gray-500'}`}
-                                >
-                                    <KanbanIcon size={16} />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Desktop Only: Profile Panel */}
-                    <div className="hidden md:flex items-center gap-3 pl-4 border-l border-slate-200">
-                        <div className="text-right">
-                            <div className="text-sm font-semibold text-slate-700 leading-none mb-1">
-                                {session?.user?.name || 'Administrator'}
-                            </div>
-                            <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">
-                                {user?.role || 'Admin'}
-                            </div>
-                        </div>
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
-                            <span className="font-bold text-sm">
-                                {session?.user?.name?.charAt(0).toUpperCase() || 'A'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <AdminCommandBar
+                    viewMode={viewMode}
+                    setViewMode={setViewMode}
+                    session={session}
+                    userRole={user?.role}
+                    dateRange={bookingsHook.dateRange}
+                    onDateRangeChange={bookingsHook.setDateRange}
+                    leadsTotal={leadsHook.pagination.total}
+                    onOpenLeadModal={() => leadsHook.handleOpenLeadModal()}
+                    leadsViewMode={leadsViewMode}
+                    setLeadsViewMode={setLeadsViewMode}
+                />
 
                 <div className="space-y-6">
-                    {/* DASHBOARD VIEW */}
-                    {viewMode === 'dashboard' && (
-                        <div className="space-y-8 animate-in fade-in">
-                            <DashboardMetrics
-                                sessionBookings={bookingsHook.bookingsByDateRange}
-                                createdBookings={bookingsHook.bookingsByCreatedDate}
-                                allBookings={bookingsHook.bookings}
-                                dateRange={bookingsHook.dateRange}
-                            />
-                        </div>
-                    )}
-
-
-                    {/* ADS VIEW */}
-                    {viewMode === 'ads' && (
-                        <div className="animate-in fade-in space-y-8">
-                            <AdsPerformance
-                                bookings={bookingsHook.bookingsByCreatedDate}
-                                dateRange={bookingsHook.dateRange}
-                            />
-                            <LeadPerformance data={adminAnalytics.data as any} />
-                        </div>
-                    )}
-
-                    {/* CALENDAR VIEW */}
-                    {viewMode === 'calendar' && (
-                        <div className="bg-white p-6 rounded-xl shadow-lg h-[700px] animate-in fade-in">
-                            <FullCalendar
-                                plugins={[dayGridPlugin, interactionPlugin]}
-                                initialView="dayGridMonth"
-                                events={events}
-                                eventClick={(info) => {
-                                    bookingsHook.setSelectedBooking(info.event.extendedProps.booking);
-                                }}
-                                height="100%"
-                            />
-                        </div>
-                    )}
-
-                    {/* TABLE VIEW */}
-                    {viewMode === 'table' && (
-                        <BookingsTable
-                            bookings={bookingsHook.filteredBookings}
-                            filterStatus={bookingsHook.filterStatus}
-                            setFilterStatus={bookingsHook.setFilterStatus}
-                            setSelectedBooking={bookingsHook.setSelectedBooking}
-                            handleUpdateStatus={bookingsHook.handleUpdateStatus}
-                            handleDeleteBooking={bookingsHook.handleDeleteBooking}
-                            handleOpenCreateBookingModal={handleOpenCreateBookingModal}
-                            calculateFinance={bookingsHook.calculateFinance}
-                            exportHook={exportHook}
-                            dateRange={bookingsHook.dateRange}
-                        />
-                    )}
-
-                    {/* CATALOG VIEW */}
-                    {viewMode === 'catalog' && (
-                        <CatalogManagement
-                            services={servicesHook.services}
-                            handleOpenAddServiceModal={servicesHook.handleOpenAddModal}
-                            handleOpenEditServiceModal={servicesHook.handleOpenEditModal}
-                            handleDeleteService={servicesHook.handleDeleteService}
-                            toggleServiceActive={servicesHook.toggleServiceActive}
-
-                            addons={addonsHook.addons}
-                            handleOpenAddAddonModal={addonsHook.handleOpenAddAddonModal}
-                            handleOpenEditAddonModal={addonsHook.handleOpenEditAddonModal}
-                            handleDeleteAddon={addonsHook.handleDeleteAddon}
-                            toggleAddonActive={addonsHook.toggleAddonActive}
-
-                            photographers={photographersHook.photographers}
-                            handleOpenAddPhotographerModal={photographersHook.handleOpenAddPhotographerModal}
-                            handleOpenEditPhotographerModal={photographersHook.handleOpenEditPhotographerModal}
-                            handleDeletePhotographer={photographersHook.handleDeletePhotographer}
-                            togglePhotographerActive={photographersHook.togglePhotographerActive}
-                        />
-                    )}
-
-                    {/* COUPONS VIEW */}
-                    {viewMode === 'coupons' && (
-                        <div className="animate-in fade-in">
-                            <CouponManagement />
-                        </div>
-                    )}
-
-                    {/* SETTINGS VIEW */}
-                    {viewMode === 'settings' && (
-                        <div className="animate-in fade-in">
-                            <SettingsManagement />
-                        </div>
-                    )}
-
-                    {/* FINANCE VIEW */}
-                    {viewMode === 'finance' && (
-                        <div className="animate-in fade-in">
-                            <FinanceModule />
-                        </div>
-                    )}
-
-                    {/* HOMEPAGE CMS VIEW */}
-                    {viewMode === 'homepage' && (
-                        <div className="animate-in fade-in">
-                            <HomepageCMS />
-                        </div>
-                    )}
-
-                    {/* FREELANCERS VIEW */}
-                    {viewMode === 'freelancers' && (
-                        <div className="animate-in fade-in">
-                            <FreelancerModule />
-                        </div>
-                    )}
-
-                    {/* LEADS VIEW */}
-                    {viewMode === 'leads' && (
-                        <>
-                            {leadsViewMode === 'table' ? (
-                                <LeadsTable
-                                    leads={leadsHook.filteredLeads}
-                                    filterStatus={leadsHook.filterStatus}
-                                    setFilterStatus={leadsHook.setFilterStatus}
-                                    filterSource={leadsHook.filterSource}
-                                    setFilterSource={leadsHook.setFilterSource}
-                                    filterInterest={leadsHook.filterInterest}
-                                    setFilterInterest={leadsHook.setFilterInterest}
-                                    searchQuery={leadsHook.searchQuery}
-                                    setSearchQuery={leadsHook.setSearchQuery}
-                                    onOpenModal={leadsHook.handleOpenLeadModal}
-                                    onDeleteLead={leadsHook.handleDeleteLead}
-                                    onConvertToBooking={leadsHook.handleConvertToBooking}
-                                    onWhatsApp={leadsHook.handleWhatsApp}
-
-                                    selectedIds={leadsHook.selectedIds}
-                                    onToggleSelect={leadsHook.handleToggleSelect}
-                                    onSelectAll={leadsHook.handleSelectAll}
-                                    onDeselectAll={leadsHook.handleDeselectAll}
-                                    onBulkUpdateStatus={leadsHook.handleBulkUpdateStatus}
-                                    onBulkDelete={leadsHook.handleBulkDelete}
-                                    onBulkWhatsApp={leadsHook.handleBulkWhatsApp}
-                                    pagination={leadsHook.pagination}
-                                    onPageChange={leadsHook.setPage}
-                                    services={servicesHook.services}
-                                />
-                            ) : (
-                                <LeadsKanban
-                                    leads={leadsHook.filteredLeads} // Note: Kanban typically shows all leads, but we can respect filters too
-                                    onUpdateStatus={leadsHook.handleUpdateLeadStatus}
-                                    onOpenModal={leadsHook.handleOpenLeadModal}
-                                    onWhatsApp={leadsHook.handleWhatsApp}
-                                />
-                            )}
-                        </>
-                    )}
+                    <AdminViews
+                        viewMode={viewMode}
+                        leadsViewMode={leadsViewMode}
+                        bookingsHook={bookingsHook}
+                        servicesHook={servicesHook}
+                        photographersHook={photographersHook}
+                        addonsHook={addonsHook}
+                        exportHook={exportHook}
+                        leadsHook={leadsHook}
+                        adminAnalytics={adminAnalytics}
+                        handleOpenCreateBookingModal={handleOpenCreateBookingModal}
+                    />
                 </div>
 
-                {/* Lead Modal */}
-                <LeadModal
-                    isOpen={leadsHook.isLeadModalOpen}
-                    onClose={() => leadsHook.setIsLeadModalOpen(false)}
-                    onSubmit={leadsHook.handleSaveLead}
-                    formData={leadsHook.leadFormData}
-                    setFormData={leadsHook.setLeadFormData}
-                    editingLead={leadsHook.selectedLead}
-                    services={servicesHook.services}
-                />
-
-                {/* Create Booking Modal (for lead conversion) */}
-                <CreateBookingModal
-                    isOpen={leadsHook.isBookingModalOpen}
-                    onClose={leadsHook.closeBookingModal}
-                    onSubmit={leadsHook.handleCreateBookingFromLead}
-                    formData={leadsHook.bookingFormData}
-                    setFormData={leadsHook.setBookingFormData}
+                <AdminModals
+                    bookingsHook={bookingsHook}
+                    handleOpenRescheduleModal={handleOpenRescheduleModal}
+                    handleReschedule={handleReschedule}
+                    handleCreateBooking={handleCreateBooking}
+                    handleServiceChange={handleServiceChange}
+                    toggleBookingAddon={toggleBookingAddon}
+                    updateBookingAddonQuantity={updateBookingAddonQuantity}
+                    calculateBookingTotal={calculateBookingTotal}
+                    leadsHook={leadsHook}
                     services={servicesHook.services}
                     photographers={photographersHook.photographers}
-                    availableAddons={leadsHook.availableBookingAddons}
-                    selectedAddons={leadsHook.selectedBookingAddons}
-                    onServiceChange={leadsHook.handleServiceChangeForConversion}
-                    onToggleAddon={leadsHook.toggleBookingAddonForConversion}
-                    onUpdateAddonQuantity={leadsHook.updateBookingAddonQuantityForConversion}
-                    calculateTotal={leadsHook.calculateBookingTotalForConversion}
-                />
-
-                {/* Service Modal */}
-                <ServiceModal
-                    isOpen={servicesHook.isServiceModalOpen}
-                    onClose={() => servicesHook.setIsServiceModalOpen(false)}
-                    onSubmit={servicesHook.handleSaveService}
-                    editingService={servicesHook.editingService}
-                    formData={servicesHook.serviceFormData}
-                    setFormData={servicesHook.setServiceFormData}
-                    loading={servicesHook.loading}
-                    error={servicesHook.error}
-                />
-
-                {/* Booking Detail Modal */}
-                <BookingDetailModal
-                    booking={bookingsHook.selectedBooking}
-                    photographers={photographersHook.photographers}
-                    addons={addonsHook.addons}
-                    onClose={() => bookingsHook.setSelectedBooking(null)}
-                    onDelete={bookingsHook.handleDeleteBooking}
-                    onUpdateStatus={bookingsHook.handleUpdateStatus}
-                    onUpdate={bookingsHook.handleUpdate}
-                    onUpdateFinance={bookingsHook.handleUpdateFinance}
-                    onOpenRescheduleModal={handleOpenRescheduleModal}
-                    calculateFinance={bookingsHook.calculateFinance}
-                    getOrReconstructBreakdown={bookingsHook.getOrReconstructBreakdown}
-                />
-
-                {/* Reschedule Modal */}
-                <RescheduleModal
-                    isOpen={bookingsHook.isRescheduleModalOpen}
-                    onClose={() => bookingsHook.setIsRescheduleModalOpen(false)}
-                    onSubmit={handleReschedule}
-                    formData={bookingsHook.rescheduleFormData}
-                    setFormData={bookingsHook.setRescheduleFormData}
-                />
-
-                {/* Create Booking Modal */}
-                <CreateBookingModal
-                    isOpen={bookingsHook.isCreateBookingModalOpen}
-                    onClose={() => bookingsHook.setIsCreateBookingModalOpen(false)}
-                    onSubmit={handleCreateBooking}
-                    formData={bookingsHook.bookingFormData}
-                    setFormData={bookingsHook.setBookingFormData}
-                    services={servicesHook.services}
-                    photographers={photographersHook.photographers}
-                    availableAddons={bookingsHook.availableBookingAddons}
-                    selectedAddons={bookingsHook.selectedBookingAddons}
-                    onServiceChange={handleServiceChange}
-                    onToggleAddon={toggleBookingAddon}
-                    onUpdateAddonQuantity={updateBookingAddonQuantity}
-                    calculateTotal={calculateBookingTotal}
-                />
-
-                {/* AddonModal */}
-                <AddonModal
-                    isOpen={addonsHook.isAddonModalOpen}
-                    onClose={() => addonsHook.setIsAddonModalOpen(false)}
-                    onSubmit={addonsHook.handleSaveAddon}
-                    editingAddon={addonsHook.editingAddon}
-                    formData={addonsHook.addonFormData}
-                    setFormData={addonsHook.setAddonFormData}
-                    services={servicesHook.services}
-                />
-
-                {/* Photographer Modal */}
-                <PhotographerModal
-                    isOpen={photographersHook.isPhotographerModalOpen}
-                    onClose={() => photographersHook.setIsPhotographerModalOpen(false)}
-                    onSubmit={photographersHook.handleSavePhotographer}
-                    editingPhotographer={photographersHook.editingPhotographer}
-                    formData={photographersHook.photographerFormData}
-                    setFormData={photographersHook.setPhotographerFormData}
+                    servicesHook={servicesHook}
+                    addonsHook={addonsHook}
+                    photographersHook={photographersHook}
                 />
             </div>
         </div>

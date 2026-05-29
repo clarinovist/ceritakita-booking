@@ -14,15 +14,19 @@ export const useAddons = () => {
         is_active: true
     });
 
-    const fetchData = async () => {
+    const fetchData = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch('/api/addons');
+            const res = await fetch('/api/addons', { signal });
             if (res.ok) {
                 const data = await res.json();
-                setAddons(data);
+                if (!signal?.aborted) {
+                    setAddons(data);
+                }
             }
         } catch (err) {
-            console.error(err);
+            if ((err as Error).name !== 'AbortError') {
+                console.error(err);
+            }
         }
     };
 

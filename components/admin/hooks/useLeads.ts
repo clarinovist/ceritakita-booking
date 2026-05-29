@@ -74,7 +74,7 @@ export function useLeads(services: Service[] = []) {
     const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
 
     // Fetch leads with pagination and filters
-    const fetchLeads = useCallback(async () => {
+    const fetchLeads = useCallback(async (signal?: AbortSignal) => {
         try {
             const params = new URLSearchParams();
             if (filterStatus !== 'All') params.append('status', filterStatus);
@@ -93,30 +93,38 @@ export function useLeads(services: Service[] = []) {
             params.append('page', pagination.page.toString());
             params.append('limit', pagination.limit.toString());
 
-            const res = await fetch(`/api/leads?${params.toString()}`);
+            const res = await fetch(`/api/leads?${params.toString()}`, { signal });
             if (res.ok) {
                 const data: LeadsPaginatedResponse | Lead[] = await res.json();
 
-                if ('pagination' in data) {
-                    // Server-side filtered & paginated
-                    setLeads(data.data);
-                    setPagination(data.pagination);
-                } else {
-                    // Fallback (shouldn't happen with page param)
-                    setLeads(data);
-                }
+                if (!signal?.aborted) {
+                    if ('pagination' in data) {
+                        // Server-side filtered & paginated
+                        setLeads(data.data);
+                        setPagination(data.pagination);
+                    } else {
+                        // Fallback (shouldn't happen with page param)
+                        setLeads(data);
+                    }
 
-                // Reset selection on page change/filter change
-                setSelectedIds(new Set());
+                    // Reset selection on page change/filter change
+                    setSelectedIds(new Set());
+                }
             }
         } catch (error) {
-            console.error('Failed to fetch leads:', error);
+            if ((error as Error).name !== 'AbortError') {
+                console.error('Failed to fetch leads:', error);
+            }
         }
     }, [filterStatus, filterSource, pagination.page, pagination.limit]);
 
     // Trigger fetch on filter/page change
     useEffect(() => {
-        fetchLeads();
+        const controller = new AbortController();
+        fetchLeads(controller.signal);
+        return () => {
+            controller.abort();
+        };
     }, [fetchLeads]);
 
     // Selection handlers

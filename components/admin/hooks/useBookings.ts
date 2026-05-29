@@ -51,20 +51,26 @@ export const useBookings = () => {
     const [selectedBookingAddons, setSelectedBookingAddons] = useState<Map<string, number>>(new Map());
     const [availableBookingAddons, setAvailableBookingAddons] = useState<Addon[]>([]);
 
-    const fetchData = async () => {
+    const fetchData = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch('/api/bookings');
+            const res = await fetch('/api/bookings', { signal });
             if (res.ok) {
                 const data = await res.json();
                 setBookings(data);
             }
         } catch (_err) {
-            console.error(_err);
+            if ((_err as Error).name !== 'AbortError') {
+                console.error(_err);
+            }
         }
     };
 
     useEffect(() => {
-        fetchData();
+        const controller = new AbortController();
+        fetchData(controller.signal);
+        return () => {
+            controller.abort();
+        };
     }, []);
 
     const handleUpdate = async (bookingId: string, updates: BookingUpdate) => {
