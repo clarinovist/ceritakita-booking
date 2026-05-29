@@ -7,7 +7,7 @@ import { ValueProposition } from '@/types/homepage';
 import { Plus, Trash2, Pencil, Loader2, X, Search } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { swrFetcher } from '@/lib/fetch';
 
 // Helper to render dynamic icon safetly
 const DynamicIcon = ({ name, size = 18, className }: { name: string; size?: number; className?: string }) => {
@@ -18,7 +18,7 @@ const DynamicIcon = ({ name, size = 18, className }: { name: string; size?: numb
 };
 
 export function ValuePropsTab() {
-    const { data: items, isLoading } = useSWR<ValueProposition[]>('/api/admin/value-props', fetcher);
+    const { data: items, isLoading } = useSWR<ValueProposition[]>('/api/admin/value-props', swrFetcher);
     const [editingItem, setEditingItem] = useState<ValueProposition | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);

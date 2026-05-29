@@ -7,7 +7,7 @@ import { HomepageContent } from '@/types/homepage';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { Save, Loader2, Info } from 'lucide-react';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { swrFetcher } from '@/lib/fetch';
 
 interface FormValues {
     hero: {
@@ -26,7 +26,7 @@ interface FormValues {
 }
 
 export function HeroAboutTab() {
-    const { data: content, isLoading } = useSWR<HomepageContent[]>('/api/admin/homepage/content', fetcher);
+    const { data: content, isLoading } = useSWR<HomepageContent[]>('/api/admin/homepage/content', swrFetcher);
 
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);

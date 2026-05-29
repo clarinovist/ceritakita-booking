@@ -7,7 +7,7 @@ import { HomepageContent } from '@/types/homepage';
 import { Save, Loader2, Info } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { swrFetcher } from '@/lib/fetch';
 
 interface FormValues {
     promo: {
@@ -33,7 +33,7 @@ interface FormValues {
 }
 
 export function PromoCtaTab() {
-    const { data: content, isLoading } = useSWR<HomepageContent[]>('/api/admin/homepage/content', fetcher);
+    const { data: content, isLoading } = useSWR<HomepageContent[]>('/api/admin/homepage/content', swrFetcher);
 
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);

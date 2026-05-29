@@ -25,7 +25,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { swrFetcher } from '@/lib/fetch';
 
 function SortableItem({ item, onEdit, onDelete }: { item: ServiceCategory; onEdit: (item: ServiceCategory) => void; onDelete: (id: string) => void }) {
     const {
@@ -102,7 +102,7 @@ function SortableItem({ item, onEdit, onDelete }: { item: ServiceCategory; onEdi
 }
 
 export function ServiceCategoriesTab() {
-    const { data: items, isLoading } = useSWR<ServiceCategory[]>('/api/admin/service-categories', fetcher);
+    const { data: items, isLoading } = useSWR<ServiceCategory[]>('/api/admin/service-categories', swrFetcher);
     const [editingItem, setEditingItem] = useState<ServiceCategory | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);

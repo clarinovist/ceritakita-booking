@@ -7,11 +7,11 @@ import { Testimonial, HomepageContent } from '@/types/homepage';
 import { Plus, Trash2, Pencil, Quote, Loader2, X, Search, Save, ImageIcon } from 'lucide-react';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+import { swrFetcher } from '@/lib/fetch';
 
 export function TestimonialsTab() {
-    const { data: items, isLoading: isLoadingItems } = useSWR<Testimonial[]>('/api/admin/testimonials', fetcher);
-    const { data: content, isLoading: isLoadingContent } = useSWR<HomepageContent[]>('/api/admin/homepage/content', fetcher);
+    const { data: items, isLoading: isLoadingItems } = useSWR<Testimonial[]>('/api/admin/testimonials', swrFetcher);
+    const { data: content, isLoading: isLoadingContent } = useSWR<HomepageContent[]>('/api/admin/homepage/content', swrFetcher);
 
     const [editingItem, setEditingItem] = useState<Testimonial | null>(null);
     const [isFormOpen, setIsFormOpen] = useState(false);

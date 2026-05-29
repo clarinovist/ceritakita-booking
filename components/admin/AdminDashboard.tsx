@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -14,7 +14,7 @@ import SettingsManagement from './SettingsManagement';
 import CatalogManagement from './CatalogManagement';
 import HomepageCMS from './HomepageCMS';
 import AdsPerformance from './AdsPerformance';
-import LeadPerformance, { type LeadAnalyticsData } from './analytics/LeadPerformance';
+import LeadPerformance from './analytics/LeadPerformance';
 import DateFilterToolbar from './DateFilterToolbar';
 import { FinanceModule } from './FinanceModule';
 import { FreelancerModule } from './FreelancerModule';
@@ -41,6 +41,8 @@ import { usePhotographers } from './hooks/usePhotographers';
 import { useAddons } from './hooks/useAddons';
 import { useExport } from './hooks/useExport';
 import { useLeads } from './hooks/useLeads';
+import { useAdminPermissions } from './hooks/useAdminPermissions';
+import { useAdminAnalytics } from './hooks/useAdminAnalytics';
 
 // Types
 import { type ViewMode } from '@/lib/types';
@@ -49,8 +51,11 @@ import { User } from '@/lib/types/user';
 export default function AdminDashboard() {
     const { data: session } = useSession();
     const user = session?.user as User | undefined;
-    const userPermissions = user?.permissions;
-    const userRole = user?.role;
+
+// 🔐 Permissions (used: availableModes as availableViewModes — isAdmin removed since unused)
+    const { availableModes: availableViewModes } = useAdminPermissions(user);
+    const [viewMode, setViewMode] = useState<ViewMode>(availableViewModes[0] || 'table');
+    const [leadsViewMode, setLeadsViewMode] = useState<'table' | 'board'>('table');
 
     // Custom hooks
     const bookingsHook = useBookings();
@@ -61,91 +66,11 @@ export default function AdminDashboard() {
     // Leads hook
     const leadsHook = useLeads(servicesHook.services);
 
-    // Filter view modes based on permissions
-    const getAvailableViewModes = (): ViewMode[] => {
-        // Note: 'users' and 'payment-settings' are now handled within SettingsManagement, 
-        // 'services', 'portfolio', 'addons', 'photographers' are now handled within CatalogManagement
-        const allModes: ViewMode[] = ['dashboard', 'ads', 'calendar', 'table', 'leads', 'catalog', 'coupons', 'settings', 'homepage', 'finance', 'freelancers'];
+    // 📊 Analytics (extracted)
+    const adminAnalytics = useAdminAnalytics(bookingsHook.dateRange);
 
-        if (userRole === 'admin') {
-            return allModes;
-        }
-
-        const allowedModes: ViewMode[] = [];
-
-        if (userPermissions?.dashboard) allowedModes.push('dashboard');
-        if (userPermissions?.ads) allowedModes.push('ads');
-        if (userPermissions?.booking?.view) {
-            allowedModes.push('calendar', 'table');
-        }
-        if (userPermissions?.leads?.view) allowedModes.push('leads');
-
-        // Catalog permission check
-        const hasCatalogAccess =
-            userPermissions?.services?.view ||
-            userPermissions?.portfolio?.view ||
-            userPermissions?.photographers?.view ||
-            userPermissions?.addons?.view;
-
-        if (hasCatalogAccess) allowedModes.push('catalog');
-
-        if (userPermissions?.coupons?.view) allowedModes.push('coupons');
-        if (userPermissions?.finance) allowedModes.push('finance');
-        if (userPermissions?.settings) allowedModes.push('settings');
-        if (userPermissions?.homepage_cms) allowedModes.push('homepage');
-        if (userPermissions?.freelancers) allowedModes.push('freelancers');
-
-        // If user has permissions for modules inside settings, allow settings access
-        if ((userPermissions?.users || userPermissions?.payment) && !allowedModes.includes('settings')) {
-            allowedModes.push('settings');
-        }
-
-        return allowedModes.length > 0 ? allowedModes : ['table'];
-    };
-
-    const availableViewModes = getAvailableViewModes();
-    const [viewMode, setViewMode] = useState<ViewMode>(availableViewModes[0] || 'table');
-    const [leadsViewMode, setLeadsViewMode] = useState<'table' | 'board'>('table');
-
-    // Lead Analytics State
-    const [analyticsData, setAnalyticsData] = useState<LeadAnalyticsData>({
-        total_leads: 0,
-        total_won: 0,
-        conversion_rate: 0,
-        by_agent: [],
-        isLoading: true
-    });
-
-    // Fetch analytics
-    const fetchAnalytics = React.useCallback(async () => {
-        setAnalyticsData(prev => ({ ...prev, isLoading: true, error: null }));
-        try {
-            // Ensure date string is valid for API
-            const startStr = (bookingsHook.dateRange.start || new Date().toISOString().split('T')[0]) as string;
-            const endStr = (bookingsHook.dateRange.end || new Date().toISOString().split('T')[0]) as string;
-
-            const params: Record<string, string> = {
-                start: startStr,
-                end: endStr
-            };
-            const query = new URLSearchParams(params);
-            const res = await fetch(`/api/analytics/leads?${query.toString()}`);
-            if (!res.ok) throw new Error('Failed to fetch analytics');
-
-            const data = await res.json();
-            setAnalyticsData({ ...data, isLoading: false, error: null });
-        } catch (err) {
-            console.error(err);
-            setAnalyticsData((prev: LeadAnalyticsData) => ({ ...prev, isLoading: false, error: 'Failed to load analytics' }));
-        }
-    }, [bookingsHook.dateRange]);
-
-    // Trigger fetch on view change or date change
-    useEffect(() => {
-        if (viewMode === 'ads') {
-            fetchAnalytics();
-        }
-    }, [fetchAnalytics, viewMode]);
+    // Old inline permission + analytics logic — replaced by hooks above
+    /* REMOVED: 40 lines permission + 30 lines analytics fetch */
 
     // Reset view mode if current mode becomes unavailable
     useEffect(() => {
@@ -156,7 +81,7 @@ export default function AdminDashboard() {
             }
         }
     }, [availableViewModes, viewMode]);
-
+    // Fetch analytics data when on Ads view    useEffect(() => {        if (viewMode === 'ads') {            adminAnalytics.fetchAnalytics();        }    }, [viewMode, adminAnalytics.fetchAnalytics]);
     // Fetch all data on mount
     useEffect(() => {
         bookingsHook.fetchData();
@@ -377,15 +302,18 @@ export default function AdminDashboard() {
         }
     };
 
-    const events = bookingsHook.bookings
-        .filter(b => b.status === 'Active' || b.status === 'Rescheduled')
-        .map(b => ({
-            id: b.id,
-            title: `${b.customer.name} (${b.customer.category})`,
-            start: b.booking.date,
-            backgroundColor: b.customer.category.includes('Outdoor') ? '#10B981' : '#3B82F6',
-            extendedProps: { booking: b }
-        }));
+    const events = useMemo(() =>
+        bookingsHook.bookings
+            .filter(b => b.status === 'Active' || b.status === 'Rescheduled')
+            .map(b => ({
+                id: b.id,
+                title: `${b.customer.name} (${b.customer.category})`,
+                start: b.booking.date,
+                backgroundColor: b.customer.category.includes('Outdoor') ? '#10B981' : '#3B82F6',
+                extendedProps: { booking: b }
+            })),
+        [bookingsHook.bookings]
+    );
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -466,7 +394,7 @@ export default function AdminDashboard() {
                                 {session?.user?.name || 'Administrator'}
                             </div>
                             <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">
-                                {userRole || 'Admin'}
+                                {user?.role || 'Admin'}
                             </div>
                         </div>
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg ring-2 ring-white">
@@ -498,7 +426,7 @@ export default function AdminDashboard() {
                                 bookings={bookingsHook.bookingsByCreatedDate}
                                 dateRange={bookingsHook.dateRange}
                             />
-                            <LeadPerformance data={analyticsData} />
+                            <LeadPerformance data={adminAnalytics.data as any} />
                         </div>
                     )}
 

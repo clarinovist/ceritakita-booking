@@ -11,7 +11,7 @@ interface LeadDetailPanelProps {
     onUpdate: () => void;
 }
 
-const fetcher = (url: string) => fetch(url).then(res => res.json());
+const swrFetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function LeadDetailPanel({ lead, onClose, onUpdate }: LeadDetailPanelProps) {
     const [interactionType, setInteractionType] = useState<InteractionType>('WhatsApp');
@@ -22,7 +22,7 @@ export function LeadDetailPanel({ lead, onClose, onUpdate }: LeadDetailPanelProp
     // useSWR key includes lead.id to auto-refresh on lead change
     const { data: interactions, mutate } = useSWR<LeadInteraction[]>(
         lead ? `/api/leads/${lead.id}/interactions` : null,
-        fetcher
+        swrFetcher
     );
 
     const handleLogInteraction = async (e: React.FormEvent) => {
