@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Addon, AddonFormData } from '@/lib/types';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/fetch';
 
 export const useAddons = () => {
     const [addons, setAddons] = useState<Addon[]>([]);
@@ -16,12 +17,9 @@ export const useAddons = () => {
 
     const fetchData = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch('/api/addons', { signal });
-            if (res.ok) {
-                const data = await res.json();
-                if (!signal?.aborted) {
-                    setAddons(data);
-                }
+            const data = await apiGet<Addon[]>('/api/addons', { signal });
+            if (!signal?.aborted) {
+                setAddons(data);
             }
         } catch (err) {
             if ((err as Error).name !== 'AbortError') {
@@ -51,13 +49,9 @@ export const useAddons = () => {
         if (!confirm("Are you sure you want to delete this add-on?")) return;
 
         try {
-            const res = await fetch(`/api/addons?id=${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                setAddons(prev => prev.filter(a => a.id !== id));
-                alert("Add-on deleted successfully");
-            } else {
-                throw new Error("Failed");
-            }
+            await apiDelete(`/api/addons?id=${id}`);
+            setAddons(prev => prev.filter(a => a.id !== id));
+            alert("Add-on deleted successfully");
         } catch {
             alert("Error deleting add-on");
         }
@@ -68,36 +62,17 @@ export const useAddons = () => {
 
         try {
             if (editingAddon) {
-                const res = await fetch('/api/addons', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: editingAddon.id, ...addonFormData })
-                });
-
-                if (res.ok) {
-                    setAddons(prev => prev.map(a =>
-                        a.id === editingAddon.id ? { ...a, ...addonFormData } : a
-                    ));
-                    setIsAddonModalOpen(false);
-                    alert("Add-on updated successfully");
-                } else {
-                    throw new Error("Failed");
-                }
+                await apiPut('/api/addons', { id: editingAddon.id, ...addonFormData });
+                setAddons(prev => prev.map(a =>
+                    a.id === editingAddon.id ? { ...a, ...addonFormData } : a
+                ));
+                setIsAddonModalOpen(false);
+                alert("Add-on updated successfully");
             } else {
-                const res = await fetch('/api/addons', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(addonFormData)
-                });
-
-                if (res.ok) {
-                    const newAddon = await res.json();
-                    setAddons(prev => [newAddon, ...prev]);
-                    setIsAddonModalOpen(false);
-                    alert("Add-on created successfully");
-                } else {
-                    throw new Error("Failed");
-                }
+                const newAddon = await apiPost<Addon>('/api/addons', addonFormData);
+                setAddons(prev => [newAddon, ...prev]);
+                setIsAddonModalOpen(false);
+                alert("Add-on created successfully");
             }
         } catch {
             alert("Error saving add-on");
@@ -106,17 +81,8 @@ export const useAddons = () => {
 
     const toggleAddonActive = async (id: string, active: boolean) => {
         try {
-            const res = await fetch('/api/addons', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, is_active: active })
-            });
-
-            if (res.ok) {
-                setAddons(prev => prev.map(a => a.id === id ? { ...a, is_active: active } : a));
-            } else {
-                throw new Error("Failed");
-            }
+            await apiPut('/api/addons', { id, is_active: active });
+            setAddons(prev => prev.map(a => a.id === id ? { ...a, is_active: active } : a));
         } catch {
             alert("Error updating add-on");
         }

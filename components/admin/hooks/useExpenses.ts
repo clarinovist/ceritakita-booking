@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { DateRange } from '@/lib/types';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/fetch';
 
 export interface Expense {
     id: string;
@@ -28,7 +29,7 @@ export function useExpenses() {
         amount: 0
     });
 
-    const fetchExpenses = useCallback(async (dateRange?: DateRange) => {
+    const fetchExpenses = useCallback(async (dateRange?: DateRange, signal?: AbortSignal) => {
         setLoading(true);
         try {
             let url = '/api/expenses';
@@ -40,31 +41,24 @@ export function useExpenses() {
                 url += `?${params.toString()}`;
             }
 
-            const res = await fetch(url);
-            if (!res.ok) throw new Error('Failed to fetch expenses');
-            const data = await res.json();
-            setExpenses(data);
+            const data = await apiGet<Expense[]>(url, { signal });
+            if (!signal?.aborted) {
+                setExpenses(data);
+            }
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'Unknown error');
+            if (!signal?.aborted) {
+                setError(err instanceof Error ? err.message : 'Unknown error');
+            }
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
 
     const createExpense = async (data: ExpenseFormData) => {
         try {
-            const res = await fetch('/api/expenses', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.message || 'Failed to create expense');
-            }
-
-            const newExpense = await res.json();
+            const newExpense = await apiPost<Expense>('/api/expenses', data);
             setExpenses(prev => [newExpense, ...prev]);
             return newExpense;
         } catch (err) {
@@ -74,18 +68,7 @@ export function useExpenses() {
 
     const updateExpense = async (id: string, data: ExpenseFormData) => {
         try {
-            const res = await fetch(`/api/expenses/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-
-            if (!res.ok) {
-                const error = await res.json();
-                throw new Error(error.message || 'Failed to update expense');
-            }
-
-            // Refetch or optimistic update
+            await apiPut<Expense>(`/api/expenses/${id}`, data);
             setExpenses(prev => prev.map(exp =>
                 exp.id === id ? { ...exp, ...data } : exp
             ));
@@ -98,12 +81,7 @@ export function useExpenses() {
         if (!confirm('Are you sure you want to delete this expense?')) return;
 
         try {
-            const res = await fetch(`/api/expenses/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (!res.ok) throw new Error('Failed to delete expense');
-
+            await apiDelete(`/api/expenses/${id}`);
             setExpenses(prev => prev.filter(exp => exp.id !== id));
         } catch (err) {
             alert(err instanceof Error ? err.message : 'Failed to delete');

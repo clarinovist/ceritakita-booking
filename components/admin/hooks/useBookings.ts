@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { Booking, FinanceData, BookingUpdate, FilterStatus, DateRange, Addon } from '@/lib/types';
+import { apiGet, apiPut, apiDelete } from '@/lib/fetch';
 
 export const useBookings = () => {
     const [bookings, setBookings] = useState<Booking[]>([]);
@@ -53,11 +54,8 @@ export const useBookings = () => {
 
     const fetchData = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch('/api/bookings', { signal });
-            if (res.ok) {
-                const data = await res.json();
-                setBookings(data);
-            }
+            const data = await apiGet<Booking[]>('/api/bookings', { signal });
+            setBookings(data);
         } catch (_err) {
             if ((_err as Error).name !== 'AbortError') {
                 console.error(_err);
@@ -75,23 +73,12 @@ export const useBookings = () => {
 
     const handleUpdate = async (bookingId: string, updates: BookingUpdate) => {
         try {
-            const res = await fetch('/api/bookings/update', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: bookingId, ...updates })
-            });
-            if (res.ok) {
-                const updated = await res.json();
-                setBookings(prev => prev.map(b => b.id === bookingId ? updated : b));
-                setSelectedBooking(updated);
-            } else {
-                const errorData = await res.json();
-                alert(`Failed to update: ${errorData.error || errorData.message || 'Unknown server error'}`);
-                console.error("Update failed:", errorData);
-            }
+            const updated = await apiPut<Booking>('/api/bookings/update', { id: bookingId, ...updates });
+            setBookings(prev => prev.map(b => b.id === bookingId ? updated : b));
+            setSelectedBooking(updated);
         } catch (err) {
             console.error(err);
-            alert("Failed to update: Network error or server unreachable");
+            alert(`Failed to update: ${err instanceof Error ? err.message : 'Unknown server error'}`);
         }
     };
 
@@ -102,20 +89,12 @@ export const useBookings = () => {
         if (!confirm("Are you sure you want to delete this booking? This action cannot be undone.")) return;
 
         try {
-            const res = await fetch(`/api/bookings?id=${bookingId}`, {
-                method: 'DELETE'
-            });
-
-            if (res.ok) {
-                setBookings(prev => prev.filter(b => b.id !== bookingId));
-                if (selectedBooking?.id === bookingId) {
-                    setSelectedBooking(null);
-                }
-                alert("Booking deleted successfully");
-            } else {
-                const error = await res.json();
-                throw new Error(error.error || "Failed to delete");
+            await apiDelete(`/api/bookings?id=${bookingId}`);
+            setBookings(prev => prev.filter(b => b.id !== bookingId));
+            if (selectedBooking?.id === bookingId) {
+                setSelectedBooking(null);
             }
+            alert("Booking deleted successfully");
         } catch (error) {
             console.error("Delete booking error:", error);
             alert(`Failed to delete booking: ${error instanceof Error ? error.message : 'Unknown error'}`);

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { DateRange } from '@/lib/types';
 import { Expense } from './useExpenses';
+import { apiGet } from '@/lib/fetch';
 
 export interface FinanceSummaryData {
     period: { startDate?: string; endDate?: string };
@@ -27,10 +28,7 @@ export function useFinanceSummary() {
                 endDate: dateRange.end
             });
 
-            const res = await fetch(`/api/finance/summary?${params.toString()}`);
-            if (!res.ok) throw new Error('Failed to fetch finance summary');
-
-            const summaryData = await res.json();
+            const summaryData = await apiGet<FinanceSummaryData>(`/api/finance/summary?${params.toString()}`);
             setData(summaryData);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Unknown error');

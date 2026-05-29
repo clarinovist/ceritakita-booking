@@ -1,5 +1,7 @@
 'use client';
 
+import { apiFetchRaw } from '@/lib/fetch';
+
 export const useExport = () => {
     const handleExportBookings = async (filterStatus: string, dateRange: { start: string; end: string }) => {
         try {
@@ -9,8 +11,7 @@ export const useExport = () => {
                 endDate: dateRange.end
             });
 
-            const response = await fetch(`/api/export/bookings?${params}`);
-            if (!response.ok) throw new Error('Export failed');
+            const response = await apiFetchRaw(`/api/export/bookings?${params}`);
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -34,8 +35,7 @@ export const useExport = () => {
                 endDate: dateRange.end
             });
 
-            const response = await fetch(`/api/export/financial?${params}`);
-            if (!response.ok) throw new Error('Export failed');
+            const response = await apiFetchRaw(`/api/export/financial?${params}`);
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);

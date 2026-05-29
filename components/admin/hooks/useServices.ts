@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Service, ServiceFormData } from '@/lib/types';
 import { logger } from '@/lib/logger';
+import { apiGet, apiPost, ApiError } from '@/lib/fetch';
 
 export const useServices = () => {
     const [services, setServices] = useState<Service[]>([]);
@@ -23,23 +24,9 @@ export const useServices = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/services', { signal });
-            if (res.ok) {
-                const data = await res.json();
-                if (!signal?.aborted) {
-                    setServices(data);
-                }
-            } else {
-                const errorData = await res.json().catch(() => ({}));
-                const msg = errorData.error || `Failed to fetch services (${res.status})`;
-                if (!signal?.aborted) {
-                    setError(msg);
-                }
-                logger.error('Failed to fetch services - non‑OK response', {
-                    status: res.status,
-                    statusText: res.statusText,
-                    details: errorData
-                });
+            const data = await apiGet<Service[]>('/api/services', { signal });
+            if (!signal?.aborted) {
+                setServices(data);
             }
         } catch (err) {
             if ((err as Error).name !== 'AbortError') {
@@ -57,40 +44,22 @@ export const useServices = () => {
         setLoading(true);
         setError(null);
         try {
-            const res = await fetch('/api/services', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updatedList)
-            });
-
-            const data = await res.json().catch(() => ({}));
-
-            if (res.ok) {
-                setServices(updatedList);
-                return true;
-            } else {
-                // Handle detailed error messages (e.g. from Zod validation)
-                let errorMessage = data.error || `Failed with status ${res.status}`;
-
-                if (data.details && Array.isArray(data.details)) {
-                    const validationErrors = data.details.map((issue: any) =>
-                        `${issue.path.join('.')}: ${issue.message}`
-                    ).join(', ');
-                    errorMessage = `Validation failed: ${validationErrors}`;
-                }
-
+            await apiPost<unknown>('/api/services', updatedList);
+            setServices(updatedList);
+            return true;
+        } catch (error) {
+            if (error instanceof ApiError) {
+                let errorMessage = error.message || `Failed with status ${error.status}`;
                 setError(errorMessage);
                 logger.error('Failed to save services - non-OK response', {
-                    status: res.status,
-                    statusText: res.statusText,
-                    body: data
+                    status: error.status,
+                    message: error.message
                 });
-                return false;
+            } else {
+                const msg = error instanceof Error ? error.message : 'Error connection to server';
+                setError(msg);
+                logger.error('Error saving services (catch block)', { error });
             }
-        } catch (error) {
-            const msg = error instanceof Error ? error.message : 'Error connection to server';
-            setError(msg);
-            logger.error('Error saving services (catch block)', { error });
             return false;
         } finally {
             setLoading(false);

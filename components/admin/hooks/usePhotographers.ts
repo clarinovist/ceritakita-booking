@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Photographer, PhotographerFormData } from '@/lib/types';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/fetch';
 
 export const usePhotographers = () => {
     const [photographers, setPhotographers] = useState<Photographer[]>([]);
@@ -16,12 +17,9 @@ export const usePhotographers = () => {
 
     const fetchData = async (signal?: AbortSignal) => {
         try {
-            const res = await fetch('/api/photographers', { signal });
-            if (res.ok) {
-                const data = await res.json();
-                if (!signal?.aborted) {
-                    setPhotographers(data);
-                }
+            const data = await apiGet<Photographer[]>('/api/photographers', { signal });
+            if (!signal?.aborted) {
+                setPhotographers(data);
             }
         } catch (err) {
             if ((err as Error).name !== 'AbortError') {
@@ -51,13 +49,9 @@ export const usePhotographers = () => {
         if (!confirm("Are you sure you want to delete this photographer? This will remove them from all assigned bookings.")) return;
 
         try {
-            const res = await fetch(`/api/photographers?id=${id}`, { method: 'DELETE' });
-            if (res.ok) {
-                setPhotographers(prev => prev.filter(p => p.id !== id));
-                alert("Photographer deleted successfully");
-            } else {
-                throw new Error("Failed");
-            }
+            await apiDelete(`/api/photographers?id=${id}`);
+            setPhotographers(prev => prev.filter(p => p.id !== id));
+            alert("Photographer deleted successfully");
         } catch {
             alert("Error deleting photographer");
         }
@@ -69,37 +63,18 @@ export const usePhotographers = () => {
         try {
             if (editingPhotographer) {
                 // Update existing photographer
-                const res = await fetch('/api/photographers', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: editingPhotographer.id, ...photographerFormData })
-                });
-
-                if (res.ok) {
-                    setPhotographers(prev => prev.map(p =>
-                        p.id === editingPhotographer.id ? { ...p, ...photographerFormData } : p
-                    ));
-                    setIsPhotographerModalOpen(false);
-                    alert("Photographer updated successfully");
-                } else {
-                    throw new Error("Failed");
-                }
+                await apiPut('/api/photographers', { id: editingPhotographer.id, ...photographerFormData });
+                setPhotographers(prev => prev.map(p =>
+                    p.id === editingPhotographer.id ? { ...p, ...photographerFormData } : p
+                ));
+                setIsPhotographerModalOpen(false);
+                alert("Photographer updated successfully");
             } else {
                 // Create new photographer
-                const res = await fetch('/api/photographers', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(photographerFormData)
-                });
-
-                if (res.ok) {
-                    const newPhotographer = await res.json();
-                    setPhotographers(prev => [newPhotographer, ...prev]);
-                    setIsPhotographerModalOpen(false);
-                    alert("Photographer created successfully");
-                } else {
-                    throw new Error("Failed");
-                }
+                const newPhotographer = await apiPost<Photographer>('/api/photographers', photographerFormData);
+                setPhotographers(prev => [newPhotographer, ...prev]);
+                setIsPhotographerModalOpen(false);
+                alert("Photographer created successfully");
             }
         } catch {
             alert("Error saving photographer");
@@ -108,17 +83,8 @@ export const usePhotographers = () => {
 
     const togglePhotographerActive = async (id: string, active: boolean) => {
         try {
-            const res = await fetch('/api/photographers', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, is_active: active })
-            });
-
-            if (res.ok) {
-                setPhotographers(prev => prev.map(p => p.id === id ? { ...p, is_active: active } : p));
-            } else {
-                throw new Error("Failed");
-            }
+            await apiPut('/api/photographers', { id, is_active: active });
+            setPhotographers(prev => prev.map(p => p.id === id ? { ...p, is_active: active } : p));
         } catch {
             alert("Error updating photographer");
         }

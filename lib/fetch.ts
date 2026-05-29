@@ -20,17 +20,18 @@ export async function apiFetch<T>(
   url: string,
   options?: RequestInit & { timeout?: number }
 ): Promise<T> {
-  const controller = new AbortController();
+  let controller: AbortController | undefined;
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   if (options?.timeout) {
-    timeoutId = setTimeout(() => controller.abort(), options.timeout);
+    controller = new AbortController();
+    timeoutId = setTimeout(() => controller!.abort(), options.timeout);
   }
 
   try {
     const response = await fetch(url, {
       ...options,
-      signal: controller.signal,
+      signal: controller?.signal ?? options?.signal,
     });
 
     if (!response.ok) {
@@ -51,8 +52,8 @@ export async function apiFetch<T>(
 export const swrFetcher = <T,>(url: string) => apiFetch<T>(url);
 
 /** Convenience GET */
-export function apiGet<T>(url: string) {
-  return apiFetch<T>(url);
+export function apiGet<T>(url: string, options?: RequestInit & { timeout?: number }) {
+  return apiFetch<T>(url, options);
 }
 
 /** Convenience POST */
@@ -83,12 +84,51 @@ export function apiPatch<T>(
   });
 }
 
+/** Convenience PUT */
+export function apiPut<T>(
+  url: string,
+  body: unknown,
+  options?: Omit<RequestInit, 'body' | 'method'>
+) {
+  return apiFetch<T>(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(body),
+    ...options,
+  });
+}
+
 /** Convenience DELETE */
 export function apiDelete<T>(url: string, options?: Omit<RequestInit, 'method'>) {
   return apiFetch<T>(url, { method: 'DELETE', ...options });
 }
 
 /** Convenience GET (same as apiGet, for File/Upload routes that return blob) */
-export function apiFetchRaw(url: string, options?: RequestInit & { timeout?: number }) {
-  return apiFetch<Response>(url, options);
+export async function apiFetchRaw(url: string, options?: RequestInit & { timeout?: number }) {
+  let controller: AbortController | undefined;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  if (options?.timeout) {
+    controller = new AbortController();
+    timeoutId = setTimeout(() => controller!.abort(), options.timeout);
+  }
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller?.signal ?? options?.signal,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new ApiError(
+        response.status,
+        text || `HTTP ${response.status} ${response.statusText}`
+      );
+    }
+
+    return response;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }

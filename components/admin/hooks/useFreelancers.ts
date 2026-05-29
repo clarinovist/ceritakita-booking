@@ -1,4 +1,6 @@
 import { useState, useCallback } from 'react';
+import { apiGet, apiPost, apiPut, apiDelete } from '@/lib/fetch';
+import { useFreelancerForm } from './useFreelancerForm';
 
 export interface Freelancer {
     id: string;
@@ -49,37 +51,47 @@ export const useFreelancers = () => {
     const [recap, setRecap] = useState<FreelancerMonthlyRecap[]>([]);
     const [loading, setLoading] = useState(false);
     
-    // Modals state
-    const [isFormModalOpen, setIsFormModalOpen] = useState(false);
-    const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-    const [selectedFreelancer, setSelectedFreelancer] = useState<Freelancer | null>(null);
+    // Form and modal state delegated to sub-hook
+    const formState = useFreelancerForm();
 
-    const fetchFreelancers = useCallback(async (activeOnly = false) => {
+    const fetchFreelancers = useCallback(async (activeOnly = false, signal?: AbortSignal) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/freelancers${activeOnly ? '?active=1' : ''}`);
-            if (res.ok) {
-                setFreelancers(await res.json());
+            const data = await apiGet<Freelancer[]>(
+                `/api/freelancers${activeOnly ? '?active=1' : ''}`,
+                { signal }
+            );
+            if (!signal?.aborted) {
+                setFreelancers(data);
             }
         } catch (error) {
-            console.error('Failed to fetch freelancers:', error);
+            if ((error as Error).name !== 'AbortError') {
+                console.error('Failed to fetch freelancers:', error);
+            }
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
 
-    const fetchRoles = useCallback(async (activeOnly = false) => {
+    const fetchRoles = useCallback(async (activeOnly = false, signal?: AbortSignal) => {
         try {
-            const res = await fetch(`/api/freelancers?type=roles${activeOnly ? '&active=1' : ''}`);
-            if (res.ok) {
-                setRoles(await res.json());
+            const data = await apiGet<FreelancerRole[]>(
+                `/api/freelancers?type=roles${activeOnly ? '&active=1' : ''}`,
+                { signal }
+            );
+            if (!signal?.aborted) {
+                setRoles(data);
             }
         } catch (error) {
-            console.error('Failed to fetch freelancer roles:', error);
+            if ((error as Error).name !== 'AbortError') {
+                console.error('Failed to fetch freelancer roles:', error);
+            }
         }
     }, []);
 
-    const fetchJobs = useCallback(async (startDate?: string, endDate?: string, freelancerId?: string) => {
+    const fetchJobs = useCallback(async (startDate?: string, endDate?: string, freelancerId?: string, signal?: AbortSignal) => {
         setLoading(true);
         try {
             const params = new URLSearchParams();
@@ -87,41 +99,50 @@ export const useFreelancers = () => {
             if (endDate) params.append('endDate', endDate);
             if (freelancerId) params.append('freelancer_id', freelancerId);
             
-            const res = await fetch(`/api/freelancer-jobs?${params.toString()}`);
-            if (res.ok) {
-                setJobs(await res.json());
+            const data = await apiGet<FreelancerJob[]>(
+                `/api/freelancer-jobs?${params.toString()}`,
+                { signal }
+            );
+            if (!signal?.aborted) {
+                setJobs(data);
             }
         } catch (error) {
-            console.error('Failed to fetch freelancer jobs:', error);
+            if ((error as Error).name !== 'AbortError') {
+                console.error('Failed to fetch freelancer jobs:', error);
+            }
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
 
-    const fetchRecap = useCallback(async (year: string, month: string) => {
+    const fetchRecap = useCallback(async (year: string, month: string, signal?: AbortSignal) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/freelancer-jobs/recap?year=${year}&month=${month}`);
-            if (res.ok) {
-                setRecap(await res.json());
+            const data = await apiGet<FreelancerMonthlyRecap[]>(
+                `/api/freelancer-jobs/recap?year=${year}&month=${month}`,
+                { signal }
+            );
+            if (!signal?.aborted) {
+                setRecap(data);
             }
         } catch (error) {
-            console.error('Failed to fetch freelancer recap:', error);
+            if ((error as Error).name !== 'AbortError') {
+                console.error('Failed to fetch freelancer recap:', error);
+            }
         } finally {
-            setLoading(false);
+            if (!signal?.aborted) {
+                setLoading(false);
+            }
         }
     }, []);
 
     const createFreelancer = async (data: Partial<Freelancer>) => {
         try {
-            const res = await fetch('/api/freelancers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error('Failed to create freelancer');
+            const result = await apiPost<Freelancer>('/api/freelancers', data);
             await fetchFreelancers();
-            return await res.json();
+            return result;
         } catch (error) {
             console.error('Error creating freelancer:', error);
             throw error;
@@ -130,14 +151,9 @@ export const useFreelancers = () => {
 
     const updateFreelancer = async (id: string, data: Partial<Freelancer>) => {
         try {
-            const res = await fetch(`/api/freelancers/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error('Failed to update freelancer');
+            const result = await apiPut<Freelancer>(`/api/freelancers/${id}`, data);
             await fetchFreelancers();
-            return await res.json();
+            return result;
         } catch (error) {
             console.error('Error updating freelancer:', error);
             throw error;
@@ -146,8 +162,7 @@ export const useFreelancers = () => {
 
     const deleteFreelancer = async (id: string) => {
         try {
-            const res = await fetch(`/api/freelancers/${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Failed to delete freelancer');
+            await apiDelete(`/api/freelancers/${id}`);
             await fetchFreelancers();
         } catch (error) {
             console.error('Error deleting freelancer:', error);
@@ -157,13 +172,7 @@ export const useFreelancers = () => {
 
     const createJob = async (data: Partial<FreelancerJob>) => {
         try {
-            const res = await fetch('/api/freelancer-jobs', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
-            });
-            if (!res.ok) throw new Error('Failed to create job');
-            return await res.json();
+            return await apiPost<FreelancerJob>('/api/freelancer-jobs', data);
         } catch (error) {
             console.error('Error creating job:', error);
             throw error;
@@ -172,9 +181,7 @@ export const useFreelancers = () => {
 
     const deleteJob = async (id: string) => {
         try {
-            const res = await fetch(`/api/freelancer-jobs?id=${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error('Failed to delete job');
-            
+            await apiDelete(`/api/freelancer-jobs?id=${id}`);
             // Optimistic update for jobs list
             setJobs(prev => prev.filter(job => job.id !== id));
         } catch (error) {
@@ -198,11 +205,13 @@ export const useFreelancers = () => {
         deleteFreelancer,
         createJob,
         deleteJob,
-        isFormModalOpen,
-        setIsFormModalOpen,
-        isDetailModalOpen,
-        setIsDetailModalOpen,
-        selectedFreelancer,
-        setSelectedFreelancer
+        
+        // Modal & selections from formState sub-hook
+        isFormModalOpen: formState.isFormModalOpen,
+        setIsFormModalOpen: formState.setIsFormModalOpen,
+        isDetailModalOpen: formState.isDetailModalOpen,
+        setIsDetailModalOpen: formState.setIsDetailModalOpen,
+        selectedFreelancer: formState.selectedFreelancer,
+        setSelectedFreelancer: formState.setSelectedFreelancer
     };
 };
