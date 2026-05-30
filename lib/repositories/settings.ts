@@ -34,7 +34,14 @@ export function getSystemSettings(): SystemSettings {
   rows.forEach(row => {
     if (jsonKeys.includes(row.key)) {
       try {
-        settings[row.key] = JSON.parse(row.value);
+        let raw = row.value;
+        // Perbaikan P1: handle double-escaped JSON string dari DB
+        for (let i = 0; i < 2; i++) {
+          if (typeof raw === 'string' && raw.startsWith('"') && raw.endsWith('"')) {
+            try { raw = JSON.parse(raw); } catch { break; }
+          }
+        }
+        settings[row.key] = typeof raw === 'string' ? JSON.parse(raw) : raw;
       } catch (e) {
         settings[row.key] = {};
       }

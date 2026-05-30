@@ -41,11 +41,33 @@ async function getLayoutSettings() {
 
   let seoSettings: SeoSettings | undefined;
   if (settingsMap.seo) {
+    let raw = settingsMap.seo;
+    // Perbaikan P1: database kadang double-escape JSON string
+    // Coba unwrap hingga 2 level
+    for (let i = 0; i < 2; i++) {
+      if (typeof raw === 'string' && raw.startsWith('"') && raw.endsWith('"')) {
+        try {
+          raw = JSON.parse(raw);
+        } catch {
+          break;
+        }
+      }
+    }
     try {
-      seoSettings = JSON.parse(settingsMap.seo);
+      seoSettings = typeof raw === 'string' ? JSON.parse(raw) : raw;
     } catch (error) {
       console.error("Failed to parse SEO settings", error);
     }
+  }
+
+  // Fallback env var bila database corrupt / kosong
+  const envPixelId = process.env.META_PIXEL_ID;
+  const envGaId = process.env.NEXT_PUBLIC_GA_ID || process.env.GA_ID;
+  if (envPixelId || envGaId) {
+    seoSettings = {
+      googleAnalyticsId: seoSettings?.googleAnalyticsId || envGaId || '',
+      metaPixelId: seoSettings?.metaPixelId || envPixelId || '',
+    };
   }
 
   return {

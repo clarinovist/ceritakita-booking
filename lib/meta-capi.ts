@@ -11,12 +11,18 @@ export interface MetaCAPIEvent {
         em?: string[]; // Hashed email
         fn?: string; // Hashed first name
         ln?: string; // Hashed last name
+        client_ip_address?: string; // Raw IP — Meta hashes server-side
+        client_user_agent?: string; // Raw UA — Meta hashes server-side
+        fbc?: string; // Facebook click ID (from fbclid param)
+        fbp?: string; // Facebook browser ID (from _fbp cookie)
     };
     custom_data?: {
         status?: string;
         value?: number;
         currency?: string;
         content_name?: string;
+        content_category?: string;
+        source?: string;
     };
     event_source_url?: string;
 }
@@ -42,7 +48,8 @@ export async function sendMetaConversionEvent(
             (settings.seo?.metaPixelId) ||
             (settings as any).meta_pixel_id;
 
-        const accessToken = process.env.META_ACCESS_TOKEN;
+        const accessToken = process.env.META_ACCESS_TOKEN ||
+            process.env.META_ACCESS_TOKEN_CK;
         const apiVersion = process.env.META_API_VERSION || 'v19.0';
 
         if (!pixelId || !accessToken) {
@@ -185,5 +192,42 @@ export async function sendPurchaseEvent(
             currency: 'IDR',
             content_name: 'Photography Session'
         }
+    });
+}
+
+/**
+ * Helper: Send "Contact" event saat user klik WA redirect dari iklan (P2)
+ * Fire-and-forget, tidak blocking redirect
+ */
+export async function sendWaClickEvent(
+    ip: string,
+    userAgent: string,
+    source: string,
+    fbclid?: string | null,
+    fbp?: string | null
+): Promise<{ success: boolean; event_id?: string; error?: string }> {
+    const userData: MetaCAPIEvent['user_data'] = {
+        client_ip_address: ip,
+        client_user_agent: userAgent,
+    };
+
+    if (fbclid) {
+        userData.fbc = fbclid;
+    }
+    if (fbp) {
+        userData.fbp = fbp;
+    }
+
+    return sendMetaConversionEvent({
+        event_name: 'Contact',
+        event_time: Math.floor(Date.now() / 1000),
+        action_source: 'website',
+        user_data: userData,
+        custom_data: {
+            content_name: 'WhatsApp Click',
+            content_category: 'Ad Redirect',
+            source: source || 'unknown',
+        },
+        event_source_url: `https://ceritakita.studio/api/wa/${source}`,
     });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveWaClick } from '@/lib/repositories/analytics';
+import { sendWaClickEvent } from '@/lib/meta-capi';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -49,6 +50,10 @@ export async function GET(
     const utmMedium = searchParams.get('utm_medium') ?? undefined;
     const utmContent = searchParams.get('utm_content') ?? undefined;
 
+    // Meta Click ID & browser ID untuk attribution
+    const fbclid = searchParams.get('fbclid');
+    const fbp = request.cookies.get('_fbp')?.value;
+
     // Client hints
     const userAgent = request.headers.get('user-agent') ?? undefined;
     const referrer = request.headers.get('referer') ?? undefined;
@@ -76,6 +81,14 @@ export async function GET(
         source,
       });
     }
+
+    // P2: Fire CAPI event (Contact) saat user klik WA link — non-blocking
+    sendWaClickEvent(ip, userAgent ?? '', source, fbclid, fbp ?? null).catch((err) => {
+      logger.warn('Meta CAPI WA click event failed (non-blocking)', {
+        error: err instanceof Error ? err.message : String(err),
+        source,
+      });
+    });
 
     // Build wa.me URL with pre-filled text
     const waText = encodeURIComponent(config.text);
