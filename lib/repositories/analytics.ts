@@ -613,7 +613,35 @@ export interface WaClickRow {
 }
 
 /**
- * Get WA click statistics grouped by source and day
+ * SQL fragment to exclude known bot/crawler IPs from WA click queries.
+ * These IPs inflate metrics by 47%+ (Meta crawlers, AWS bots, Docker internal).
+ * Kept in sync with lib/bot-filter.ts BOT_IP_PATTERNS.
+ */
+const BOT_IP_EXCLUDE_SQL = `(
+  ip NOT LIKE '2a03:2880:%'
+  AND ip NOT LIKE '31.13.%'
+  AND ip NOT LIKE '157.240.%'
+  AND ip NOT LIKE '69.63.%'
+  AND ip NOT LIKE '35.%'
+  AND ip NOT LIKE '47.%'
+  AND ip NOT LIKE '52.%'
+  AND ip NOT LIKE '54.%'
+  AND ip NOT LIKE '158.140.%'
+  AND ip NOT LIKE '172.17.%'
+  AND ip NOT LIKE '172.18.%'
+  AND ip NOT LIKE '172.19.%'
+  AND ip NOT LIKE '172.2%'
+  AND ip NOT LIKE '172.30.%'
+  AND ip NOT LIKE '172.31.%'
+  AND ip NOT LIKE '192.168.%'
+  AND ip NOT LIKE '10.%'
+  AND ip != '127.0.0.1'
+  AND ip != '::1'
+  AND ip != 'unknown'
+)`;
+
+/**
+ * Get WA click statistics grouped by source and day (excludes bot traffic)
  */
 export function getWaClicksByDay(since?: string, until?: string): WaClickRow[] {
   const db = getDb();
@@ -625,21 +653,20 @@ export function getWaClicksByDay(since?: string, until?: string): WaClickRow[] {
       DATE(clicked_at) as day,
       COUNT(*) as clicks
     FROM wa_clicks
+    WHERE ${BOT_IP_EXCLUDE_SQL}
   `;
 
   const params: (string | null)[] = [];
 
   if (since || until) {
-    const conditions: string[] = [];
     if (since) {
-      conditions.push('DATE(clicked_at) >= ?');
+      sql += ' AND DATE(clicked_at) >= ?';
       params.push(since);
     }
     if (until) {
-      conditions.push('DATE(clicked_at) <= ?');
+      sql += ' AND DATE(clicked_at) <= ?';
       params.push(until);
     }
-    sql += ' WHERE ' + conditions.join(' AND ');
   }
 
   sql += ' GROUP BY source, package, DATE(clicked_at) ORDER BY day DESC, clicks DESC';
@@ -654,25 +681,23 @@ export function getWaClicksByDay(since?: string, until?: string): WaClickRow[] {
 }
 
 /**
- * Get total WA clicks count for a date range
+ * Get total WA clicks count for a date range (excludes bot traffic)
  */
 export function getWaClicksCount(since?: string, until?: string): number {
   const db = getDb();
 
-  let sql = 'SELECT COUNT(*) as count FROM wa_clicks';
+  let sql = `SELECT COUNT(*) as count FROM wa_clicks WHERE ${BOT_IP_EXCLUDE_SQL}`;
   const params: (string | null)[] = [];
 
   if (since || until) {
-    const conditions: string[] = [];
     if (since) {
-      conditions.push('DATE(clicked_at) >= ?');
+      sql += ' AND DATE(clicked_at) >= ?';
       params.push(since);
     }
     if (until) {
-      conditions.push('DATE(clicked_at) <= ?');
+      sql += ' AND DATE(clicked_at) <= ?';
       params.push(until);
     }
-    sql += ' WHERE ' + conditions.join(' AND ');
   }
 
   try {

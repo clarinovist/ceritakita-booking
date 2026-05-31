@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { saveWaClick } from '@/lib/repositories/analytics';
 import { sendWaClickEvent } from '@/lib/meta-capi';
 import { logger } from '@/lib/logger';
+import { isBotRequest, createRateLimiter } from '@/lib/bot-filter';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,9 +32,13 @@ const WA_NUMBER = '6282324021938';
 // Fallback config literal to satisfy TS strictness
 const FALLBACK_CONFIG = { text: 'Halo CeritaKita Studio, saya tertarik info paket foto', pkg: 'General' };
 
+// IP-based rate limiter: max 3 clicks per IP per 5 minutes
+const waRateLimiter = createRateLimiter({ windowMs: 5 * 60 * 1000, maxHits: 3 });
+
 /**
  * GET /api/wa/[source]
  * Logs click then 302-redirects to wa.me with pre-filled text
+ * Filters bot/crawler traffic and rate-limits to prevent inflation
  */
 export async function GET(
   request: NextRequest,
@@ -62,6 +67,38 @@ export async function GET(
       request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
       request.headers.get('x-real-ip') ??
       'unknown';
+
+    // ── Bot/crawler filter ──
+    // Meta ad crawlers, AWS bots, Docker internal, and known bot IPs
+    // still redirect (so Meta link validation passes) but skip DB/CAPI logging
+    const botResult = isBotRequest(ip, userAgent);
+    if (botResult.isBot) {
+      logger.info('WA click filtered (bot/crawler)', {
+        source,
+        ip,
+        reason: botResult.reason,
+      });
+      // Still redirect — Meta validates ad links by crawling them,
+      // and we don't want to break ad delivery by returning errors
+      const waText = encodeURIComponent(config.text);
+      const redirectUrl = `https://wa.me/${WA_NUMBER}?text=${waText}`;
+      return NextResponse.redirect(redirectUrl, 302);
+    }
+
+    // ── Rate limit per IP ──
+    // Prevent repeat clicks from same IP inflating metrics
+    const rateResult = waRateLimiter(ip);
+    if (!rateResult.allowed) {
+      logger.info('WA click rate-limited', {
+        source,
+        ip,
+        hits: rateResult.hits,
+      });
+      // Still redirect user — don't punish real users who click twice
+      const waText = encodeURIComponent(config.text);
+      const redirectUrl = `https://wa.me/${WA_NUMBER}?text=${waText}`;
+      return NextResponse.redirect(redirectUrl, 302);
+    }
 
     // Log to database (fire-and-forget, don't block redirect on error)
     try {
