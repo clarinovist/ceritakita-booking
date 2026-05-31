@@ -149,7 +149,7 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
     let adsInsights: AdsInsights | null = null;
     try {
         const metaToken = process.env.META_ACCESS_TOKEN_CK;
-        const adAccountId = process.env.META_AD_ACCOUNT_ID || 'act_203972264282201';
+        const _adAccountId = process.env.META_AD_ACCOUNT_ID || 'act_203972264282201';
         const campaignId = process.env.META_CAMPAIGN_ID || '120246392062980052';
 
         if (metaToken) {
@@ -165,7 +165,7 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
             if (campaignData.data?.[0]) {
                 const insight = campaignData.data[0];
                 const linkClicks = insight.actions?.find((a: any) => a.action_type === 'link_click')?.value || '0';
-                const lpv = insight.actions?.find((a: any) => a.action_type === 'landing_page_view')?.value || '0';
+                const _lpv = insight.actions?.find((a: any) => a.action_type === 'landing_page_view')?.value || '0';
 
                 // Fetch WA click data (bot-filtered) for yesterday
                 const waClickSources = getWaClicksByDay(yesterday, todayStr);
