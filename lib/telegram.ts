@@ -163,7 +163,34 @@ export function formatDailyReport(data: DailyReportData): string {
         lines.push(`📅 _Tidak ada jadwal dalam 3 hari ke depan_`);
     }
 
-    // Overdue follow-ups telah dihapus sesuai permintaan
+    // Ads + WA Click insights
+    if (data.adsInsights) {
+        const ads = data.adsInsights;
+        lines.push('');
+        lines.push('📢 *Meta Ads (3 Hari Terakhir)*');
+        lines.push(`   💸 Spend: ${formatRupiah(ads.spend)}`);
+        lines.push(`   👁 Impressions: ${ads.impressions.toLocaleString('id-ID')}`);
+        lines.push(`   🔗 Link Clicks: ${ads.linkClicks.toLocaleString('id-ID')}`);
+        lines.push(`   📊 CTR: ${ads.ctr.toFixed(2)}% | CPC: ${formatRupiah(ads.cpc)}`);
+        lines.push(`   👥 Reach: ${ads.reach.toLocaleString('id-ID')}`);
+        lines.push('');
+        lines.push('📱 *WA Clicks (Clean, Bot-Filtered)*');
+        lines.push(`   Total: ${ads.waClicks} clicks`);
+        if (ads.waClicksBySource.length > 0) {
+            ads.waClicksBySource.forEach(({ source, clicks }) => {
+                const label = source === 'meta1' ? 'Keluarga' : source === 'meta2' ? 'Self Photo' : source === 'meta3' ? 'Birthday' : source;
+                lines.push(`   • ${label}: ${clicks}`);
+            });
+        }
+        // Funnel: Meta link clicks → WA clicks
+        if (ads.linkClicks > 0 && ads.waClicks > 0) {
+            const conversionRate = ((ads.waClicks / ads.linkClicks) * 100).toFixed(1);
+            lines.push(`   🔄 Link→WA: ${conversionRate}%`);
+        }
+    } else {
+        lines.push('');
+        lines.push('📢 _Data iklan tidak tersedia_');
+    }
 
     lines.push('');
     lines.push(`_Generated: ${format(new Date(), 'HH:mm', { locale: localeId })} WIB_`);

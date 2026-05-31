@@ -2,8 +2,24 @@ import { readData as readBookings } from '@/lib/repositories/bookings';
 import { getExpenses } from '@/lib/storage-expenses';
 import { getLeads } from '@/lib/leads';
 import { getSystemSettings } from '@/lib/repositories/settings';
+import { getWaClicksByDay, getWaClicksCount } from '@/lib/repositories/analytics';
 import { Booking, Payment } from '@/lib/types';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+
+export interface AdsInsights {
+    campaignName: string;
+    campaignStatus: string;
+    spend: number;
+    impressions: number;
+    clicks: number;
+    linkClicks: number;
+    ctr: number;
+    cpc: number;
+    cpm: number;
+    reach: number;
+    waClicks: number;
+    waClicksBySource: Array<{ source: string; clicks: number }>;
+}
 
 export interface DailyReportData {
     date: string;
@@ -14,9 +30,10 @@ export interface DailyReportData {
     };
     newBookings: Booking[];
     paymentsReceived: Array<{ booking: Booking; payment: Payment }>;
-    newLeads: any[]; // Using any for simplicity since Lead type isn't fully exported in index
+    newLeads: any[];
     upcomingBookings: Booking[];
     overdueFollowUps: any[];
+    adsInsights?: AdsInsights | null;
 }
 
 export interface WeeklyReportData {
@@ -128,6 +145,62 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
         return dateA - dateB; // Oldest first
     });
 
+    // 6. Meta Ads + WA Click insights (non-blocking — failures result in null)
+    let adsInsights: AdsInsights | null = null;
+    try {
+        const metaToken = process.env.META_ACCESS_TOKEN_CK;
+        const adAccountId = process.env.META_AD_ACCOUNT_ID || 'act_203972264282201';
+        const campaignId = process.env.META_CAMPAIGN_ID || '120246392062980052';
+
+        if (metaToken) {
+            const apiVersion = 'v18.0';
+            const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
+            const todayStr = format(now, 'yyyy-MM-dd');
+
+            // Fetch campaign insights for yesterday (more complete data)
+            const insightsUrl = `https://graph.facebook.com/${apiVersion}/${campaignId}/insights?fields=spend,impressions,clicks,ctr,cpc,cpm,reach,actions&date_preset=last_3d&access_token=${metaToken}`;
+            const campaignRes = await fetch(insightsUrl);
+            const campaignData = await campaignRes.json();
+
+            if (campaignData.data?.[0]) {
+                const insight = campaignData.data[0];
+                const linkClicks = insight.actions?.find((a: any) => a.action_type === 'link_click')?.value || '0';
+                const lpv = insight.actions?.find((a: any) => a.action_type === 'landing_page_view')?.value || '0';
+
+                // Fetch WA click data (bot-filtered) for yesterday
+                const waClickSources = getWaClicksByDay(yesterday, todayStr);
+                const totalWaClicks = getWaClicksCount(yesterday, todayStr);
+
+                // Group WA clicks by source
+                const clicksBySource = new Map<string, number>();
+                for (const row of waClickSources) {
+                    const current = clicksBySource.get(row.source) || 0;
+                    clicksBySource.set(row.source, current + (row as any).clicks);
+                }
+
+                adsInsights = {
+                    campaignName: 'CeritaKita - Solo Radius 30km',
+                    campaignStatus: 'ACTIVE',
+                    spend: parseFloat(insight.spend || '0'),
+                    impressions: parseInt(insight.impressions || '0'),
+                    clicks: parseInt(insight.clicks || '0'),
+                    linkClicks: parseInt(linkClicks),
+                    ctr: parseFloat(insight.ctr || '0'),
+                    cpc: parseFloat(insight.cpc || '0'),
+                    cpm: parseFloat(insight.cpm || '0'),
+                    reach: parseInt(insight.reach || '0'),
+                    waClicks: totalWaClicks,
+                    waClicksBySource: Array.from(clicksBySource.entries())
+                        .map(([source, clicks]) => ({ source, clicks }))
+                        .sort((a, b) => b.clicks - a.clicks),
+                };
+            }
+        }
+    } catch (err) {
+        // Non-blocking — ads data is optional
+        console.warn('Failed to fetch ads insights for daily report:', err);
+    }
+
     return {
         date: targetDateStr,
         metrics: {
@@ -139,7 +212,8 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
         paymentsReceived,
         newLeads,
         upcomingBookings,
-        overdueFollowUps
+        overdueFollowUps,
+        adsInsights,
     };
 }
 
