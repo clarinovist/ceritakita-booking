@@ -149,7 +149,6 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
     let adsInsights: AdsInsights | null = null;
     try {
         const metaToken = process.env.META_ACCESS_TOKEN_CK;
-        const _adAccountId = process.env.META_AD_ACCOUNT_ID || 'act_203972264282201';
         const campaignId = process.env.META_CAMPAIGN_ID || '120246392062980052';
 
         if (metaToken) {
@@ -157,7 +156,7 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
             const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
             const todayStr = format(now, 'yyyy-MM-dd');
 
-            // Fetch campaign insights for yesterday (more complete data)
+            // Fetch campaign insights for last 3 days (more stable data)
             const insightsUrl = `https://graph.facebook.com/${apiVersion}/${campaignId}/insights?fields=spend,impressions,clicks,ctr,cpc,cpm,reach,actions&date_preset=last_3d&access_token=${metaToken}`;
             const campaignRes = await fetch(insightsUrl);
             const campaignData = await campaignRes.json();
@@ -165,7 +164,6 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
             if (campaignData.data?.[0]) {
                 const insight = campaignData.data[0];
                 const linkClicks = insight.actions?.find((a: any) => a.action_type === 'link_click')?.value || '0';
-                const _lpv = insight.actions?.find((a: any) => a.action_type === 'landing_page_view')?.value || '0';
 
                 // Fetch WA click data (bot-filtered) for yesterday
                 const waClickSources = getWaClicksByDay(yesterday, todayStr);
