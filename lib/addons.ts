@@ -256,21 +256,27 @@ export function getBookingAddonsForBookings(bookingIds: string[]): Map<string, B
 export function setBookingAddons(bookingId: string, addons: { addon_id: string; quantity: number; price: number }[]): void {
   const db = getDb();
 
-  // No db.transaction() wrapper — callers (createBooking, updateBooking) already
-  // wrap this in their own transaction. A nested transaction (SAVEPOINT) here
-  // caused SQLITE_CONSTRAINT_UNIQUE on booking_addons(booking_id, addon_id) because
-  // the inner SAVEPOINT commits before the outer transaction finishes.
+  // Deduplicate addons by addon_id to prevent UNIQUE constraint violations.
+  // No db.transaction() wrapper here — callers (createBooking, updateBooking)
+  // already wrap this in their own transaction. A nested SAVEPOINT caused
+  // SQLITE_CONSTRAINT_UNIQUE on booking_addons(booking_id, addon_id).
+  const dedupedMap = new Map<string, { addon_id: string; quantity: number; price: number }>();
+  for (const addon of addons) {
+    dedupedMap.set(addon.addon_id, addon);
+  }
+  const deduped = Array.from(dedupedMap.values());
+
   // Remove existing add-ons for this booking
   db.prepare('DELETE FROM booking_addons WHERE booking_id = ?').run(bookingId);
 
   // Insert new add-ons
-  if (addons.length > 0) {
+  if (deduped.length > 0) {
     const insertStmt = db.prepare(`
       INSERT INTO booking_addons (booking_id, addon_id, quantity, price_at_booking)
       VALUES (?, ?, ?, ?)
     `);
 
-    for (const addon of addons) {
+    for (const addon of deduped) {
       insertStmt.run(bookingId, addon.addon_id, addon.quantity, addon.price);
     }
   }
