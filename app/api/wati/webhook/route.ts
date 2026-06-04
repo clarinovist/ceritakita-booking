@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logger } from '@/lib/logger';
+import { getDb } from '@/lib/db';
 import {
   saveRawEvent,
   updateRawEventStatus,
@@ -19,6 +20,9 @@ export async function POST(req: NextRequest) {
   let rawEventDbId: string | null = null;
 
   try {
+    // Ensure database schema is initialized
+    getDb();
+    
     // ── Shared secret / signature check ──
     const secretHeader = req.headers.get('x-wati-webhook-secret') || req.nextUrl.searchParams.get('secret');
     const expectedSecret = process.env.WATI_WEBHOOK_SECRET;
