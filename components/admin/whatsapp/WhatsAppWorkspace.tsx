@@ -1,0 +1,692 @@
+'use client';
+
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  Search, User, Calendar, Clock,
+  Link2, Send, MessageSquare, CheckCheck, Check,
+  ShieldAlert, Archive, Inbox, Phone, RefreshCw, Unlink
+} from 'lucide-react';
+import { format } from 'date-fns';
+import { id } from 'date-fns/locale';
+
+interface Conversation {
+  id: string;
+  contact_id: string;
+  status: 'open' | 'pending_human' | 'resolved' | 'archived';
+  assigned_to: string | null;
+  last_inbound_at: string | null;
+  last_outbound_at: string | null;
+  last_message_at: string | null;
+  booking_id: string | null;
+  phone_number: string;
+  display_name: string | null;
+}
+
+interface Message {
+  id: string;
+  conversation_id: string;
+  contact_id: string;
+  direction: 'incoming' | 'outgoing';
+  sender_type: 'customer' | 'owner' | 'cs' | 'bot' | 'system';
+  message_type: string;
+  text: string | null;
+  media_url: string | null;
+  media_mime_type: string | null;
+  status: 'sent' | 'delivered' | 'read' | 'failed' | null;
+  wati_timestamp: string;
+}
+
+interface Booking {
+  id: string;
+  created_at: string;
+  status: 'Active' | 'Cancelled' | 'Rescheduled' | 'Completed';
+  customer: {
+    name: string;
+    whatsapp: string;
+    category: string;
+  };
+  booking: {
+    date: string;
+    notes: string;
+  };
+  finance: {
+    total_price: number;
+    payments: Array<{
+      amount: number;
+      date: string;
+      note: string;
+    }>;
+  };
+}
+
+export function WhatsAppWorkspace() {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [customerBookings, setCustomerBookings] = useState<Booking[]>([]);
+  const [allBookings, setAllBookings] = useState<Booking[]>([]);
+  
+  // Search & Filters
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'pending_human' | 'resolved'>('all');
+  const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  
+  // Inputs & Loading
+  const [replyText, setReplyText] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [isLoadingConvs, setIsLoadingConvs] = useState(false);
+  const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
+  
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Fetch Conversations list
+  const fetchConversations = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoadingConvs(true);
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations?status=${statusFilter}&search=${encodeURIComponent(searchTerm)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setConversations(data.conversations || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch conversations:', err);
+    } finally {
+      if (showLoading) setIsLoadingConvs(false);
+    }
+  }, [statusFilter, searchTerm]);
+
+  // Fetch Messages for selected conversation
+  const fetchMessages = useCallback(async (convId: string) => {
+    setIsLoadingMsgs(true);
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${convId}/messages`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch messages:', err);
+    } finally {
+      setIsLoadingMsgs(false);
+    }
+  }, []);
+
+  // Fetch bookings for Customer 360 panel
+  const fetchAllBookings = useCallback(async () => {
+    try {
+      const res = await fetch('/api/bookings');
+      if (res.ok) {
+        const data = await res.json();
+        setAllBookings(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch all bookings:', err);
+    }
+  }, []);
+
+  // Poll for new messages/conversations every 10 seconds
+  useEffect(() => {
+    fetchConversations(true);
+    fetchAllBookings();
+    
+    const interval = setInterval(() => {
+      fetchConversations(false);
+      if (selectedConversation) {
+        // Poll messages silently
+        fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/messages`)
+          .then(res => {
+            if (res.ok) return res.json();
+          })
+          .then(data => {
+            if (data) setMessages(data);
+          })
+          .catch(err => console.error('Polled messages error:', err));
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [searchTerm, statusFilter, fetchConversations, fetchAllBookings, selectedConversation]);
+
+  // Handle conversation selection change
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation.id);
+      
+      // Filter bookings belonging to this customer
+      const phoneDigits = selectedConversation.phone_number.replace(/\D/g, '');
+      const filtered = allBookings.filter(b => {
+        const bPhoneDigits = b.customer.whatsapp.replace(/\D/g, '');
+        return bPhoneDigits.includes(phoneDigits) || phoneDigits.includes(bPhoneDigits);
+      });
+      setCustomerBookings(filtered);
+    } else {
+      setMessages([]);
+      setCustomerBookings([]);
+    }
+  }, [selectedConversation, allBookings, fetchMessages]);
+
+  // Scroll to bottom on new message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Send message handler
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedConversation || !replyText.trim() || isSending) return;
+
+    setIsSending(true);
+    const textToSend = replyText.trim();
+    setReplyText(''); // Clear input instantly for better UX
+
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textToSend })
+      });
+
+      if (res.ok) {
+        // Reload messages to show sent message
+        await fetchMessages(selectedConversation.id);
+        fetchConversations(false);
+      } else {
+        alert('Gagal mengirim pesan. Silakan coba lagi.');
+        setReplyText(textToSend); // Restore text
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      alert('Gagal mengirim pesan due to error.');
+      setReplyText(textToSend);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // Update conversation status (Open / Resolved / Archived)
+  const handleUpdateStatus = async (convId: string, newStatus: 'open' | 'resolved' | 'archived') => {
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${convId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (res.ok) {
+        if (selectedConversation?.id === convId) {
+          setSelectedConversation(prev => prev ? { ...prev, status: newStatus } : null);
+        }
+        fetchConversations(false);
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+    }
+  };
+
+  // Link booking handler
+  const handleLinkBooking = async (bookingId: string | null) => {
+    if (!selectedConversation) return;
+
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/link-booking`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId })
+      });
+
+      if (res.ok) {
+        setSelectedConversation(prev => prev ? { ...prev, booking_id: bookingId } : null);
+        fetchAllBookings();
+        alert(bookingId ? 'Booking berhasil ditautkan!' : 'Booking berhasil dilepas!');
+      }
+    } catch (err) {
+      console.error('Failed to link booking:', err);
+    }
+  };
+
+  // Format Helper
+  const formatMsgTime = (isoString: string) => {
+    try {
+      return format(new Date(isoString), 'HH:mm');
+    } catch {
+      return '';
+    }
+  };
+
+  const formatRelativeDay = (isoString: string | null) => {
+    if (!isoString) return '';
+    try {
+      const date = new Date(isoString);
+      return format(date, 'd MMM yy, HH:mm', { locale: id });
+    } catch {
+      return '';
+    }
+  };
+
+  // Calculate stats for customer
+  const totalPaid = customerBookings.reduce((sum, b) => {
+    const paidAmount = b.finance.payments.reduce((pSum, p) => pSum + p.amount, 0);
+    return sum + paidAmount;
+  }, 0);
+
+  const matchedLinkedBooking = allBookings.find(b => b.id === selectedConversation?.booking_id);
+
+  // Search bookings for link options
+  const searchResults = bookingSearchQuery.trim()
+    ? allBookings.filter(b => 
+        b.customer.name.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
+        b.id.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
+        b.customer.whatsapp.includes(bookingSearchQuery)
+      ).slice(0, 5)
+    : [];
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden flex h-[calc(100vh-140px)] animate-in fade-in duration-300">
+      
+      {/* ── Left Pane: Conversation List ── */}
+      <div className="w-1/4 min-w-[280px] border-r border-slate-100 flex flex-col bg-slate-50/50">
+        
+        {/* Header & Search */}
+        <div className="p-4 border-b border-slate-100 bg-white space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <MessageSquare className="text-blue-600 w-5 h-5" />
+              WhatsApp Inbox
+            </h2>
+            <button 
+              onClick={() => fetchConversations(true)}
+              className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition"
+              title="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-2.5 text-slate-400 w-4 h-4" />
+            <input
+              type="text"
+              placeholder="Cari nomor/nama..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white transition"
+            />
+          </div>
+
+          {/* Filters Tab */}
+          <div className="flex gap-1.5 p-0.5 bg-slate-100 rounded-lg text-xs font-semibold">
+            {(['all', 'open', 'pending_human', 'resolved'] as const).map((filter) => {
+              const label = filter === 'all' ? 'Semua' : filter === 'open' ? 'Buka' : filter === 'pending_human' ? 'Perlu CS' : 'Selesai';
+              const isActive = statusFilter === filter;
+              return (
+                <button
+                  key={filter}
+                  onClick={() => setStatusFilter(filter)}
+                  className={`flex-1 py-1.5 rounded-md transition text-center ${
+                    isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Conversations Scroll View */}
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-100/60 custom-scrollbar">
+          {isLoadingConvs ? (
+            <div className="p-8 text-center text-slate-400 text-sm flex flex-col items-center gap-2">
+              <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+              Memuat percakapan...
+            </div>
+          ) : conversations.length === 0 ? (
+            <div className="p-8 text-center text-slate-400 text-sm flex flex-col items-center gap-2">
+              <Inbox className="w-8 h-8 text-slate-300" />
+              Tidak ada percakapan
+            </div>
+          ) : (
+            conversations.map((conv) => {
+              const isSelected = selectedConversation?.id === conv.id;
+              return (
+                <button
+                  key={conv.id}
+                  onClick={() => setSelectedConversation(conv)}
+                  className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-1 border-l-4 ${
+                    isSelected 
+                      ? 'bg-blue-50/40 border-blue-600 bg-white' 
+                      : 'border-transparent hover:bg-slate-100/50 bg-white'
+                  }`}
+                >
+                  <div className="flex justify-between items-start w-full">
+                    <span className="font-semibold text-slate-800 text-sm truncate max-w-[150px]">
+                      {conv.display_name || conv.phone_number}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {formatRelativeDay(conv.last_message_at).split(',')[0]}
+                    </span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center w-full mt-1">
+                    <span className="text-xs text-slate-500 truncate max-w-[170px]">
+                      {conv.phone_number}
+                    </span>
+                    
+                    {/* Status Pill */}
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      conv.status === 'pending_human' 
+                        ? 'bg-amber-100 text-amber-800' 
+                        : conv.status === 'open'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {conv.status === 'pending_human' ? 'Perlu CS' : conv.status === 'open' ? 'Buka' : 'Selesai'}
+                    </span>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* ── Middle Pane: Chat Window ── */}
+      <div className="flex-1 flex flex-col bg-slate-50">
+        {selectedConversation ? (
+          <>
+            {/* Chat Header */}
+            <div className="px-6 py-4 bg-white border-b border-slate-100 flex items-center justify-between shadow-sm relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold shadow-inner">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-800 text-base">
+                    {selectedConversation.display_name || selectedConversation.phone_number}
+                  </h3>
+                  <p className="text-xs text-slate-500 flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5" />
+                    {selectedConversation.phone_number}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-2">
+                {matchedLinkedBooking && (
+                  <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100">
+                    <Link2 className="w-3.5 h-3.5" />
+                    Taut: {matchedLinkedBooking.id}
+                  </div>
+                )}
+                
+                {selectedConversation.status !== 'resolved' ? (
+                  <button
+                    onClick={() => handleUpdateStatus(selectedConversation.id, 'resolved')}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-850 rounded-xl text-xs font-bold transition"
+                  >
+                    <Archive className="w-4 h-4" />
+                    Tandai Selesai
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleUpdateStatus(selectedConversation.id, 'open')}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl text-xs font-bold transition"
+                  >
+                    <Inbox className="w-4 h-4" />
+                    Buka Kembali
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Bubble Messages Container */}
+            <div 
+              ref={chatContainerRef}
+              className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-50"
+            >
+              {isLoadingMsgs ? (
+                <div className="h-full flex items-center justify-center text-slate-400 text-sm">
+                  <RefreshCw className="w-5 h-5 animate-spin mr-2 text-blue-500" />
+                  Memuat riwayat chat...
+                </div>
+              ) : messages.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
+                  <MessageSquare className="w-8 h-8 text-slate-300" />
+                  Belum ada pesan terkirim
+                </div>
+              ) : (
+                messages.map((msg) => {
+                  const isCustomer = msg.direction === 'incoming';
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex w-full ${isCustomer ? 'justify-start' : 'justify-end'}`}
+                    >
+                      <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm relative ${
+                        isCustomer 
+                          ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100' 
+                          : 'bg-blue-600 text-white rounded-tr-none'
+                      }`}>
+                        
+                        {/* Message Text */}
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed break-words">
+                          {msg.text}
+                        </p>
+                        
+                        {/* Timestamp & Status Icon */}
+                        <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${
+                          isCustomer ? 'text-slate-400' : 'text-blue-200'
+                        }`}>
+                          <span>{formatMsgTime(msg.wati_timestamp)}</span>
+                          {!isCustomer && (
+                            msg.status === 'read' ? (
+                              <CheckCheck className="w-3 h-3 text-blue-300" />
+                            ) : msg.status === 'failed' ? (
+                              <ShieldAlert className="w-3 h-3 text-red-300" />
+                            ) : (
+                              <Check className="w-3 h-3 text-blue-200" />
+                            )
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Message Input Box */}
+            <div className="p-4 bg-white border-t border-slate-100">
+              <form onSubmit={handleSendMessage} className="flex gap-3">
+                <textarea
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  placeholder="Tulis balasan pesan WhatsApp..."
+                  rows={2}
+                  className="flex-1 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-slate-50 focus:bg-white transition"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage(e);
+                    }
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={isSending || !replyText.trim()}
+                  className="px-5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl flex items-center justify-center transition active:scale-95 shadow-md shadow-blue-500/20 shrink-0"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </form>
+            </div>
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-slate-400 p-8">
+            <Inbox className="w-12 h-12 text-slate-350 mb-3" />
+            <p className="text-base font-semibold text-slate-600">Pilih Percakapan</p>
+            <p className="text-sm text-slate-450 mt-1">Pilih salah satu nomor di panel kiri untuk mulai membalas pesan.</p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Right Pane: Customer 360 (Only visible when conversation is active) ── */}
+      {selectedConversation && (
+        <div className="w-1/3 min-w-[320px] max-w-[400px] border-l border-slate-100 flex flex-col bg-white overflow-y-auto custom-scrollbar p-6 space-y-6">
+          
+          {/* Customer Profile Section */}
+          <div className="text-center pb-6 border-b border-slate-100">
+            <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold mx-auto mb-3 shadow-inner">
+              <User className="w-8 h-8" />
+            </div>
+            <h4 className="font-bold text-slate-800 text-lg">
+              {selectedConversation.display_name || 'Customer'}
+            </h4>
+            <p className="text-sm text-slate-500 mt-0.5">{selectedConversation.phone_number}</p>
+          </div>
+
+          {/* Finance & Transaction Summary */}
+          <div>
+            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Ringkasan Transaksi</h5>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-semibold text-slate-500 block">Total Booking</span>
+                <span className="text-lg font-bold text-slate-800">{customerBookings.length}x</span>
+              </div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <span className="text-[10px] font-semibold text-slate-500 block">Dana Masuk</span>
+                <span className="text-sm font-bold text-emerald-600 block mt-1">
+                  Rp {totalPaid.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Linked Booking details */}
+          <div>
+            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Booking Ditautkan</h5>
+            {matchedLinkedBooking ? (
+              <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 space-y-3">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded">
+                      {matchedLinkedBooking.id}
+                    </span>
+                    <span className="block text-slate-850 font-bold text-sm mt-1.5">
+                      {matchedLinkedBooking.customer.category}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => handleLinkBooking(null)}
+                    className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg p-1 transition"
+                    title="Lepas tautan booking"
+                  >
+                    <Unlink className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-650">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    {matchedLinkedBooking.booking.date.split('T')[0]}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                    {matchedLinkedBooking.booking.date.split('T')[1]?.substring(0, 5) || ''}
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-blue-100 flex justify-between items-center text-xs font-semibold">
+                  <span className="text-slate-500">Harga:</span>
+                  <span className="text-slate-800">
+                    Rp {matchedLinkedBooking.finance.total_price.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl p-4 text-center">
+                Belum ada booking yang ditautkan ke chat ini.
+              </div>
+            )}
+          </div>
+
+          {/* Link Booking Actions */}
+          <div>
+            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tautkan Booking Manual</h5>
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2 text-slate-400 w-3.5 h-3.5" />
+                <input
+                  type="text"
+                  placeholder="Cari Booking ID / Nama..."
+                  value={bookingSearchQuery}
+                  onChange={(e) => setBookingSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              {searchResults.length > 0 && (
+                <div className="border border-slate-100 rounded-lg divide-y divide-slate-50 bg-slate-50 max-h-40 overflow-y-auto">
+                  {searchResults.map(b => (
+                    <button
+                      key={b.id}
+                      onClick={() => {
+                        handleLinkBooking(b.id);
+                        setBookingSearchQuery('');
+                      }}
+                      className="w-full text-left p-2.5 hover:bg-blue-50 transition text-xs flex justify-between items-center"
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-800 block">{b.customer.name}</span>
+                        <span className="text-slate-500 text-[10px]">{b.id} - {b.customer.category}</span>
+                      </div>
+                      <Link2 className="w-3.5 h-3.5 text-blue-500" />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Bookings History list */}
+          <div>
+            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Histori Booking Kontak</h5>
+            {customerBookings.length > 0 ? (
+              <div className="space-y-2">
+                {customerBookings.map((b) => (
+                  <div 
+                    key={b.id}
+                    onClick={() => handleLinkBooking(b.id)}
+                    className="p-3 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50/10 cursor-pointer transition text-xs flex justify-between items-center"
+                  >
+                    <div>
+                      <span className="font-semibold text-slate-700 block">{b.customer.category}</span>
+                      <span className="text-slate-400 text-[10px]">{b.booking.date.split('T')[0]} - {b.id}</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                      b.status === 'Completed' 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : b.status === 'Cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {b.status === 'Completed' ? 'Selesai' : b.status === 'Cancelled' ? 'Batal' : 'Aktif'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-450 text-center">Tidak ada histori booking.</p>
+            )}
+          </div>
+
+        </div>
+      )}
+
+    </div>
+  );
+}
+export default WhatsAppWorkspace;
