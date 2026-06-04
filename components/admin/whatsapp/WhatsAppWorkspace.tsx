@@ -20,6 +20,13 @@ interface Conversation {
   booking_id: string | null;
   phone_number: string;
   display_name: string | null;
+  crm_label?: string;
+  next_fu_at?: string | null;
+  fu_note?: string | null;
+  fu_template_key?: string | null;
+  last_fu_at?: string | null;
+  fu_count?: number;
+  label_source?: string;
 }
 
 interface Message {
@@ -59,6 +66,45 @@ interface Booking {
   };
 }
 
+const CRM_TEMPLATES: Record<string, { key: string; label: string; text: string; nextDays: number }> = {
+  leads: {
+    key: 'leads_1d',
+    label: 'Leads (Hari ke-1)',
+    text: 'Halo kak, ada yang bisa CeritaKita bantu?',
+    nextDays: 1
+  },
+  warm: {
+    key: 'warm_3d',
+    label: 'Warm Leads (Hari ke-3)',
+    text: 'Halo kak, masih tertarik untuk sesi foto di CeritaKita? Kalau ada yang ingin ditanyakan, kami bantu ya.',
+    nextDays: 3
+  },
+  booking: {
+    key: 'booking_post_session_1d',
+    label: 'Post Session (H+1)',
+    text: 'Terima kasih sudah foto bareng CeritaKita, kak. Semoga suka dengan experience-nya ya.',
+    nextDays: 1
+  },
+  completed: {
+    key: 'review_request_1d',
+    label: 'Minta Review (H+1)',
+    text: 'Kalau berkenan, boleh bantu share review/testimoni singkat ya kak.',
+    nextDays: 1
+  },
+  testimoni: {
+    key: 'repeat_30d',
+    label: 'Repeat Offer (+30 Hari)',
+    text: 'Halo kak, kapan-kapan mau foto lagi di CeritaKita? Kami siap bantu kalau mau booking sesi berikutnya.',
+    nextDays: 30
+  },
+  cold: {
+    key: 'none',
+    label: 'None',
+    text: '',
+    nextDays: 0
+  }
+};
+
 export function WhatsAppWorkspace() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -68,8 +114,9 @@ export function WhatsAppWorkspace() {
 
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'pending_human' | 'resolved'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'pending_human' | 'resolved' | 'follow_up'>('all');
   const [bookingSearchQuery, setBookingSearchQuery] = useState('');
+  const [dueFollowUpCount, setDueFollowUpCount] = useState(0);
 
   // Inputs & Loading
   const [replyText, setReplyText] = useState('');
@@ -85,6 +132,25 @@ export function WhatsAppWorkspace() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  const getCrmBadgeStyles = (label?: string) => {
+    switch (label) {
+      case 'leads':
+        return 'bg-slate-100 text-slate-800 border-slate-200';
+      case 'warm':
+        return 'bg-amber-100 text-amber-800 border-amber-250';
+      case 'booking':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'completed':
+        return 'bg-emerald-100 text-emerald-800 border-emerald-250';
+      case 'testimoni':
+        return 'bg-purple-100 text-purple-850 border-purple-200';
+      case 'cold':
+        return 'bg-slate-100 text-slate-500 border-slate-250';
+      default:
+        return 'bg-slate-100 text-slate-800 border-slate-200';
+    }
+  };
+
   // Show non-blocking toast helper
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -98,21 +164,107 @@ export function WhatsAppWorkspace() {
     }
   }, [toast]);
 
+  // Fetch due follow-ups count
+  const fetchDueCount = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/whatsapp/follow-ups?limit=1');
+      if (res.ok) {
+        const data = await res.json();
+        setDueFollowUpCount(data.total || 0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch due count:', err);
+    }
+  }, []);
+
   // Fetch Conversations list
   const fetchConversations = useCallback(async (showLoading = true) => {
     if (showLoading) setIsLoadingConvs(true);
     try {
-      const res = await fetch(`/api/admin/whatsapp/conversations?status=${statusFilter}&search=${encodeURIComponent(searchTerm)}`);
+      const isFU = statusFilter === 'follow_up';
+      const statusParam = isFU ? 'all' : statusFilter;
+      const res = await fetch(`/api/admin/whatsapp/conversations?status=${statusParam}&dueFollowUp=${isFU}&search=${encodeURIComponent(searchTerm)}`);
       if (res.ok) {
         const data = await res.json();
         setConversations(data.conversations || []);
       }
+      fetchDueCount();
     } catch (err) {
       console.error('Failed to fetch conversations:', err);
     } finally {
       if (showLoading) setIsLoadingConvs(false);
     }
-  }, [statusFilter, searchTerm]);
+  }, [statusFilter, searchTerm, fetchDueCount]);
+
+  // Update CRM metadata handler
+  const handleUpdateCrm = async (
+    label: string,
+    nextFu: string | null,
+    note: string | null,
+    templateKey: string | null
+  ) => {
+    if (!selectedConversation) return;
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/crm`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          crmLabel: label,
+          nextFuAt: nextFu,
+          fuNote: note,
+          fuTemplateKey: templateKey
+        })
+      });
+
+      if (res.ok) {
+        setSelectedConversation(prev => prev ? {
+          ...prev,
+          crm_label: label,
+          next_fu_at: nextFu,
+          fu_note: note,
+          fu_template_key: templateKey,
+          label_source: 'admin'
+        } : null);
+        fetchConversations(false);
+        showToast('Pipeline CRM berhasil diperbarui!');
+      } else {
+        showToast('Gagal memperbarui CRM.', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to update CRM:', err);
+      showToast('Gagal menghubungi server.', 'error');
+    }
+  };
+
+  // Mark follow-up as sent
+  const handleMarkFuSent = async () => {
+    if (!selectedConversation) return;
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/follow-up/mark-sent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'copied' })
+      });
+
+      if (res.ok) {
+        setSelectedConversation(prev => prev ? {
+          ...prev,
+          next_fu_at: null,
+          fu_note: null,
+          fu_template_key: null,
+          fu_count: (prev.fu_count || 0) + 1,
+          last_fu_at: new Date().toISOString()
+        } : null);
+        fetchConversations(false);
+        showToast('Follow-up ditandai selesai!');
+      } else {
+        showToast('Gagal menandai follow-up.', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to mark follow-up sent:', err);
+      showToast('Gagal menghubungi server.', 'error');
+    }
+  };
 
   // Fetch Messages for selected conversation
   const fetchMessages = useCallback(async (convId: string) => {
@@ -368,19 +520,26 @@ export function WhatsAppWorkspace() {
           </div>
 
           {/* Filters Tab */}
-          <div className="flex gap-1.5 p-0.5 bg-slate-100 rounded-lg text-xs font-semibold">
-            {(['all', 'open', 'pending_human', 'resolved'] as const).map((filter) => {
-              const label = filter === 'all' ? 'Semua' : filter === 'open' ? 'Buka' : filter === 'pending_human' ? 'Perlu CS' : 'Selesai';
+          <div className="flex flex-wrap gap-1 p-0.5 bg-slate-100 rounded-lg text-[10px] font-semibold">
+            {(['all', 'open', 'pending_human', 'resolved', 'follow_up'] as const).map((filter) => {
+              const label = filter === 'all' ? 'Semua' : filter === 'open' ? 'Buka' : filter === 'pending_human' ? 'Perlu CS' : filter === 'resolved' ? 'Selesai' : 'Follow-up';
               const isActive = statusFilter === filter;
               return (
                 <button
                   key={filter}
                   onClick={() => setStatusFilter(filter)}
-                  className={`flex-1 py-1.5 rounded-md transition text-center ${
+                  className={`flex-1 py-1.5 px-1 rounded-md transition text-center relative ${
                     isActive ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  {label}
+                  <span className="flex items-center justify-center gap-0.5">
+                    {label}
+                    {filter === 'follow_up' && dueFollowUpCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white font-black rounded-full text-[8px] h-4 w-4 flex items-center justify-center border border-white shadow-sm animate-pulse">
+                        {dueFollowUpCount}
+                      </span>
+                    )}
+                  </span>
                 </button>
               );
             })}
@@ -422,20 +581,29 @@ export function WhatsAppWorkspace() {
                   </div>
 
                   <div className="flex justify-between items-center w-full mt-1">
-                    <span className="text-xs text-slate-500 truncate max-w-[170px]">
+                    <span className="text-xs text-slate-500 truncate max-w-[120px]">
                       {conv.phone_number}
                     </span>
 
-                    {/* Status Pill */}
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                      conv.status === 'pending_human'
-                        ? 'bg-amber-100 text-amber-800'
-                        : conv.status === 'open'
-                        ? 'bg-blue-100 text-blue-800'
-                        : 'bg-emerald-100 text-emerald-800'
-                    }`}>
-                      {conv.status === 'pending_human' ? 'Perlu CS' : conv.status === 'open' ? 'Buka' : 'Selesai'}
-                    </span>
+                    <div className="flex gap-1 items-center shrink-0">
+                      {/* CRM Label Pill */}
+                      {conv.crm_label && (
+                        <span className={`px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${getCrmBadgeStyles(conv.crm_label)}`}>
+                          {conv.crm_label}
+                        </span>
+                      )}
+
+                      {/* Status Pill */}
+                      <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase ${
+                        conv.status === 'pending_human'
+                          ? 'bg-amber-100 text-amber-800 border border-amber-250'
+                          : conv.status === 'open'
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-250'
+                      }`}>
+                        {conv.status === 'pending_human' ? 'CS' : conv.status === 'open' ? 'Buka' : 'Selesai'}
+                      </span>
+                    </div>
                   </div>
                 </button>
               );
@@ -599,6 +767,139 @@ export function WhatsAppWorkspace() {
               {selectedConversation.display_name || 'Customer'}
             </h4>
             <p className="text-sm text-slate-500 mt-0.5">{selectedConversation.phone_number}</p>
+          </div>
+
+          {/* WhatsApp CRM Pipeline Section */}
+          <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-4 shadow-sm">
+            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
+              WhatsApp CRM Pipeline
+            </h5>
+
+            {/* Stage Dropdown */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase block">Tahapan Pipeline</label>
+              <select
+                value={selectedConversation.crm_label || 'leads'}
+                onChange={(e) => {
+                  const newLabel = e.target.value;
+                  const template = CRM_TEMPLATES[newLabel];
+                  let nextFuString: string | null = null;
+                  if (template && template.nextDays > 0) {
+                    const d = new Date();
+                    d.setDate(d.getDate() + template.nextDays);
+                    nextFuString = d.toISOString();
+                  }
+                  handleUpdateCrm(newLabel, nextFuString, template?.text || '', template?.key || '');
+                }}
+                className="w-full text-xs font-semibold px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+              >
+                <option value="leads">Leads (Baru)</option>
+                <option value="warm">Warm Leads (Tanya-tanya)</option>
+                <option value="booking">Booking (Aktif)</option>
+                <option value="completed">Completed (Selesai Foto)</option>
+                <option value="testimoni">Testimoni (Kandidat Repeat)</option>
+                <option value="cold">Cold (Tidak Respons)</option>
+              </select>
+            </div>
+
+            {/* Next Follow-up Schedule */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase flex justify-between items-center">
+                <span>Jadwal Follow-up</span>
+                {selectedConversation.next_fu_at && (
+                  <button
+                    onClick={() => handleUpdateCrm(selectedConversation.crm_label || 'leads', null, null, null)}
+                    className="text-[9px] text-red-500 hover:text-red-700 font-bold transition"
+                  >
+                    Hapus Jadwal
+                  </button>
+                )}
+              </label>
+              <input
+                type="datetime-local"
+                value={
+                  selectedConversation.next_fu_at
+                    ? (() => {
+                        try {
+                          const date = new Date(selectedConversation.next_fu_at);
+                          const tzOffset = date.getTimezoneOffset() * 60000;
+                          return new Date(date.getTime() - tzOffset).toISOString().slice(0, 16);
+                        } catch {
+                          return '';
+                        }
+                      })()
+                    : ''
+                }
+                onChange={(e) => {
+                  const localVal = e.target.value;
+                  if (!localVal) return;
+                  const isoVal = new Date(localVal).toISOString();
+                  const currentLabel = selectedConversation.crm_label || 'leads';
+                  const template = CRM_TEMPLATES[currentLabel];
+                  handleUpdateCrm(currentLabel, isoVal, selectedConversation.fu_note || template?.text || '', selectedConversation.fu_template_key || template?.key || '');
+                }}
+                className="w-full text-xs px-3 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition"
+              />
+            </div>
+
+            {/* Follow-up Note / Template */}
+            {selectedConversation.next_fu_at && (
+              <div className="space-y-2 border-t border-slate-200/60 pt-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Pesan Follow-up</span>
+                  <span className="text-[9px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                    Saran: {selectedConversation.fu_template_key || 'Custom'}
+                  </span>
+                </div>
+
+                <textarea
+                  value={selectedConversation.fu_note || ''}
+                  onChange={(e) => {
+                    const newNote = e.target.value;
+                    handleUpdateCrm(
+                      selectedConversation.crm_label || 'leads',
+                      selectedConversation.next_fu_at || null,
+                      newNote,
+                      selectedConversation.fu_template_key || 'custom'
+                    );
+                  }}
+                  rows={3}
+                  className="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition"
+                />
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      const text = selectedConversation.fu_note || '';
+                      navigator.clipboard.writeText(text)
+                        .then(() => showToast('Pesan disalin ke clipboard!'))
+                        .catch(() => showToast('Gagal menyalin.', 'error'));
+                    }}
+                    className="flex-1 py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    Salin Pesan
+                  </button>
+
+                  <button
+                    onClick={handleMarkFuSent}
+                    className="flex-1 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/10 active:scale-95"
+                  >
+                    <CheckCheck className="w-3.5 h-3.5" />
+                    Tandai Terkirim
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Statistics Row */}
+            <div className="flex justify-between items-center text-[10px] text-slate-400 font-semibold border-t border-slate-200/60 pt-3">
+              <span>Total FU: {selectedConversation.fu_count || 0}x</span>
+              {selectedConversation.last_fu_at && (
+                <span>Terakhir: {formatRelativeDay(selectedConversation.last_fu_at).split(',')[0]}</span>
+              )}
+            </div>
           </div>
 
           {/* Finance & Transaction Summary */}

@@ -7,8 +7,8 @@ import { AppError, createErrorResponse } from '@/lib/logger';
 export const dynamic = 'force-dynamic';
 
 /**
- * GET /api/admin/whatsapp/conversations
- * Retrieve paginated conversations with search and filter options
+ * GET /api/admin/whatsapp/follow-ups
+ * Retrieve due/overdue follow-ups
  */
 export async function GET(request: NextRequest) {
   try {
@@ -23,21 +23,21 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status') || 'all';
-    const search = searchParams.get('search') || '';
-    const dueFollowUp = searchParams.get('dueFollowUp') === 'true';
+    const label = searchParams.get('label') || 'all';
+    const limit = parseInt(searchParams.get('limit') || '50', 10);
     const page = parseInt(searchParams.get('page') || '1', 10);
-    const limit = parseInt(searchParams.get('limit') || '20', 10);
 
     const result = getConversations({
-      status,
-      search,
-      dueFollowUp,
+      crmLabel: label,
+      dueFollowUp: true,
       page,
       limit
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json({
+      items: result.conversations,
+      total: result.total
+    });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });

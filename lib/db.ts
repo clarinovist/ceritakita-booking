@@ -820,12 +820,41 @@ function initializeSchema() {
       last_outbound_at TEXT,
       last_message_at TEXT,
       booking_id TEXT,
+      crm_label TEXT DEFAULT 'leads',
+      next_fu_at TEXT,
+      fu_note TEXT,
+      fu_template_key TEXT,
+      last_fu_at TEXT,
+      fu_count INTEGER NOT NULL DEFAULT 0,
+      label_source TEXT DEFAULT 'system',
+      label_updated_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (contact_id) REFERENCES whatsapp_contacts(id) ON DELETE CASCADE,
       FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL
     )
   `);
+
+  // Add new columns to existing whatsapp_conversations table (migration)
+  const columnsToAdd = [
+    { name: 'crm_label', definition: "TEXT DEFAULT 'leads'" },
+    { name: 'next_fu_at', definition: 'TEXT' },
+    { name: 'fu_note', definition: 'TEXT' },
+    { name: 'fu_template_key', definition: 'TEXT' },
+    { name: 'last_fu_at', definition: 'TEXT' },
+    { name: 'fu_count', definition: 'INTEGER NOT NULL DEFAULT 0' },
+    { name: 'label_source', definition: "TEXT DEFAULT 'system'" },
+    { name: 'label_updated_at', definition: 'TEXT' }
+  ];
+
+  for (const col of columnsToAdd) {
+    try {
+      db.exec(`ALTER TABLE whatsapp_conversations ADD COLUMN ${col.name} ${col.definition}`);
+      console.log(`✅ Database migration: Added ${col.name} column to whatsapp_conversations table`);
+    } catch {
+      // Column already exists
+    }
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS whatsapp_messages (
@@ -882,6 +911,9 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_wa_msg_contact ON whatsapp_messages(contact_id);
     CREATE INDEX IF NOT EXISTS idx_wa_msg_wati_id ON whatsapp_messages(wati_message_id);
     CREATE INDEX IF NOT EXISTS idx_msg_outbox_status ON message_outbox(status);
+    CREATE INDEX IF NOT EXISTS idx_wa_conv_crm_label ON whatsapp_conversations(crm_label);
+    CREATE INDEX IF NOT EXISTS idx_wa_conv_next_fu_at ON whatsapp_conversations(next_fu_at);
+    CREATE INDEX IF NOT EXISTS idx_wa_conv_label_fu ON whatsapp_conversations(crm_label, next_fu_at);
   `);
 }
 

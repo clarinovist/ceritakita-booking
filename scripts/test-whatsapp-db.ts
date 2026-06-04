@@ -72,6 +72,59 @@ async function testDatabase() {
     const outboxId = queueOutbox(conversationId, contactId, 'Halo! Silakan lihat paket kami.', 'session_text');
     console.log('✅ Outbox message queued. ID:', outboxId);
 
+    // 5.5 Test CRM features
+    console.log('\nTesting CRM updateConversationCrm...');
+    const { updateConversationCrm, markFollowUpSent, classifyIncomingMessage } = await import('../lib/repositories/whatsapp');
+
+    updateConversationCrm(conversationId, {
+      crmLabel: 'warm',
+      nextFuAt: '2026-06-10T12:00:00.000Z',
+      fuNote: 'Test follow up note',
+      fuTemplateKey: 'warm_3d'
+    });
+
+    // Retrieve conversation and verify
+    let convAfterCrm = db.prepare('SELECT * FROM whatsapp_conversations WHERE id = ?').get(conversationId) as any;
+    console.log('CRM Label updated to:', convAfterCrm.crm_label);
+    console.log('Next FU date:', convAfterCrm.next_fu_at);
+    console.log('FU Note:', convAfterCrm.fu_note);
+    console.log('Label Source:', convAfterCrm.label_source);
+
+    if (convAfterCrm.crm_label === 'warm' && convAfterCrm.next_fu_at === '2026-06-10T12:00:00.000Z') {
+      console.log('✅ updateConversationCrm success');
+    } else {
+      console.error('❌ updateConversationCrm mismatch!');
+    }
+
+    console.log('\nTesting CRM markFollowUpSent...');
+    markFollowUpSent(conversationId, 'copied');
+    let convAfterSent = db.prepare('SELECT * FROM whatsapp_conversations WHERE id = ?').get(conversationId) as any;
+    console.log('FU count after mark sent:', convAfterSent.fu_count);
+    console.log('Next FU date after mark sent (should be null):', convAfterSent.next_fu_at);
+    console.log('Last FU date:', convAfterSent.last_fu_at);
+    if (convAfterSent.fu_count === 1 && convAfterSent.next_fu_at === null && convAfterSent.last_fu_at !== null) {
+      console.log('✅ markFollowUpSent success');
+    } else {
+      console.error('❌ markFollowUpSent mismatch!');
+    }
+
+    console.log('\nTesting CRM classifyIncomingMessage...');
+    const class1 = classifyIncomingMessage('Berapa harga paket prewedding?', 'leads', 'system');
+    console.log('Classified price inquiry:', class1);
+    if (class1?.crmLabel === 'warm' && class1.fuTemplateKey === 'warm_3d') {
+      console.log('✅ Price keywords classification success');
+    } else {
+      console.error('❌ Price keywords classification failed');
+    }
+
+    const class2 = classifyIncomingMessage('Saya ada komplain mengenai jadwal reschedule', 'warm', 'system');
+    console.log('Classified reschedule/complaint:', class2);
+    if (class2 && class2.nextFuAt === null) {
+      console.log('✅ Reschedule/complaint classification success');
+    } else {
+      console.error('❌ Reschedule/complaint classification failed');
+    }
+
     // 6. Test getConversations
     console.log('\nTesting getConversations list...');
     const list = getConversations();

@@ -26,6 +26,14 @@ export interface WhatsAppConversation {
   last_outbound_at: string | null;
   last_message_at: string | null;
   booking_id: string | null;
+  crm_label?: string;
+  next_fu_at?: string | null;
+  fu_note?: string | null;
+  fu_template_key?: string | null;
+  last_fu_at?: string | null;
+  fu_count?: number;
+  label_source?: string;
+  label_updated_at?: string | null;
   created_at: string;
   updated_at: string;
   // Joined fields
@@ -98,10 +106,10 @@ export function updateRawEventStatus(id: string, status: 'processed' | 'failed',
 export function upsertContact(phone: string, displayName: string | null, watiContactId: string | null): string {
   const db = getDb();
   const normalizedPhone = normalizePhoneNumber(phone);
-  
+
   // Try to find existing contact by normalized phone
   const existing = db.prepare('SELECT id FROM whatsapp_contacts WHERE phone_number = ?').get(normalizedPhone) as { id: string } | undefined;
-  
+
   if (existing) {
     db.prepare(`
       UPDATE whatsapp_contacts
@@ -130,7 +138,7 @@ export function upsertConversation(
   status: 'open' | 'pending_human' | 'resolved' | 'archived' = 'open'
 ): string {
   const db = getDb();
-  
+
   // Try to find open/pending conversation for this contact
   const existing = db.prepare(`
     SELECT id FROM whatsapp_conversations
@@ -176,7 +184,7 @@ export function insertMessageIdempotent(data: {
   rawEventId?: string | null;
 }): { success: boolean; messageId: string } {
   const db = getDb();
-  
+
   // Check if message with same watiMessageId already exists (if ID is available)
   if (data.watiMessageId) {
     const existing = db.prepare('SELECT id FROM whatsapp_messages WHERE wati_message_id = ?').get(data.watiMessageId) as { id: string } | undefined;
@@ -262,9 +270,14 @@ export function insertMessageIdempotent(data: {
 /**
  * Retrieve list of conversations with contact details
  */
+/**
+ * Retrieve list of conversations with contact details and CRM support
+ */
 export function getConversations(filters: {
   status?: string;
   search?: string;
+  crmLabel?: string;
+  dueFollowUp?: boolean;
   page?: number;
   limit?: number;
 } = {}): { conversations: WhatsAppConversation[]; total: number } {
@@ -278,12 +291,23 @@ export function getConversations(filters: {
     JOIN whatsapp_contacts con ON c.contact_id = con.id
   `;
   const params: any[] = [];
-
   const conditions: string[] = [];
 
   if (filters.status && filters.status !== 'all') {
     conditions.push('c.status = ?');
     params.push(filters.status);
+  }
+
+  if (filters.crmLabel && filters.crmLabel !== 'all') {
+    conditions.push('c.crm_label = ?');
+    params.push(filters.crmLabel);
+  }
+
+  if (filters.dueFollowUp) {
+    conditions.push("c.next_fu_at IS NOT NULL AND c.next_fu_at <= ?");
+    params.push(new Date().toISOString());
+    conditions.push("c.crm_label IN ('leads', 'warm', 'completed', 'testimoni')");
+    conditions.push("c.status IN ('open', 'pending_human', 'resolved')");
   }
 
   if (filters.search) {
@@ -307,10 +331,158 @@ export function getConversations(filters: {
     ORDER BY c.last_message_at DESC
     LIMIT ? OFFSET ?
   `;
-  
+
   const conversations = db.prepare(itemsQuery).all(...params, limit, offset) as WhatsAppConversation[];
 
   return { conversations, total };
+}
+
+/**
+ * Update CRM pipeline metadata for a conversation
+ */
+export function updateConversationCrm(
+  id: string,
+  data: {
+    crmLabel?: string;
+    nextFuAt?: string | null;
+    fuNote?: string | null;
+    fuTemplateKey?: string | null;
+    labelSource?: string;
+  }
+): void {
+  const db = getDb();
+  const updates: string[] = [];
+  const params: any[] = [];
+
+  if (data.crmLabel !== undefined) {
+    updates.push('crm_label = ?');
+    params.push(data.crmLabel);
+  }
+  if (data.nextFuAt !== undefined) {
+    updates.push('next_fu_at = ?');
+    params.push(data.nextFuAt);
+  }
+  if (data.fuNote !== undefined) {
+    updates.push('fu_note = ?');
+    params.push(data.fuNote);
+  }
+  if (data.fuTemplateKey !== undefined) {
+    updates.push('fu_template_key = ?');
+    params.push(data.fuTemplateKey);
+  }
+  if (data.labelSource !== undefined) {
+    updates.push('label_source = ?');
+    params.push(data.labelSource);
+  }
+
+  if (updates.length === 0) return;
+
+  updates.push('label_updated_at = CURRENT_TIMESTAMP');
+  updates.push('updated_at = CURRENT_TIMESTAMP');
+
+  db.prepare(`
+    UPDATE whatsapp_conversations
+    SET ${updates.join(', ')}
+    WHERE id = ?
+  `).run(...params, id);
+}
+
+/**
+ * Mark a follow-up as sent, increment fu_count, set last_fu_at, and clear/reschedule next_fu_at
+ */
+export function markFollowUpSent(
+  id: string,
+  mode: 'copied' | 'sent_wati' | 'manual',
+  note?: string
+): void {
+  const db = getDb();
+
+  db.prepare(`
+    UPDATE whatsapp_conversations
+    SET last_fu_at = CURRENT_TIMESTAMP,
+        fu_count = fu_count + 1,
+        next_fu_at = NULL,
+        fu_note = NULL,
+        fu_template_key = NULL,
+        updated_at = CURRENT_TIMESTAMP
+    WHERE id = ?
+  `).run(id);
+
+  logger.info(`[CRM] Follow-up marked as sent for conversation ${id}`, { mode, note });
+}
+
+/**
+ * Classify incoming message based on keywords and suggest CRM stages
+ */
+export function classifyIncomingMessage(
+  text: string,
+  currentLabel: string,
+  labelSource: string
+): {
+  crmLabel: string;
+  nextFuAt: string | null;
+  fuTemplateKey: string | null;
+  fuNote: string | null;
+} | null {
+  if (labelSource === 'admin') {
+    return null;
+  }
+
+  const normalized = text.toLowerCase();
+
+  // Escalate / Complaint / Reschedule keywords (disable auto-FU)
+  const escalateKeywords = ['reschedule', 'ubah jadwal', 'cancel', 'batal', 'komplain', 'refund', 'salah'];
+  const hasEscalate = escalateKeywords.some(keyword => normalized.includes(keyword));
+  if (hasEscalate) {
+    return {
+      crmLabel: currentLabel,
+      nextFuAt: null,
+      fuTemplateKey: null,
+      fuNote: null
+    };
+  }
+
+  // Testimoni candidate
+  const testimoniKeywords = ['review', 'testimoni', 'makasih', 'terima kasih', 'puas', 'bagus', 'keren'];
+  const hasTestimoni = testimoniKeywords.some(keyword => normalized.includes(keyword));
+  if (hasTestimoni && (currentLabel === 'booking' || currentLabel === 'completed')) {
+    const nextFuDate = new Date();
+    nextFuDate.setDate(nextFuDate.getDate() + 30);
+    return {
+      crmLabel: 'testimoni',
+      nextFuAt: nextFuDate.toISOString(),
+      fuTemplateKey: 'repeat_30d',
+      fuNote: 'Halo kak, kapan-kapan mau foto lagi di CeritaKita? Kami siap bantu kalau mau booking sesi berikutnya.'
+    };
+  }
+
+  // Price/detail inquiry -> Warm
+  const priceKeywords = ['harga', 'paket', 'berapa', 'detail', 'promo', 'include', 'pricelist'];
+  const hasPrice = priceKeywords.some(keyword => normalized.includes(keyword));
+  if (hasPrice && currentLabel === 'leads') {
+    const nextFuDate = new Date();
+    nextFuDate.setDate(nextFuDate.getDate() + 3);
+    return {
+      crmLabel: 'warm',
+      nextFuAt: nextFuDate.toISOString(),
+      fuTemplateKey: 'warm_3d',
+      fuNote: 'Halo kak, masih tertarik untuk sesi foto di CeritaKita? Kalau ada yang ingin ditanyakan, kami bantu ya.'
+    };
+  }
+
+  // New lead / generic chat -> leads (+1 day FU)
+  if (currentLabel === 'leads') {
+    const nextFuDate = new Date();
+    nextFuDate.setDate(nextFuDate.getDate() + 1);
+    return {
+      crmLabel: 'leads',
+      nextFuAt: nextFuDate.toISOString(),
+      fuTemplateKey: 'leads_1d',
+      fuNote: 'Halo kak, ada yang bisa CeritaKita bantu?'
+    };
+  }
+
+  return null;
 }
 
 /**
@@ -361,12 +533,12 @@ export function queueOutbox(
 ): string {
   const db = getDb();
   const id = randomUUID();
-  
+
   db.prepare(`
     INSERT INTO message_outbox (id, conversation_id, contact_id, channel, send_type, payload, status, scheduled_at)
     VALUES (?, ?, ?, 'wati', ?, ?, 'pending', datetime('now'))
   `).run(id, conversationId, contactId, sendType, JSON.stringify({ text }));
-  
+
   return id;
 }
 
@@ -479,7 +651,7 @@ export async function processOutboxQueue(): Promise<void> {
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       logger.error(`Outbox processing failed for ${item.id}`, { error: errMsg });
-      
+
       const newStatus = item.attempt_count >= 3 ? 'failed' : 'pending';
       db.prepare(`
         UPDATE message_outbox

@@ -20,9 +20,30 @@ async function testIngestion() {
     const { POST } = await import('../app/api/wati/webhook/route');
     const { getConversations, getMessages } = await import('../lib/repositories/whatsapp');
 
-    // 1. Mock a standard incoming message payload from WATI
+    const { getDb } = await import('../lib/db');
+    const db = getDb();
+
+    // Clean up conversation state to leads before running test if exists
+    try {
+      db.prepare(`
+        UPDATE whatsapp_conversations
+        SET crm_label = 'leads', next_fu_at = NULL, fu_note = NULL, label_source = 'system'
+        WHERE id = (
+          SELECT c.id
+          FROM whatsapp_conversations c
+          JOIN whatsapp_contacts con ON c.contact_id = con.id
+          WHERE con.phone_number = '628127780285'
+        )
+      `).run();
+      console.log('🧹 Cleaned up target conversation CRM state');
+    } catch {
+      // conversation doesn't exist yet, which is fine
+    }
+
+    // 1. Mock a standard incoming message payload from WATI (unique ID)
+    const testId = 'wamid.' + Date.now();
     const mockPayload = {
-      id: 'wamid.HBgLNjI4MTI3NzgwMjg1FgoA',
+      id: testId,
       waId: '628127780285',
       senderName: 'Nugroho Pramono',
       type: 'text',
@@ -51,13 +72,24 @@ async function testIngestion() {
 
     if (response.status === 200 && body.success) {
       console.log('✅ Webhook route returned success status');
-      
+
       // Verify database state
       const convs = getConversations({ search: '628127780285' });
       console.log('Found Conversations:', convs.total);
       if (convs.total > 0 && convs.conversations[0]) {
         console.log('✅ Ingestion correctly created the conversation & contact');
-        const messages = getMessages(convs.conversations[0].id);
+        const conversation = convs.conversations[0];
+        console.log('CRM Label in DB:', (conversation as any).crm_label);
+        console.log('Next FU date in DB:', (conversation as any).next_fu_at);
+        console.log('FU Note in DB:', (conversation as any).fu_note);
+
+        if ((conversation as any).crm_label === 'warm' && (conversation as any).next_fu_at !== null) {
+          console.log('✅ Ingestion correctly classified and updated conversation CRM label to warm');
+        } else {
+          console.error('❌ Ingestion CRM auto-classification failed!');
+        }
+
+        const messages = getMessages(conversation.id);
         console.log('Messages count in DB:', messages.length);
         console.log('Message text:', messages[0]?.text);
         if (messages[0]?.text === mockPayload.text) {

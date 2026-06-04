@@ -6,7 +6,10 @@ import {
   updateRawEventStatus,
   upsertContact,
   upsertConversation,
-  insertMessageIdempotent
+  insertMessageIdempotent,
+  getConversationById,
+  updateConversationCrm,
+  classifyIncomingMessage
 } from '@/lib/repositories/whatsapp';
 
 export const dynamic = 'force-dynamic';
@@ -103,6 +106,37 @@ export async function POST(req: NextRequest) {
       watiTimestamp,
       rawEventId: rawEventDbId
     });
+
+    // Auto-suggest CRM label for incoming messages
+    if (direction === 'incoming' && success) {
+      try {
+        const currentConv = getConversationById(conversationId);
+        if (currentConv) {
+          const crmFields = currentConv as any;
+          const classification = classifyIncomingMessage(
+            text,
+            crmFields.crm_label || 'leads',
+            crmFields.label_source || 'system'
+          );
+          if (classification) {
+            updateConversationCrm(conversationId, {
+              crmLabel: classification.crmLabel,
+              nextFuAt: classification.nextFuAt,
+              fuNote: classification.fuNote,
+              fuTemplateKey: classification.fuTemplateKey,
+              labelSource: 'system'
+            });
+            logger.info('WATI Ingestion auto-suggest CRM update applied', {
+              conversationId,
+              crmLabel: classification.crmLabel,
+              nextFuAt: classification.nextFuAt
+            });
+          }
+        }
+      } catch (crmErr) {
+        logger.error('Failed to auto-label conversation on webhook', { conversationId, error: String(crmErr) });
+      }
+    }
 
     logger.info('WATI Ingestion completed successfully', {
       eventId,
