@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Search, User, Calendar, Clock,
   Link2, Send, MessageSquare, CheckCheck, Check,
-  ShieldAlert, Archive, Inbox, Phone, RefreshCw, Unlink
+  ShieldAlert, Archive, Inbox, Phone, RefreshCw, Unlink, X, ExternalLink, Copy
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
@@ -65,20 +65,38 @@ export function WhatsAppWorkspace() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [customerBookings, setCustomerBookings] = useState<Booking[]>([]);
   const [allBookings, setAllBookings] = useState<Booking[]>([]);
-  
+
   // Search & Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'pending_human' | 'resolved'>('all');
   const [bookingSearchQuery, setBookingSearchQuery] = useState('');
-  
+
   // Inputs & Loading
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isLoadingConvs, setIsLoadingConvs] = useState(false);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
-  
+
+  // Toast, Modal, and Confirmation States
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+  const [bookingToConfirmLink, setBookingToConfirmLink] = useState<Booking | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Show non-blocking toast helper
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+  }, []);
+
+  // Auto-clear toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   // Fetch Conversations list
   const fetchConversations = useCallback(async (showLoading = true) => {
@@ -129,7 +147,7 @@ export function WhatsAppWorkspace() {
   useEffect(() => {
     fetchConversations(true);
     fetchAllBookings();
-    
+
     const interval = setInterval(() => {
       fetchConversations(false);
       if (selectedConversation) {
@@ -152,7 +170,7 @@ export function WhatsAppWorkspace() {
   useEffect(() => {
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
-      
+
       // Filter bookings belonging to this customer
       const phoneDigits = selectedConversation.phone_number.replace(/\D/g, '');
       const filtered = allBookings.filter(b => {
@@ -192,12 +210,12 @@ export function WhatsAppWorkspace() {
         await fetchMessages(selectedConversation.id);
         fetchConversations(false);
       } else {
-        alert('Gagal mengirim pesan. Silakan coba lagi.');
+        showToast('Gagal mengirim pesan. Silakan coba lagi.', 'error');
         setReplyText(textToSend); // Restore text
       }
     } catch (err) {
       console.error('Error sending message:', err);
-      alert('Gagal mengirim pesan due to error.');
+      showToast('Gagal mengirim pesan.', 'error');
       setReplyText(textToSend);
     } finally {
       setIsSending(false);
@@ -218,9 +236,11 @@ export function WhatsAppWorkspace() {
           setSelectedConversation(prev => prev ? { ...prev, status: newStatus } : null);
         }
         fetchConversations(false);
+        showToast(`Status percakapan diubah menjadi ${newStatus === 'resolved' ? 'Selesai' : newStatus === 'open' ? 'Buka' : 'Arsip'}`);
       }
     } catch (err) {
       console.error('Failed to update status:', err);
+      showToast('Gagal memperbarui status.', 'error');
     }
   };
 
@@ -238,11 +258,44 @@ export function WhatsAppWorkspace() {
       if (res.ok) {
         setSelectedConversation(prev => prev ? { ...prev, booking_id: bookingId } : null);
         fetchAllBookings();
-        alert(bookingId ? 'Booking berhasil ditautkan!' : 'Booking berhasil dilepas!');
+        showToast(bookingId ? 'Booking berhasil ditautkan!' : 'Booking berhasil dilepas!');
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        showToast(errData.error || 'Gagal mengubah tautan booking.', 'error');
       }
     } catch (err) {
       console.error('Failed to link booking:', err);
+      showToast('Gagal menghubungkan ke server.', 'error');
     }
+  };
+
+  // Copy payment reminder template
+  const copyPaymentReminder = (b: Booking) => {
+    const total = b.finance.total_price;
+    const paid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
+    const sisa = total - paid;
+    const message = `Halo Kak ${b.customer.name}, sekadar mengingatkan untuk sisa pembayaran booking #${b.id} (${b.customer.category}) sebesar Rp ${sisa.toLocaleString('id-ID')} dapat ditransfer ke rekening CeritaKita ya. Terima kasih!`;
+
+    navigator.clipboard.writeText(message)
+      .then(() => showToast('Pengingat pembayaran disalin ke clipboard!'))
+      .catch(() => showToast('Gagal menyalin ke clipboard.', 'error'));
+  };
+
+  // Calculation helper for payment summary
+  const getBookingPaymentInfo = (b: Booking) => {
+    const total = b.finance.total_price;
+    const paid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
+    const sisa = total - paid;
+    let statusLabel = 'Belum Bayar';
+    let statusClass = 'bg-rose-100 text-rose-800 border-rose-200';
+    if (sisa <= 0) {
+      statusLabel = 'Lunas';
+      statusClass = 'bg-emerald-100 text-emerald-800 border-emerald-200';
+    } else if (paid > 0) {
+      statusLabel = 'DP';
+      statusClass = 'bg-amber-100 text-amber-850 border-amber-200';
+    }
+    return { total, paid, sisa, statusLabel, statusClass };
   };
 
   // Format Helper
@@ -274,7 +327,7 @@ export function WhatsAppWorkspace() {
 
   // Search bookings for link options
   const searchResults = bookingSearchQuery.trim()
-    ? allBookings.filter(b => 
+    ? allBookings.filter(b =>
         b.customer.name.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
         b.id.toLowerCase().includes(bookingSearchQuery.toLowerCase()) ||
         b.customer.whatsapp.includes(bookingSearchQuery)
@@ -283,10 +336,10 @@ export function WhatsAppWorkspace() {
 
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-xl overflow-hidden flex h-[calc(100vh-140px)] animate-in fade-in duration-300">
-      
+
       {/* ── Left Pane: Conversation List ── */}
       <div className="w-1/4 min-w-[280px] border-r border-slate-100 flex flex-col bg-slate-50/50">
-        
+
         {/* Header & Search */}
         <div className="p-4 border-b border-slate-100 bg-white space-y-3">
           <div className="flex items-center justify-between">
@@ -294,7 +347,7 @@ export function WhatsAppWorkspace() {
               <MessageSquare className="text-blue-600 w-5 h-5" />
               WhatsApp Inbox
             </h2>
-            <button 
+            <button
               onClick={() => fetchConversations(true)}
               className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition"
               title="Refresh"
@@ -354,8 +407,8 @@ export function WhatsAppWorkspace() {
                   key={conv.id}
                   onClick={() => setSelectedConversation(conv)}
                   className={`w-full text-left p-4 transition-all duration-200 flex flex-col gap-1 border-l-4 ${
-                    isSelected 
-                      ? 'bg-blue-50/40 border-blue-600 bg-white' 
+                    isSelected
+                      ? 'bg-blue-50/40 border-blue-600 bg-white'
                       : 'border-transparent hover:bg-slate-100/50 bg-white'
                   }`}
                 >
@@ -367,16 +420,16 @@ export function WhatsAppWorkspace() {
                       {formatRelativeDay(conv.last_message_at).split(',')[0]}
                     </span>
                   </div>
-                  
+
                   <div className="flex justify-between items-center w-full mt-1">
                     <span className="text-xs text-slate-500 truncate max-w-[170px]">
                       {conv.phone_number}
                     </span>
-                    
+
                     {/* Status Pill */}
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                      conv.status === 'pending_human' 
-                        ? 'bg-amber-100 text-amber-800' 
+                      conv.status === 'pending_human'
+                        ? 'bg-amber-100 text-amber-800'
                         : conv.status === 'open'
                         ? 'bg-blue-100 text-blue-800'
                         : 'bg-emerald-100 text-emerald-800'
@@ -420,7 +473,7 @@ export function WhatsAppWorkspace() {
                     Taut: {matchedLinkedBooking.id}
                   </div>
                 )}
-                
+
                 {selectedConversation.status !== 'resolved' ? (
                   <button
                     onClick={() => handleUpdateStatus(selectedConversation.id, 'resolved')}
@@ -442,7 +495,7 @@ export function WhatsAppWorkspace() {
             </div>
 
             {/* Bubble Messages Container */}
-            <div 
+            <div
               ref={chatContainerRef}
               className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-slate-50"
             >
@@ -465,16 +518,16 @@ export function WhatsAppWorkspace() {
                       className={`flex w-full ${isCustomer ? 'justify-start' : 'justify-end'}`}
                     >
                       <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm relative ${
-                        isCustomer 
-                          ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100' 
+                        isCustomer
+                          ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
                           : 'bg-blue-600 text-white rounded-tr-none'
                       }`}>
-                        
+
                         {/* Message Text */}
                         <p className="text-sm whitespace-pre-wrap leading-relaxed break-words">
                           {msg.text}
                         </p>
-                        
+
                         {/* Timestamp & Status Icon */}
                         <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${
                           isCustomer ? 'text-slate-400' : 'text-blue-200'
@@ -536,7 +589,7 @@ export function WhatsAppWorkspace() {
       {/* ── Right Pane: Customer 360 (Only visible when conversation is active) ── */}
       {selectedConversation && (
         <div className="w-1/3 min-w-[320px] max-w-[400px] border-l border-slate-100 flex flex-col bg-white overflow-y-auto custom-scrollbar p-6 space-y-6">
-          
+
           {/* Customer Profile Section */}
           <div className="text-center pb-6 border-b border-slate-100">
             <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold mx-auto mb-3 shadow-inner">
@@ -569,86 +622,147 @@ export function WhatsAppWorkspace() {
           <div>
             <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Booking Ditautkan</h5>
             {matchedLinkedBooking ? (
-              <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-4 space-y-3">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <span className="text-xs font-bold text-blue-800 bg-blue-100 px-2 py-0.5 rounded">
-                      {matchedLinkedBooking.id}
-                    </span>
-                    <span className="block text-slate-850 font-bold text-sm mt-1.5">
-                      {matchedLinkedBooking.customer.category}
-                    </span>
+              (() => {
+                const { total, paid, sisa, statusLabel, statusClass } = getBookingPaymentInfo(matchedLinkedBooking);
+                return (
+                  <div className="bg-blue-50/40 border border-blue-150 rounded-2xl p-5 space-y-4 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-100/30 rounded-full -mr-8 -mt-8 pointer-events-none" />
+
+                    <div className="flex justify-between items-start relative z-10">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] font-bold text-blue-800 bg-blue-100 px-2.5 py-0.5 rounded-lg border border-blue-200">
+                            #{matchedLinkedBooking.id}
+                          </span>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-lg border uppercase tracking-wider ${statusClass}`}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <span className="block text-slate-800 font-extrabold text-base mt-2">
+                          {matchedLinkedBooking.customer.category}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleLinkBooking(null)}
+                        className="text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl p-1.5 transition duration-200 border border-transparent hover:border-red-100"
+                        title="Lepas tautan booking"
+                      >
+                        <Unlink className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 text-xs text-slate-650 border-t border-slate-100 pt-3">
+                      <div className="flex items-center gap-2 font-medium">
+                        <Calendar className="w-4 h-4 text-blue-500 shrink-0" />
+                        {matchedLinkedBooking.booking.date.split('T')[0]}
+                      </div>
+                      <div className="flex items-center gap-2 font-medium">
+                        <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                        {matchedLinkedBooking.booking.date.split('T')[1]?.substring(0, 5) || ''}
+                      </div>
+                    </div>
+
+                    {/* Financial Summary Breakdown */}
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-blue-50/50 text-xs space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Total Harga:</span>
+                        <span className="font-bold text-slate-800">Rp {total.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-500">Telah Dibayar:</span>
+                        <span className="font-bold text-emerald-600">Rp {paid.toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex justify-between items-center border-t border-slate-200/40 pt-2 font-bold">
+                        <span className="text-slate-600">Sisa Tagihan:</span>
+                        <span className={sisa > 0 ? 'text-amber-600' : 'text-slate-800'}>
+                          Rp {sisa.toLocaleString('id-ID')}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => copyPaymentReminder(matchedLinkedBooking)}
+                        className="flex-1 py-2 px-3 bg-white hover:bg-slate-55 text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
+                        title="Salin pesan pengingat pembayaran ke WhatsApp"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        Salin Pengingat
+                      </button>
+                      <button
+                        onClick={() => window.open(`/admin/invoices/${matchedLinkedBooking.id}`, '_blank')}
+                        className="py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 border border-transparent hover:border-slate-200 active:scale-95"
+                        title="Buka invoice di tab baru"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <button
+                      onClick={() => setIsLinkModalOpen(true)}
+                      className="w-full py-1.5 text-center text-blue-600 hover:text-blue-800 hover:underline text-[11px] font-bold transition"
+                    >
+                      Ubah Tautan Booking
+                    </button>
                   </div>
+                );
+              })()
+            ) : (
+              <div className="space-y-4">
+                <div className="text-xs text-slate-400 border border-dashed border-slate-250 rounded-2xl p-6 text-center bg-slate-50/30">
+                  <p>Belum ada booking yang ditautkan ke chat ini.</p>
                   <button
-                    onClick={() => handleLinkBooking(null)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg p-1 transition"
-                    title="Lepas tautan booking"
+                    onClick={() => setIsLinkModalOpen(true)}
+                    className="mt-3 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-md shadow-blue-500/10 active:scale-95"
                   >
-                    <Unlink className="w-4 h-4" />
+                    <Link2 className="w-4 h-4" />
+                    Hubungkan ke Booking
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-650">
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    {matchedLinkedBooking.booking.date.split('T')[0]}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5 text-slate-400" />
-                    {matchedLinkedBooking.booking.date.split('T')[1]?.substring(0, 5) || ''}
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-blue-100 flex justify-between items-center text-xs font-semibold">
-                  <span className="text-slate-500">Harga:</span>
-                  <span className="text-slate-800">
-                    Rp {matchedLinkedBooking.finance.total_price.toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl p-4 text-center">
-                Belum ada booking yang ditautkan ke chat ini.
+                {/* Suggested Booking (Level 2) */}
+                {(() => {
+                  const suggested = customerBookings.find(b => b.status === 'Active') || customerBookings[0];
+                  if (!suggested) return null;
+                  const { sisa, statusLabel, statusClass } = getBookingPaymentInfo(suggested);
+                  return (
+                    <div className="border border-amber-250 bg-amber-50/20 rounded-2xl p-4 space-y-3 animate-in fade-in duration-300">
+                      <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-800">
+                        <CheckCheck className="w-3.5 h-3.5 text-amber-600 animate-pulse animate-duration-1000" />
+                        Saran Booking (No WA Cocok)
+                      </div>
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                              #{suggested.id}
+                            </span>
+                            <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${statusClass}`}>
+                              {statusLabel}
+                            </span>
+                          </div>
+                          <span className="block text-slate-800 font-extrabold text-sm mt-1.5">
+                            {suggested.customer.category}
+                          </span>
+                          <span className="block text-[10px] text-slate-500">
+                            {suggested.booking.date.split('T')[0]} · Rp {sisa.toLocaleString('id-ID')} sisa
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleLinkBooking(suggested.id)}
+                        className="w-full py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-750 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1 shadow-sm active:scale-95"
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                        Tautkan Booking Ini
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             )}
-          </div>
-
-          {/* Link Booking Actions */}
-          <div>
-            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Tautkan Booking Manual</h5>
-            <div className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2 text-slate-400 w-3.5 h-3.5" />
-                <input
-                  type="text"
-                  placeholder="Cari Booking ID / Nama..."
-                  value={bookingSearchQuery}
-                  onChange={(e) => setBookingSearchQuery(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              {searchResults.length > 0 && (
-                <div className="border border-slate-100 rounded-lg divide-y divide-slate-50 bg-slate-50 max-h-40 overflow-y-auto">
-                  {searchResults.map(b => (
-                    <button
-                      key={b.id}
-                      onClick={() => {
-                        handleLinkBooking(b.id);
-                        setBookingSearchQuery('');
-                      }}
-                      className="w-full text-left p-2.5 hover:bg-blue-50 transition text-xs flex justify-between items-center"
-                    >
-                      <div>
-                        <span className="font-semibold text-slate-800 block">{b.customer.name}</span>
-                        <span className="text-slate-500 text-[10px]">{b.id} - {b.customer.category}</span>
-                      </div>
-                      <Link2 className="w-3.5 h-3.5 text-blue-500" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Bookings History list */}
@@ -656,33 +770,203 @@ export function WhatsAppWorkspace() {
             <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Histori Booking Kontak</h5>
             {customerBookings.length > 0 ? (
               <div className="space-y-2">
-                {customerBookings.map((b) => (
-                  <div 
-                    key={b.id}
-                    onClick={() => handleLinkBooking(b.id)}
-                    className="p-3 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50/10 cursor-pointer transition text-xs flex justify-between items-center"
-                  >
-                    <div>
-                      <span className="font-semibold text-slate-700 block">{b.customer.category}</span>
-                      <span className="text-slate-400 text-[10px]">{b.booking.date.split('T')[0]} - {b.id}</span>
+                {customerBookings.map((b) => {
+                  const { sisa } = getBookingPaymentInfo(b);
+                  return (
+                    <div
+                      key={b.id}
+                      onClick={async () => {
+                        if (selectedConversation.booking_id === b.id) return;
+                        if (selectedConversation.booking_id) {
+                          setBookingToConfirmLink(b);
+                        } else {
+                          await handleLinkBooking(b.id);
+                        }
+                      }}
+                      className={`p-3 border rounded-xl cursor-pointer transition text-xs flex justify-between items-center ${
+                        selectedConversation.booking_id === b.id
+                          ? 'border-blue-500 bg-blue-50/10 cursor-default'
+                          : 'border-slate-100 hover:border-blue-300 hover:bg-blue-50/5'
+                      }`}
+                    >
+                      <div>
+                        <span className="font-semibold text-slate-700 block">{b.customer.category}</span>
+                        <span className="text-slate-400 text-[10px]">{b.booking.date.split('T')[0]} - #{b.id}</span>
+                        {sisa > 0 && (
+                          <span className="block text-[9px] text-amber-600 font-medium">Sisa: Rp {sisa.toLocaleString('id-ID')}</span>
+                        )}
+                      </div>
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                        b.status === 'Completed'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : b.status === 'Cancelled'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {b.status === 'Completed' ? 'Selesai' : b.status === 'Cancelled' ? 'Batal' : 'Aktif'}
+                      </span>
                     </div>
-                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                      b.status === 'Completed' 
-                        ? 'bg-emerald-100 text-emerald-800' 
-                        : b.status === 'Cancelled'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
-                      {b.status === 'Completed' ? 'Selesai' : b.status === 'Cancelled' ? 'Batal' : 'Aktif'}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
-              <p className="text-xs text-slate-450 text-center">Tidak ada histori booking.</p>
+              <p className="text-xs text-slate-400 text-center">Tidak ada histori booking.</p>
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* ── LINK BOOKING MODAL DIALOG ── */}
+      {isLinkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-100 flex flex-col max-h-[85vh] animate-in scale-in duration-200">
+
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-blue-600" />
+                Cari & Tautkan Booking
+              </h3>
+              <button
+                onClick={() => {
+                  setIsLinkModalOpen(false);
+                  setBookingSearchQuery('');
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input Box */}
+            <div className="p-4 border-b border-slate-50 bg-slate-50/50">
+              <div className="relative">
+                <Search className="absolute left-3.5 top-3 text-slate-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Cari Booking ID, nama customer, atau nomor WhatsApp..."
+                  value={bookingSearchQuery}
+                  onChange={(e) => setBookingSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white shadow-sm transition"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            {/* Results Area */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar min-h-[250px]">
+              {bookingSearchQuery.trim() === '' ? (
+                <div className="text-center py-10 text-slate-400 text-sm">
+                  <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  Ketik nama customer atau ID Booking untuk mulai mencari
+                </div>
+              ) : searchResults.length === 0 ? (
+                <div className="text-center py-10 text-slate-400 text-sm">
+                  Tidak ditemukan booking yang cocok untuk &quot;{bookingSearchQuery}&quot;
+                </div>
+              ) : (
+                searchResults.map(b => {
+                  const { total, sisa, statusLabel, statusClass } = getBookingPaymentInfo(b);
+                  return (
+                    <div
+                      key={b.id}
+                      className="border border-slate-100 rounded-2xl p-4 hover:border-blue-300 hover:bg-blue-50/5 transition flex flex-col md:flex-row justify-between items-start md:items-center gap-4 animate-in fade-in duration-200"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+                            #{b.id}
+                          </span>
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-wider ${statusClass}`}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                        <span className="block font-bold text-slate-800 text-sm">{b.customer.name}</span>
+                        <span className="block text-slate-500 text-xs">{b.customer.category} · {b.booking.date.split('T')[0]}</span>
+                        <span className="block text-[11px] text-slate-650 font-medium">
+                          Total: Rp {total.toLocaleString('id-ID')} · Sisa: <span className={sisa > 0 ? 'text-amber-600 font-semibold' : 'text-slate-650'}>Rp {sisa.toLocaleString('id-ID')}</span>
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={async () => {
+                          if (!selectedConversation) return;
+                          if (selectedConversation.booking_id === b.id) {
+                            showToast('Booking ini sudah ditautkan.', 'error');
+                            return;
+                          }
+                          if (selectedConversation.booking_id) {
+                            setBookingToConfirmLink(b);
+                          } else {
+                            await handleLinkBooking(b.id);
+                            setIsLinkModalOpen(false);
+                            setBookingSearchQuery('');
+                          }
+                        }}
+                        className="py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm active:scale-95 shrink-0 self-end md:self-center"
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                        Tautkan
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── OVERWRITE CONFIRMATION DIALOG ── */}
+      {bookingToConfirmLink && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 border border-slate-100 animate-in scale-in duration-150 space-y-4">
+            <h4 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5 text-amber-500 animate-bounce" />
+              Ganti Tautan Booking?
+            </h4>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Percakapan ini sudah tertaut dengan booking <strong className="text-slate-800">#{selectedConversation?.booking_id}</strong>.
+              Apakah Anda yakin ingin menggantinya dengan booking <strong className="text-slate-800">#{bookingToConfirmLink.id}</strong> ({bookingToConfirmLink.customer.name})?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setBookingToConfirmLink(null)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={async () => {
+                  const targetId = bookingToConfirmLink.id;
+                  setBookingToConfirmLink(null);
+                  await handleLinkBooking(targetId);
+                  setIsLinkModalOpen(false);
+                  setBookingSearchQuery('');
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/10 active:scale-95"
+              >
+                Ya, Ganti
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── NON-BLOCKING TOAST NOTIFICATION SYSTEM ── */}
+      {toast && (
+        <div className={`fixed bottom-6 right-6 z-[70] px-4 py-3 rounded-2xl shadow-xl border text-sm font-semibold flex items-center gap-2.5 animate-in slide-in-from-bottom-5 duration-300 ${
+          toast.type === 'success'
+            ? 'bg-emerald-50 border-emerald-250 text-emerald-800'
+            : 'bg-rose-50 border-rose-250 text-rose-800'
+        }`}>
+          {toast.type === 'success' ? (
+            <CheckCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          <span>{toast.message}</span>
         </div>
       )}
 

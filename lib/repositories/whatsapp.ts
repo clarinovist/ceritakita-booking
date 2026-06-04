@@ -326,6 +326,19 @@ export function getMessages(conversationId: string): WhatsAppMessage[] {
 }
 
 /**
+ * Get conversation by ID with contact details
+ */
+export function getConversationById(id: string): WhatsAppConversation | null {
+  const db = getDb();
+  return db.prepare(`
+    SELECT c.*, con.phone_number, con.display_name, con.linked_customer_id
+    FROM whatsapp_conversations c
+    JOIN whatsapp_contacts con ON c.contact_id = con.id
+    WHERE c.id = ?
+  `).get(id) as WhatsAppConversation | null;
+}
+
+/**
  * Link booking to conversation
  */
 export function linkBookingToConversation(conversationId: string, bookingId: string | null): void {
