@@ -15,6 +15,7 @@ import AdsPerformance from './AdsPerformance';
 import LeadPerformance from './analytics/LeadPerformance';
 import { FinanceModule } from './FinanceModule';
 import { FreelancerModule } from './FreelancerModule';
+import { WhatsAppWorkspace } from './whatsapp/WhatsAppWorkspace';
 
 // Tables
 import { BookingsTable } from './tables/BookingsTable';
@@ -214,6 +215,13 @@ export function AdminViews({
                         />
                     )}
                 </>
+            );
+
+        case 'whatsapp':
+            return (
+                <div className="animate-in fade-in">
+                    <WhatsAppWorkspace />
+                </div>
             );
 
         default:

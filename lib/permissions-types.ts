@@ -21,7 +21,8 @@ export const DEFAULT_ADMIN_PERMISSIONS: UserPermissions = {
   users: true,
   leads: { view: true, create: true, update: true, delete: true },
   homepage_cms: true,
-  freelancers: true
+  freelancers: true,
+  whatsapp: true
 };
 
 /**
@@ -43,7 +44,8 @@ export const DEFAULT_STAFF_PERMISSIONS: UserPermissions = {
   users: false,
   leads: { view: true, create: true, update: true, delete: false },
   homepage_cms: false,
-  freelancers: false
+  freelancers: false,
+  whatsapp: false
 };
 
 /**
@@ -102,6 +104,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
     { id: 'finance', icon: 'Wallet', label: 'Finance', permission: 'finance' },
     { id: 'homepage', icon: 'Home', label: 'Homepage CMS', permission: 'homepage_cms' },
     { id: 'freelancers', icon: 'Briefcase', label: 'Freelancers', permission: 'freelancers' },
+    { id: 'whatsapp', icon: 'MessageSquare', label: 'WhatsApp Chat', permission: 'whatsapp' },
   ];
 
   // Admin sees everything
@@ -111,7 +114,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
 
   // Filter by permissions
   return allMenuItems.filter(item => {
-    if (item.permission === 'dashboard' || item.permission === 'ads' || item.permission === 'homepage_cms') {
+    if (item.permission === 'dashboard' || item.permission === 'ads' || item.permission === 'homepage_cms' || item.permission === 'whatsapp') {
       return permissions?.[item.permission];
     }
 

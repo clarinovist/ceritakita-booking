@@ -13,7 +13,7 @@ export function useAdminPermissions(user?: User) {
     const availableModes = useMemo<ViewMode[]>(() => {
         const all: ViewMode[] = [
             'dashboard', 'ads', 'calendar', 'table', 'leads',
-            'catalog', 'coupons', 'settings', 'homepage', 'finance', 'freelancers'
+            'catalog', 'coupons', 'settings', 'homepage', 'finance', 'freelancers', 'whatsapp'
         ];
 
         if (role === 'admin') return all;
@@ -37,6 +37,7 @@ export function useAdminPermissions(user?: User) {
         if (perms?.settings)           allowed.push('settings');
         if (perms?.homepage_cms)       allowed.push('homepage');
         if (perms?.freelancers)        allowed.push('freelancers');
+        if (perms?.whatsapp)           allowed.push('whatsapp');
 
         // Edge-case: settings sub-permissions
         if ((perms?.users || perms?.payment) && !allowed.includes('settings')) {

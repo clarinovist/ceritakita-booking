@@ -779,6 +779,110 @@ function initializeSchema() {
     insertMany();
     console.log('✅ Database seeded: Value Propositions');
   }
+
+  // --- WHATSAPP TABLES ---
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS wati_raw_events (
+      id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      wati_id TEXT,
+      payload TEXT NOT NULL,
+      received_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      processed_at TEXT,
+      processing_status TEXT DEFAULT 'pending',
+      error_message TEXT
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_contacts (
+      id TEXT PRIMARY KEY,
+      phone_number TEXT NOT NULL UNIQUE,
+      display_name TEXT,
+      wati_contact_id TEXT,
+      is_opted_in INTEGER DEFAULT 1,
+      opted_in_at TEXT,
+      last_message_at TEXT,
+      linked_customer_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_conversations (
+      id TEXT PRIMARY KEY,
+      wati_conversation_id TEXT,
+      contact_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open', 'pending_human', 'resolved', 'archived')),
+      assigned_to TEXT,
+      last_inbound_at TEXT,
+      last_outbound_at TEXT,
+      last_message_at TEXT,
+      booking_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (contact_id) REFERENCES whatsapp_contacts(id) ON DELETE CASCADE,
+      FOREIGN KEY (booking_id) REFERENCES bookings(id) ON DELETE SET NULL
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_messages (
+      id TEXT PRIMARY KEY,
+      wati_message_id TEXT UNIQUE,
+      conversation_id TEXT NOT NULL,
+      contact_id TEXT NOT NULL,
+      direction TEXT NOT NULL CHECK(direction IN ('incoming', 'outgoing')),
+      sender_type TEXT NOT NULL CHECK(sender_type IN ('customer', 'owner', 'cs', 'bot', 'system')),
+      message_type TEXT NOT NULL DEFAULT 'text',
+      text TEXT,
+      media_url TEXT,
+      media_mime_type TEXT,
+      reply_to_message_id TEXT,
+      status TEXT CHECK(status IN ('sent', 'delivered', 'read', 'failed')),
+      wati_timestamp TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      raw_event_id TEXT,
+      FOREIGN KEY (conversation_id) REFERENCES whatsapp_conversations(id) ON DELETE CASCADE,
+      FOREIGN KEY (contact_id) REFERENCES whatsapp_contacts(id) ON DELETE CASCADE,
+      FOREIGN KEY (raw_event_id) REFERENCES wati_raw_events(id) ON DELETE SET NULL
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS message_outbox (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      contact_id TEXT NOT NULL,
+      channel TEXT NOT NULL DEFAULT 'wati',
+      send_type TEXT NOT NULL DEFAULT 'session_text',
+      payload TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'sending', 'sent', 'failed', 'cancelled')),
+      attempt_count INTEGER DEFAULT 0,
+      last_error TEXT,
+      scheduled_at TEXT NOT NULL,
+      sent_at TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES whatsapp_conversations(id) ON DELETE CASCADE,
+      FOREIGN KEY (contact_id) REFERENCES whatsapp_contacts(id) ON DELETE CASCADE
+    )
+  `);
+
+  // Create indexes for WhatsApp tables
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_wa_raw_events_status ON wati_raw_events(processing_status);
+    CREATE INDEX IF NOT EXISTS idx_wa_contacts_phone ON whatsapp_contacts(phone_number);
+    CREATE INDEX IF NOT EXISTS idx_wa_contacts_wati_id ON whatsapp_contacts(wati_contact_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_conv_contact ON whatsapp_conversations(contact_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_conv_last_msg ON whatsapp_conversations(last_message_at);
+    CREATE INDEX IF NOT EXISTS idx_wa_conv_booking ON whatsapp_conversations(booking_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_msg_conv_time ON whatsapp_messages(conversation_id, wati_timestamp);
+    CREATE INDEX IF NOT EXISTS idx_wa_msg_contact ON whatsapp_messages(contact_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_msg_wati_id ON whatsapp_messages(wati_message_id);
+    CREATE INDEX IF NOT EXISTS idx_msg_outbox_status ON message_outbox(status);
+  `);
 }
 
 /**

@@ -51,6 +51,7 @@ export interface UserPermissions {
   };
   homepage_cms: boolean;
   freelancers?: boolean;
+  whatsapp?: boolean;
 }
 
 export interface User {

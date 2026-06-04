@@ -48,3 +48,6 @@ node_modules/
 # uploaded files
 /uploads/
 .aider*
+
+# generated analysis artifacts
+graphify-out/
