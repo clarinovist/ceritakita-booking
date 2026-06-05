@@ -106,28 +106,49 @@ export function saveAdsLogBatch(dataList: AdsData[]): void {
   if (validDataList.length === 0) return;
 
   const transaction = db.transaction(() => {
-    const stmt = db.prepare(`
+    const chunkSize = 180; // 5 params per row * 180 = 900 params, under SQLite's 999 limit
+
+    // Pre-compile statement for full chunks to maximize performance
+    const placeholdersFull = Array(chunkSize).fill('(?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').join(', ');
+    const stmtFull = db.prepare(`
       INSERT OR REPLACE INTO ads_performance_log (
         date_record, spend, impressions, clicks, reach, updated_at
-      ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ) VALUES ${placeholdersFull}
     `);
 
-    for (const data of validDataList) {
-      let dateRecord: string;
-      if (data.date_start) {
-        dateRecord = data.date_start;
-      } else {
-        const now = new Date();
-        dateRecord = now.toISOString().split('T')[0] || '';
+    for (let i = 0; i < validDataList.length; i += chunkSize) {
+      const chunk = validDataList.slice(i, i + chunkSize);
+      const values: (string | number)[] = [];
+
+      for (const data of chunk) {
+        let dateRecord: string;
+        if (data.date_start) {
+          dateRecord = data.date_start;
+        } else {
+          const now = new Date();
+          dateRecord = now.toISOString().split('T')[0] || '';
+        }
+
+        values.push(
+          dateRecord,
+          data.spend,
+          data.impressions,
+          data.inlineLinkClicks,
+          data.reach
+        );
       }
 
-      stmt.run(
-        dateRecord,
-        data.spend,
-        data.impressions,
-        data.inlineLinkClicks,
-        data.reach
-      );
+      if (chunk.length === chunkSize) {
+        stmtFull.run(...values);
+      } else {
+        // Handle the remainder
+        const placeholders = Array(chunk.length).fill('(?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').join(', ');
+        db.prepare(`
+          INSERT OR REPLACE INTO ads_performance_log (
+            date_record, spend, impressions, clicks, reach, updated_at
+          ) VALUES ${placeholders}
+        `).run(...values);
+      }
     }
   });
 
