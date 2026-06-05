@@ -5,6 +5,45 @@ All notable changes to the CeritaKita Studio Booking System will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.0.0...v1.1.0) (2026-06-05)
+
+
+### Features
+
+* add configurable AI Brain dashboard with hardened runtime guards ([914d6e4](https://github.com/clarinovist/ceritakita-booking/commit/914d6e416abea8560ffedabd0a3cf3b8d0310bab))
+* add explicit save button for Google Drive link with success feedback ([c0763ef](https://github.com/clarinovist/ceritakita-booking/commit/c0763efdc0baa2bf7e039d998ddc0765e7981f32))
+* add privacy policy page for Meta Developer compliance (/privacy) ([e5ac589](https://github.com/clarinovist/ceritakita-booking/commit/e5ac58913388e793d45a3b52a31773f7405a09c2))
+* add WA click analytics endpoint with admin auth ([c03a316](https://github.com/clarinovist/ceritakita-booking/commit/c03a316b1e8c02fb6d144f02f17bd54d036a465e))
+* add WATI WhatsApp customer 360 integration ([2e9c45c](https://github.com/clarinovist/ceritakita-booking/commit/2e9c45c8fdf5f2f58d0785dab6c305414452c945))
+* privacy policy page for Meta Developer compliance ([3bc3e09](https://github.com/clarinovist/ceritakita-booking/commit/3bc3e09f09df54646491eeb47b5821aca1b2a6da))
+* unify telegram report to once daily + add Meta Ads & WA click insights ([24def89](https://github.com/clarinovist/ceritakita-booking/commit/24def897c56113d01376c7c434773d1d04396f78))
+* WA click tracking + update Meta ad creatives to tracked links ([bf734f9](https://github.com/clarinovist/ceritakita-booking/commit/bf734f935142d0e1835ed6ca09420c011b229985))
+* WhatsApp Brain AI Reply integration ([375c13e](https://github.com/clarinovist/ceritakita-booking/commit/375c13eda89e987c84988327f6b05aecf1cfcde9))
+* **whatsapp:** harden watzap webhook/status flow and add template/provider admin APIs ([303a1e9](https://github.com/clarinovist/ceritakita-booking/commit/303a1e991760a2b4e921751e92e066eb4855b108))
+
+
+### Bug Fixes
+
+* allow drive link updates on completed bookings and resolve input value sync bug ([75147dd](https://github.com/clarinovist/ceritakita-booking/commit/75147dd948042404c1d12badc4864d4ba242d9f7))
+* deduplicate addons in setBookingAddons to prevent UNIQUE constraint ([405a3b7](https://github.com/clarinovist/ceritakita-booking/commit/405a3b75820251cc77d47e5d3a8cefaa24f5d030))
+* ensure whatsapp db schema initializes on webhook cold start ([ddd29da](https://github.com/clarinovist/ceritakita-booking/commit/ddd29da7034b8c63cdb49b26e0f069fbc60aaf3b))
+* explicit dimensions for QR code svg to prevent print collapsing ([fd6a114](https://github.com/clarinovist/ceritakita-booking/commit/fd6a114340ac6d2bc80c5752c51c33fb0aa9b00c))
+* expose WhatsApp admin menu and schema ([99c4b35](https://github.com/clarinovist/ceritakita-booking/commit/99c4b35751c1e463857e1e92087daface57e75d7))
+* filter bot/crawler traffic from WA click analytics and add rate limiting ([c549d5a](https://github.com/clarinovist/ceritakita-booking/commit/c549d5a8cc9e9ec9345a6ec6f529246172e13250))
+* harden server action mismatch recovery ([6d3e4eb](https://github.com/clarinovist/ceritakita-booking/commit/6d3e4eba17f7c6349ecbc0b15f698cf89ac9a228))
+* lint errors - prefix unused vars with underscore ([91e1ba3](https://github.com/clarinovist/ceritakita-booking/commit/91e1ba31b3dd24ad48b170a43b614f39b11641ad))
+* P1 pixel parsing + P2 CAPI auto-track WA clicks ([e135f75](https://github.com/clarinovist/ceritakita-booking/commit/e135f75b507cbc514440bf654f3b4dc58b2524de))
+* persist drive_link correctly on booking update ([78358c8](https://github.com/clarinovist/ceritakita-booking/commit/78358c8b850e69a412aa78bec14e63c4e06cde74))
+* remove nested transaction in setBookingAddons causing UNIQUE constraint error ([0210a77](https://github.com/clarinovist/ceritakita-booking/commit/0210a77ff6fd26b5c635ac80c796c9831ac559df))
+* remove unused vars for Next.js strict build ([a507c38](https://github.com/clarinovist/ceritakita-booking/commit/a507c38b8ffd11873050f8e2eb561a977b826f2d))
+* standardize API validation and security hardening ([57fab61](https://github.com/clarinovist/ceritakita-booking/commit/57fab6191754e7d323a917ca207802f2e4613ce8))
+
+
+### Performance Improvements
+
+* apply Jules-optimized financial export and outstanding balance fixes ([#36](https://github.com/clarinovist/ceritakita-booking/issues/36)) ([7193e12](https://github.com/clarinovist/ceritakita-booking/commit/7193e125ee6a5713c4317c5c3db2eb7f60982670))
+* optimize getTrafficStats by replacing array find with map lookup ([#40](https://github.com/clarinovist/ceritakita-booking/issues/40)) ([90c3261](https://github.com/clarinovist/ceritakita-booking/commit/90c32612a9c63bf80652abcc831c908f2f8baef3))
+
 ## 1.0.0 (2026-04-08)
 
 
