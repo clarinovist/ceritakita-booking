@@ -20,7 +20,6 @@ export const FinanceReports: React.FC<FinanceReportsProps> = ({ dateRange }) => 
 
     const handleExport = async (type: 'financial' | 'expenses') => {
         try {
-            // Fix: Point to the correct endpoint /api/export/[type]
             const endpoint = `/api/export/${type}`;
 
             const params = new URLSearchParams({
