@@ -3,6 +3,8 @@ import { randomUUID } from 'crypto';
 import { normalizePhoneNumber } from '@/lib/whatsapp-template';
 import { logger } from '@/lib/logger';
 
+type SendResult = { success: boolean; providerMessageId: string | null; error?: string };
+
 export interface WhatsAppContact {
   id: string;
   phone_number: string;
@@ -19,6 +21,7 @@ export interface WhatsAppContact {
 export interface WhatsAppConversation {
   id: string;
   wati_conversation_id: string | null;
+  provider_conversation_id?: string | null;
   contact_id: string;
   status: 'open' | 'pending_human' | 'resolved' | 'archived';
   assigned_to: string | null;
@@ -44,6 +47,7 @@ export interface WhatsAppConversation {
 export interface WhatsAppMessage {
   id: string;
   wati_message_id: string | null;
+  provider_message_id?: string | null;
   conversation_id: string;
   contact_id: string;
   direction: 'incoming' | 'outgoing';
@@ -76,7 +80,7 @@ export interface OutboxMessage {
 }
 
 /**
- * Save raw JSON payload from WATI
+ * Save raw JSON payload from provider (legacy table name kept: wati_raw_events)
  */
 export function saveRawEvent(eventType: string, watiId: string | null, payload: string): string {
   const db = getDb();
@@ -134,12 +138,11 @@ export function upsertContact(phone: string, displayName: string | null, watiCon
  */
 export function upsertConversation(
   contactId: string,
-  watiConversationId: string | null,
+  providerConversationId: string | null,
   status: 'open' | 'pending_human' | 'resolved' | 'archived' = 'open'
 ): string {
   const db = getDb();
 
-  // Try to find open/pending conversation for this contact
   const existing = db.prepare(`
     SELECT id FROM whatsapp_conversations
     WHERE contact_id = ? AND status IN ('open', 'pending_human')
@@ -147,22 +150,22 @@ export function upsertConversation(
   `).get(contactId) as { id: string } | undefined;
 
   if (existing) {
-    if (watiConversationId) {
+    if (providerConversationId) {
       db.prepare(`
         UPDATE whatsapp_conversations
-        SET wati_conversation_id = ?, updated_at = CURRENT_TIMESTAMP
+        SET wati_conversation_id = COALESCE(?, wati_conversation_id), updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
-      `).run(watiConversationId, existing.id);
+      `).run(providerConversationId, existing.id);
     }
     return existing.id;
-  } else {
-    const id = randomUUID();
-    db.prepare(`
-      INSERT INTO whatsapp_conversations (id, wati_conversation_id, contact_id, status)
-      VALUES (?, ?, ?, ?)
-    `).run(id, watiConversationId, contactId, status);
-    return id;
   }
+
+  const id = randomUUID();
+  db.prepare(`
+    INSERT INTO whatsapp_conversations (id, wati_conversation_id, contact_id, status)
+    VALUES (?, ?, ?, ?)
+  `).run(id, providerConversationId, contactId, status);
+  return id;
 }
 
 /**
@@ -485,6 +488,31 @@ export function classifyIncomingMessage(
   return null;
 }
 
+export function updateMessageStatusByProviderMessageId(
+  providerMessageId: string,
+  status: 'sent' | 'delivered' | 'read' | 'failed'
+): boolean {
+  const db = getDb();
+
+  const existing = db.prepare(`
+    SELECT id, status FROM whatsapp_messages
+    WHERE wati_message_id = ?
+    LIMIT 1
+  `).get(providerMessageId) as { id: string; status: string | null } | undefined;
+
+  if (!existing) return false;
+
+  if (existing.status !== status) {
+    db.prepare(`
+      UPDATE whatsapp_messages
+      SET status = ?
+      WHERE id = ?
+    `).run(status, existing.id);
+  }
+
+  return true;
+}
+
 /**
  * Get messages inside a conversation
  */
@@ -529,21 +557,193 @@ export function queueOutbox(
   conversationId: string,
   contactId: string,
   text: string,
-  sendType: 'session_text' | 'template' = 'session_text'
+  sendType: 'session_text' | 'template' = 'session_text',
+  options?: {
+    templateName?: string;
+    templateLanguage?: string;
+    parameter?: Array<Record<string, string>>;
+  }
 ): string {
   const db = getDb();
   const id = randomUUID();
+  const provider = (process.env.WHATSAPP_PROVIDER || (process.env.WATZAP_API_KEY ? 'watzap' : 'wati')).toLowerCase();
+
+  const payload: Record<string, any> = { text };
+  if (sendType === 'template') {
+    payload.template_name = options?.templateName || '';
+    if (options?.templateLanguage) payload.template_language = options.templateLanguage;
+    if (Array.isArray(options?.parameter)) payload.parameter = options?.parameter;
+  }
 
   db.prepare(`
     INSERT INTO message_outbox (id, conversation_id, contact_id, channel, send_type, payload, status, scheduled_at)
-    VALUES (?, ?, ?, 'wati', ?, ?, 'pending', datetime('now'))
-  `).run(id, conversationId, contactId, sendType, JSON.stringify({ text }));
+    VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))
+  `).run(id, conversationId, contactId, provider, sendType, JSON.stringify(payload));
 
   return id;
 }
 
+async function sendViaWatzapTemplate(phoneNumber: string, templateName: string, parameter?: Array<Record<string, string>>, templateLanguage?: string): Promise<SendResult> {
+  const apiKey = process.env.WATZAP_API_KEY;
+  const baseUrl = (process.env.WATZAP_BASE_URL || 'https://api.watzap.id/v1').replace(/\/$/, '');
+
+  if (!apiKey) {
+    return { success: false, providerMessageId: null, error: 'WATZAP_API_KEY is not configured' };
+  }
+
+  const payload: any = {
+    api_key: apiKey,
+    phone_no: phoneNumber,
+    template_name: templateName
+  };
+
+  if (templateLanguage) payload.template_language = templateLanguage;
+  if (Array.isArray(parameter) && parameter.length > 0) payload.parameter = parameter;
+
+  const url = `${baseUrl}/waba_send_message_template`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  const raw = await res.text();
+  let data: any = null;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    // keep raw for error
+  }
+
+  const success = res.ok && (data?.status === '200' || data?.status === 200 || data?.ack === 'successfully');
+  if (!success) {
+    return {
+      success: false,
+      providerMessageId: null,
+      error: `WATZAP template send failed: HTTP ${res.status} ${raw}`
+    };
+  }
+
+  return {
+    success: true,
+    providerMessageId: data?.wamid || data?.data?.wamid || null
+  };
+}
+
+async function sendViaWatzap(phoneNumber: string, payload: Record<string, any>, sendType: string): Promise<SendResult> {
+  const apiKey = process.env.WATZAP_API_KEY;
+  const baseUrl = (process.env.WATZAP_BASE_URL || 'https://api.watzap.id/v1').replace(/\/$/, '');
+
+  if (!apiKey) {
+    return { success: false, providerMessageId: null, error: 'WATZAP_API_KEY is not configured' };
+  }
+
+  if (sendType === 'template') {
+    const templateName = String(payload?.template_name || '').trim();
+    if (!templateName) {
+      return { success: false, providerMessageId: null, error: 'Outbox template_name is required for template send' };
+    }
+    const parameter = Array.isArray(payload?.parameter) ? payload.parameter : undefined;
+    const templateLanguage = payload?.template_language ? String(payload.template_language) : undefined;
+    return sendViaWatzapTemplate(phoneNumber, templateName, parameter, templateLanguage);
+  }
+
+  const text = String(payload?.text || '').trim();
+  if (!text) {
+    return { success: false, providerMessageId: null, error: 'Outbox payload text is empty' };
+  }
+
+  const url = `${baseUrl}/waba_send_message`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      api_key: apiKey,
+      phone_no: phoneNumber,
+      message: text
+    })
+  });
+
+  const raw = await res.text();
+  let data: any = null;
+  try {
+    data = raw ? JSON.parse(raw) : null;
+  } catch {
+    // keep raw for error
+  }
+
+  const success = res.ok && (data?.status === '200' || data?.status === 200 || data?.status === true || data?.ack === 'successfully');
+  if (!success) {
+    return {
+      success: false,
+      providerMessageId: null,
+      error: `WATZAP send failed: HTTP ${res.status} ${raw}`
+    };
+  }
+
+  return {
+    success: true,
+    providerMessageId: data?.wamid || data?.data?.wamid || null
+  };
+}
+
+async function sendViaWati(phoneNumber: string, text: string, sendType: string = 'session_text'): Promise<SendResult> {
+  if (sendType === 'template') {
+    return {
+      success: false,
+      providerMessageId: null,
+      error: 'WATI template sending is not implemented in outbox. Use WHATSAPP_PROVIDER=watzap for template sends.'
+    };
+  }
+  const watiEndpoint = process.env.WATI_API_ENDPOINT;
+  const watiToken = process.env.WATI_API_TOKEN;
+
+  if (!watiEndpoint || !watiToken) {
+    return {
+      success: false,
+      providerMessageId: null,
+      error: 'WATI credentials (WATI_API_ENDPOINT / WATI_API_TOKEN) are not configured'
+    };
+  }
+
+  // Try v3 first
+  try {
+    const v3Url = `${watiEndpoint.replace(/\/$/, '')}/api/ext/v3/conversations/messages/text`;
+    const v3Res = await fetch(v3Url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${watiToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ target: phoneNumber, text })
+    });
+
+    if (v3Res.ok) {
+      const v3Data = await v3Res.json();
+      return { success: true, providerMessageId: v3Data?.id || v3Data?.messageId || null };
+    }
+  } catch (err) {
+    logger.warn('WATI v3 send error', { error: String(err) });
+  }
+
+  // Fallback v1
+  const v1Url = `${watiEndpoint.replace(/\/$/, '')}/api/v1/sendSessionMessage/${phoneNumber}?messageText=${encodeURIComponent(text)}`;
+  const v1Res = await fetch(v1Url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${watiToken}` }
+  });
+
+  if (!v1Res.ok) {
+    const errText = await v1Res.text();
+    return { success: false, providerMessageId: null, error: `WATI v1 fallback failed: ${v1Res.status} ${errText}` };
+  }
+
+  const v1Data = await v1Res.json();
+  return { success: true, providerMessageId: v1Data?.id || v1Data?.messageId || null };
+}
+
 /**
- * Attempt sending pending outbox messages to WATI
+ * Attempt sending pending outbox messages
  */
 export async function processOutboxQueue(): Promise<void> {
   const db = getDb();
@@ -558,99 +758,47 @@ export async function processOutboxQueue(): Promise<void> {
 
   if (pending.length === 0) return;
 
-  const watiEndpoint = process.env.WATI_API_ENDPOINT;
-  const watiToken = process.env.WATI_API_TOKEN;
+  const provider = (process.env.WHATSAPP_PROVIDER || (process.env.WATZAP_API_KEY ? 'watzap' : 'wati')).toLowerCase();
 
   for (const item of pending) {
     db.prepare("UPDATE message_outbox SET status = 'sending', attempt_count = attempt_count + 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?").run(item.id);
 
     try {
-      if (!watiEndpoint || !watiToken) {
-        throw new Error('WATI credentials (WATI_API_ENDPOINT / WATI_API_TOKEN) are not configured');
+      const payloadObj = JSON.parse(item.payload || '{}');
+      const outgoingText = item.send_type === 'template'
+        ? String(payloadObj.template_name || '[template]').trim()
+        : String(payloadObj.text || '').trim();
+
+      const result = provider === 'watzap'
+        ? await sendViaWatzap(item.phone_number, payloadObj, item.send_type)
+        : await sendViaWati(item.phone_number, outgoingText, item.send_type);
+
+      if (!result.success) {
+        throw new Error(result.error || `${provider} send failed`);
       }
 
-      const payloadObj = JSON.parse(item.payload);
-      const text = payloadObj.text;
-      let success = false;
-      let watiMessageId: string | null = null;
+      db.transaction(() => {
+        db.prepare(`
+          UPDATE message_outbox
+          SET status = 'sent', sent_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `).run(item.id);
 
-      // Try Endpoint v3 first: https://live-mt-server.wati.io/api/ext/v3/conversations/messages/text
-      // Body format: { "target": "628...", "text": "Message content" }
-      try {
-        const v3Url = `${watiEndpoint.replace(/\/$/, '')}/api/ext/v3/conversations/messages/text`;
-        logger.info(`Attempting WATI send v3 message for outbox ${item.id}`, { url: v3Url });
-
-        const res = await fetch(v3Url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${watiToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            target: item.phone_number,
-            text: text
-          })
+        insertMessageIdempotent({
+          watiMessageId: result.providerMessageId,
+          conversationId: item.conversation_id,
+          contactId: item.contact_id,
+          direction: 'outgoing',
+          senderType: 'cs',
+          text: outgoingText,
+          watiTimestamp: new Date().toISOString()
         });
+      })();
 
-        if (res.ok) {
-          const resData = await res.json();
-          success = true;
-          watiMessageId = resData.id || resData.messageId || null;
-          logger.info(`WATI send v3 succeeded for outbox ${item.id}`, { watiMessageId });
-        } else {
-          const errText = await res.text();
-          logger.warn(`WATI send v3 failed for outbox ${item.id}`, { status: res.status, error: errText });
-        }
-      } catch (v3Err) {
-        logger.warn(`WATI send v3 error for outbox ${item.id}`, { error: String(v3Err) });
-      }
-
-      // Fallback to Endpoint v1: POST {WATI_API_ENDPOINT}/api/v1/sendSessionMessage/{whatsappNumber}?messageText={text}
-      if (!success) {
-        const v1Url = `${watiEndpoint.replace(/\/$/, '')}/api/v1/sendSessionMessage/${item.phone_number}?messageText=${encodeURIComponent(text)}`;
-        logger.info(`Attempting WATI send v1 fallback for outbox ${item.id}`, { url: v1Url });
-
-        const res = await fetch(v1Url, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${watiToken}`
-          }
-        });
-
-        if (res.ok) {
-          const resData = await res.json();
-          success = true;
-          watiMessageId = resData.id || resData.messageId || null;
-          logger.info(`WATI send v1 fallback succeeded for outbox ${item.id}`, { watiMessageId });
-        } else {
-          const errText = await res.text();
-          throw new Error(`WATI v1 fallback failed: ${res.status} ${errText}`);
-        }
-      }
-
-      if (success) {
-        db.transaction(() => {
-          db.prepare(`
-            UPDATE message_outbox
-            SET status = 'sent', sent_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
-            WHERE id = ?
-          `).run(item.id);
-
-          // Add this sent message to local whatsapp_messages
-          insertMessageIdempotent({
-            watiMessageId,
-            conversationId: item.conversation_id,
-            contactId: item.contact_id,
-            direction: 'outgoing',
-            senderType: 'cs',
-            text: text,
-            watiTimestamp: new Date().toISOString()
-          });
-        })();
-      }
+      logger.info('Outbox message sent', { outboxId: item.id, provider, providerMessageId: result.providerMessageId });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      logger.error(`Outbox processing failed for ${item.id}`, { error: errMsg });
+      logger.error(`Outbox processing failed for ${item.id}`, { error: errMsg, provider });
 
       const newStatus = item.attempt_count >= 3 ? 'failed' : 'pending';
       db.prepare(`

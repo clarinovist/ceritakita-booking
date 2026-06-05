@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
 import { getMessages, queueOutbox, processOutboxQueue } from '@/lib/repositories/whatsapp';
+import { watzapSyncTemplates } from '@/lib/watzap';
 import { getDb } from '@/lib/db';
 import { AppError, createErrorResponse } from '@/lib/logger';
 
@@ -54,10 +55,24 @@ export async function POST(request: NextRequest, { params }: Context) {
     }
 
     const body = await request.json();
-    const { text } = body;
+    const { text, sendType, templateName, templateLanguage, parameter, syncTemplatesFirst } = body;
 
-    if (!text || typeof text !== 'string' || !text.trim()) {
-      throw new AppError('Message text is required', 400, 'BAD_REQUEST');
+    const mode = (sendType || 'session_text') as 'session_text' | 'template';
+
+    if (mode === 'session_text') {
+      if (!text || typeof text !== 'string' || !text.trim()) {
+        throw new AppError('Message text is required', 400, 'BAD_REQUEST');
+      }
+    }
+
+    if (mode === 'template') {
+      if (!templateName || typeof templateName !== 'string' || !templateName.trim()) {
+        throw new AppError('templateName is required for template send', 400, 'BAD_REQUEST');
+      }
+      if (syncTemplatesFirst === true) {
+        // Non-blocking best effort sync to reduce template-not-found errors
+        await watzapSyncTemplates();
+      }
     }
 
     const db = getDb();
@@ -68,7 +83,19 @@ export async function POST(request: NextRequest, { params }: Context) {
     }
 
     // Queue message in outbox
-    const outboxId = queueOutbox(params.id, conv.contact_id, text.trim(), 'session_text');
+    const outboxId = queueOutbox(
+      params.id,
+      conv.contact_id,
+      mode === 'session_text' ? text.trim() : '[template]',
+      mode,
+      mode === 'template'
+        ? {
+            templateName: templateName.trim(),
+            templateLanguage: typeof templateLanguage === 'string' ? templateLanguage : undefined,
+            parameter: Array.isArray(parameter) ? parameter : undefined
+          }
+        : undefined
+    );
 
     // Immediately trigger outbox processing asynchronously (do not await, to return quick response)
     processOutboxQueue().catch((err) => {
