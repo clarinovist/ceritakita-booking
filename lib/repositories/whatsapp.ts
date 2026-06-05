@@ -809,3 +809,263 @@ export async function processOutboxQueue(): Promise<void> {
     }
   }
 }
+
+/**
+ * Save or update conversation insight
+ */
+export function saveConversationInsight(data: {
+  conversationId: string;
+  summary: string | null;
+  intent: string | null;
+  sentiment: string | null;
+  urgency: string | null;
+  riskLevel: string | null;
+  needsHuman: boolean;
+  suggestedNextAction: string | null;
+  confidence: number;
+  modelName: string | null;
+  sourceMessageId: string | null;
+}): string {
+  const db = getDb();
+  
+  const existing = db.prepare('SELECT id FROM whatsapp_conversation_insights WHERE conversation_id = ?').get(data.conversationId) as { id: string } | undefined;
+  const needsHumanInt = data.needsHuman ? 1 : 0;
+  
+  if (existing) {
+    db.prepare(`
+      UPDATE whatsapp_conversation_insights
+      SET summary = ?, intent = ?, sentiment = ?, urgency = ?, risk_level = ?, 
+          needs_human = ?, suggested_next_action = ?, confidence = ?, 
+          model_name = ?, source_message_id = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(
+      data.summary, data.intent, data.sentiment, data.urgency, data.riskLevel,
+      needsHumanInt, data.suggestedNextAction, data.confidence,
+      data.modelName, data.sourceMessageId, existing.id
+    );
+    return existing.id;
+  } else {
+    const id = randomUUID();
+    db.prepare(`
+      INSERT INTO whatsapp_conversation_insights (
+        id, conversation_id, summary, intent, sentiment, urgency, risk_level, 
+        needs_human, suggested_next_action, confidence, model_name, source_message_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      id, data.conversationId, data.summary, data.intent, data.sentiment, data.urgency, data.riskLevel,
+      needsHumanInt, data.suggestedNextAction, data.confidence,
+      data.modelName, data.sourceMessageId
+    );
+    return id;
+  }
+}
+
+/**
+ * Retrieve latest conversation insight
+ */
+export function getLatestConversationInsight(conversationId: string) {
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT * FROM whatsapp_conversation_insights
+    WHERE conversation_id = ?
+    ORDER BY created_at DESC
+    LIMIT 1
+  `).get(conversationId) as any;
+  
+  if (!row) return null;
+  return {
+    ...row,
+    needs_human: row.needs_human === 1
+  };
+}
+
+/**
+ * Save new AI Draft
+ */
+export function saveAIDraft(data: {
+  conversationId: string;
+  messageId: string | null;
+  draftText: string;
+  draftType: string;
+  status?: string;
+  riskLevel: string | null;
+  guardrailNotes: string | null;
+  createdBy?: string;
+  modelName: string | null;
+  promptVersion: string | null;
+}): string {
+  const db = getDb();
+  const id = randomUUID();
+  const status = data.status || 'drafted';
+  const createdBy = data.createdBy || 'ai';
+  
+  db.prepare(`
+    INSERT INTO whatsapp_ai_drafts (
+      id, conversation_id, message_id, draft_text, draft_type, status,
+      risk_level, guardrail_notes, created_by, model_name, prompt_version
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id, data.conversationId, data.messageId, data.draftText, data.draftType, status,
+    data.riskLevel, data.guardrailNotes, createdBy, data.modelName, data.promptVersion
+  );
+  
+  return id;
+}
+
+/**
+ * Update AI Draft Status
+ */
+export function updateAIDraftStatus(
+  draftId: string,
+  status: 'drafted' | 'edited' | 'approved' | 'sent' | 'rejected' | 'expired',
+  extra?: {
+    approvedBy?: string | null;
+    sentOutboxId?: string | null;
+    draftText?: string;
+  }
+): void {
+  const db = getDb();
+  const updates: string[] = ['status = ?'];
+  const params: any[] = [status];
+  
+  if (extra?.approvedBy !== undefined) {
+    updates.push('approved_by = ?');
+    params.push(extra.approvedBy);
+  }
+  
+  if (extra?.sentOutboxId !== undefined) {
+    updates.push('sent_outbox_id = ?');
+    params.push(extra.sentOutboxId);
+  }
+  
+  if (extra?.draftText !== undefined) {
+    updates.push('draft_text = ?');
+    params.push(extra.draftText);
+  }
+  
+  updates.push('updated_at = CURRENT_TIMESTAMP');
+  
+  db.prepare(`
+    UPDATE whatsapp_ai_drafts
+    SET ${updates.join(', ')}
+    WHERE id = ?
+  `).run(...params, draftId);
+}
+
+/**
+ * Retrieve AI Draft by ID
+ */
+export function getAIDraftById(draftId: string) {
+  const db = getDb();
+  return db.prepare('SELECT * FROM whatsapp_ai_drafts WHERE id = ?').get(draftId) as any;
+}
+
+/**
+ * Log an AI event audit log
+ */
+export function logAIEvent(data: {
+  conversationId: string;
+  eventType: string;
+  inputSnapshot: string | null;
+  outputSnapshot: string | null;
+  actor: string;
+}): string {
+  const db = getDb();
+  const id = randomUUID();
+  
+  db.prepare(`
+    INSERT INTO whatsapp_ai_events (id, conversation_id, event_type, input_snapshot, output_snapshot, actor)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).run(id, data.conversationId, data.eventType, data.inputSnapshot, data.outputSnapshot, data.actor);
+  
+  return id;
+}
+
+/**
+ * Build Customer 360 context for WhatsApp conversation
+ */
+export function buildWhatsAppCustomerContext(conversationId: string) {
+  const db = getDb();
+  const conv = getConversationById(conversationId);
+  if (!conv) return null;
+  
+  const maxMessages = parseInt(process.env.AI_CS_MAX_CONTEXT_MESSAGES || '30', 10);
+  const messages = db.prepare(`
+    SELECT id, direction, sender_type, text, wati_timestamp
+    FROM whatsapp_messages
+    WHERE conversation_id = ?
+    ORDER BY wati_timestamp DESC
+    LIMIT ?
+  `).all(conversationId, maxMessages) as any[];
+  
+  // Order messages chronologically
+  messages.reverse();
+  
+  const phone = conv.phone_number || '';
+  const cleanPhone = (p: string) => p.replace(/\D/g, '');
+  const targetClean = cleanPhone(phone);
+  
+  // Find matching bookings
+  const allBookings = db.prepare(`
+    SELECT id, status, customer_name, customer_whatsapp, customer_category, booking_date, total_price
+    FROM bookings
+  `).all() as any[];
+  
+  const customerBookings = allBookings.filter(b => {
+    const bClean = cleanPhone(b.customer_whatsapp);
+    if (bClean.length < 8 || targetClean.length < 8) return false;
+    return bClean === targetClean || bClean.includes(targetClean) || targetClean.includes(bClean);
+  });
+  
+  const bookingIds = customerBookings.map(b => b.id);
+  let payments: any[] = [];
+  if (bookingIds.length > 0) {
+    const placeholders = bookingIds.map(() => '?').join(',');
+    payments = db.prepare(`
+      SELECT booking_id, amount, date, note
+      FROM payments
+      WHERE booking_id IN (${placeholders})
+    `).all(...bookingIds);
+  }
+  
+  const bookingsWithFinance = customerBookings.map(b => {
+    const bookingPayments = payments.filter(p => p.booking_id === b.id);
+    const totalPaid = bookingPayments.reduce((sum, p) => sum + p.amount, 0);
+    const sisa = b.total_price - totalPaid;
+    return {
+      id: b.id,
+      status: b.status,
+      category: b.customer_category,
+      date: b.booking_date,
+      totalPrice: b.total_price,
+      totalPaid,
+      sisa,
+      payments: bookingPayments
+    };
+  });
+  
+  const activeBookings = bookingsWithFinance.filter(b => b.status === 'Active' || b.status === 'Rescheduled');
+  const linkedBooking = bookingsWithFinance.find(b => b.id === conv.booking_id) || null;
+  
+  return {
+    conversationId,
+    status: conv.status,
+    crmLabel: conv.crm_label || 'leads',
+    assignedTo: conv.assigned_to,
+    bookingId: conv.booking_id,
+    contact: {
+      id: conv.contact_id,
+      phone: conv.phone_number,
+      displayName: conv.display_name
+    },
+    messageHistory: messages,
+    bookings: bookingsWithFinance,
+    summary: {
+      totalBookingsCount: bookingsWithFinance.length,
+      activeBookingsCount: activeBookings.length,
+      totalAmountPaid: bookingsWithFinance.reduce((sum, b) => sum + b.totalPaid, 0),
+      totalOutstanding: bookingsWithFinance.reduce((sum, b) => sum + Math.max(0, b.sisa), 0),
+      linkedBooking
+    }
+  };
+}

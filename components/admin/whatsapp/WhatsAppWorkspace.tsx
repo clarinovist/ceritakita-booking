@@ -124,6 +124,12 @@ export function WhatsAppWorkspace() {
   const [isLoadingConvs, setIsLoadingConvs] = useState(false);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
 
+  // AI Brain & Draft suggestion states
+  const [aiInsight, setAiInsight] = useState<any | null>(null);
+  const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
+  const [aiDraft, setAiDraft] = useState<any | null>(null);
+  const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+
   // Toast, Modal, and Confirmation States
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -282,6 +288,94 @@ export function WhatsAppWorkspace() {
     }
   }, []);
 
+  // Fetch AI Insight (fast GET)
+  const fetchAIInsight = useCallback(async (convId: string) => {
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${convId}/ai/insight`);
+      if (res.ok) {
+        const data = await res.json();
+        setAiInsight(data.insight);
+      }
+    } catch (err) {
+      console.error('Failed to load AI insight:', err);
+    }
+  }, []);
+
+  // Refresh AI Insight (POST)
+  const handleRefreshInsight = async () => {
+    if (!selectedConversation) return;
+    setIsGeneratingInsight(true);
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/ai/insight`, {
+        method: 'POST'
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiInsight(data.insight);
+        showToast('Analisis insight WhatsApp diperbarui!');
+      } else {
+        showToast('Gagal memproses insight AI.', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to refresh AI insight:', err);
+      showToast('Gagal menghubungi AI service.', 'error');
+    } finally {
+      setIsGeneratingInsight(false);
+    }
+  };
+
+  // Generate AI Draft
+  const handleGenerateDraft = async () => {
+    if (!selectedConversation) return;
+    setIsGeneratingDraft(true);
+    try {
+      const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/ai/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tone: 'friendly_professional' })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiDraft(data.draft);
+        // Sync insight context because generating draft also updates it
+        fetchAIInsight(selectedConversation.id);
+        showToast('Draft balasan AI siap!');
+      } else {
+        showToast('Gagal membuat draft AI.', 'error');
+      }
+    } catch (err) {
+      console.error('Failed to generate AI draft:', err);
+      showToast('Gagal menghubungi AI service.', 'error');
+    } finally {
+      setIsGeneratingDraft(false);
+    }
+  };
+
+  // Use AI Draft
+  const handleUseDraft = () => {
+    if (!aiDraft) return;
+    setReplyText(aiDraft.text);
+    showToast('Draft dimasukkan ke composer!');
+  };
+
+  // Reject AI Draft
+  const handleRejectDraft = async () => {
+    if (!selectedConversation || !aiDraft) return;
+    const reason = window.prompt('Alasan menolak saran AI (opsional):') || '';
+    try {
+      await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/ai/drafts/${aiDraft.id}/reject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      });
+      setAiDraft(null);
+      showToast('Saran AI ditolak.');
+    } catch (err) {
+      console.error('Failed to reject draft:', err);
+      setAiDraft(null);
+    }
+  };
+
   // Fetch bookings for Customer 360 panel
   const fetchAllBookings = useCallback(async () => {
     try {
@@ -320,8 +414,11 @@ export function WhatsAppWorkspace() {
 
   // Handle conversation selection change
   useEffect(() => {
+    setAiDraft(null);
+    setAiInsight(null);
     if (selectedConversation) {
       fetchMessages(selectedConversation.id);
+      fetchAIInsight(selectedConversation.id);
 
       // Filter bookings belonging to this customer
       const phoneDigits = selectedConversation.phone_number.replace(/\D/g, '');
@@ -334,7 +431,7 @@ export function WhatsAppWorkspace() {
       setMessages([]);
       setCustomerBookings([]);
     }
-  }, [selectedConversation, allBookings, fetchMessages]);
+  }, [selectedConversation, allBookings, fetchMessages, fetchAIInsight]);
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -721,6 +818,78 @@ export function WhatsAppWorkspace() {
 
             {/* Message Input Box */}
             <div className="p-4 bg-white border-t border-slate-100">
+              {/* AI Draft Assist Panel */}
+              <div className="mb-3.5">
+                {!aiDraft ? (
+                  <button
+                    type="button"
+                    onClick={handleGenerateDraft}
+                    disabled={isGeneratingDraft}
+                    className="w-full py-2 bg-indigo-50 hover:bg-indigo-100/80 text-indigo-700 border border-indigo-100 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-55 disabled:cursor-not-allowed"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingDraft ? 'animate-spin' : ''}`} />
+                    {isGeneratingDraft ? 'Membuat Draft Balasan AI...' : 'Tanyakan Saran Balasan AI (Draft)'}
+                  </button>
+                ) : (
+                  <div className="bg-indigo-50/40 border border-indigo-100 rounded-2xl p-4 space-y-3 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between border-b border-indigo-100/60 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-extrabold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping" />
+                          AI Suggestion Draft
+                        </span>
+                        {aiDraft.riskLevel && (
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase border ${
+                            aiDraft.riskLevel === 'high'
+                              ? 'bg-rose-100 text-rose-800 border-rose-250 animate-pulse'
+                              : aiDraft.riskLevel === 'medium'
+                              ? 'bg-amber-100 text-amber-800 border-amber-250'
+                              : 'bg-emerald-100 text-emerald-800 border-emerald-250'
+                          }`}>
+                            Risk: {aiDraft.riskLevel}
+                          </span>
+                        )}
+                      </div>
+                      
+                      <span className="text-[10px] text-slate-400 font-semibold italic truncate max-w-[200px]" title={aiDraft.guardrailNotes}>
+                        {aiDraft.guardrailNotes}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-700 bg-white/75 border border-indigo-50/50 p-3 rounded-xl whitespace-pre-wrap leading-relaxed font-medium">
+                      {aiDraft.text}
+                    </p>
+
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleUseDraft}
+                        className="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/10 active:scale-95"
+                      >
+                        Salin ke Input CS
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleGenerateDraft}
+                        disabled={isGeneratingDraft}
+                        className="py-2 px-3 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50"
+                        title="Buat ulang draft baru"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingDraft ? 'animate-spin' : ''}`} />
+                        Regenerasi
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRejectDraft}
+                        className="py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-100 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95"
+                      >
+                        Tolak
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <form onSubmit={handleSendMessage} className="flex gap-3">
                 <textarea
                   value={replyText}
@@ -767,6 +936,102 @@ export function WhatsAppWorkspace() {
               {selectedConversation.display_name || 'Customer'}
             </h4>
             <p className="text-sm text-slate-500 mt-0.5">{selectedConversation.phone_number}</p>
+          </div>
+
+          {/* AI Customer Context Card */}
+          <div className="bg-gradient-to-br from-indigo-50 to-blue-50/50 border border-indigo-100/80 rounded-2xl p-5 space-y-4 shadow-sm relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <h5 className="text-xs font-bold text-indigo-900 uppercase tracking-wider flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" />
+                AI Customer Context
+              </h5>
+              <button
+                onClick={handleRefreshInsight}
+                disabled={isGeneratingInsight}
+                className="text-[10px] text-indigo-700 hover:text-indigo-900 bg-indigo-100/60 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition font-bold flex items-center gap-1 disabled:opacity-55 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`w-3 h-3 ${isGeneratingInsight ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+
+            {isGeneratingInsight && !aiInsight ? (
+              <div className="text-center py-4 text-xs text-slate-400 flex flex-col items-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-indigo-500" />
+                Menganalisis chat...
+              </div>
+            ) : aiInsight ? (
+              <div className="space-y-3.5 text-xs">
+                {/* Badges row */}
+                <div className="flex flex-wrap gap-1.5">
+                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase border ${
+                    aiInsight.intent === 'complaint' || aiInsight.intent === 'cancel_request' || aiInsight.intent === 'reschedule_request'
+                      ? 'bg-rose-100 text-rose-850 border-rose-200'
+                      : aiInsight.intent === 'price_inquiry' || aiInsight.intent === 'schedule_check'
+                      ? 'bg-amber-100 text-amber-800 border-amber-200'
+                      : 'bg-indigo-100 text-indigo-800 border-indigo-200'
+                  }`}>
+                    Intent: {aiInsight.intent}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase border ${
+                    aiInsight.sentiment === 'positive'
+                      ? 'bg-emerald-100 text-emerald-805 border-emerald-200'
+                      : aiInsight.sentiment === 'negative'
+                      ? 'bg-rose-100 text-rose-800 border-rose-200'
+                      : 'bg-slate-100 text-slate-650 border-slate-200'
+                  }`}>
+                    {aiInsight.sentiment}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase border ${
+                    aiInsight.urgency === 'high'
+                      ? 'bg-rose-100 text-rose-800 border-rose-200 animate-pulse'
+                      : 'bg-slate-100 text-slate-650 border-slate-200'
+                  }`}>
+                    Urgent: {aiInsight.urgency}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-extrabold uppercase border ${
+                    aiInsight.riskLevel === 'high'
+                      ? 'bg-rose-100 text-rose-850 border-rose-300 font-black'
+                      : aiInsight.riskLevel === 'medium'
+                      ? 'bg-amber-100 text-amber-850 border-amber-300'
+                      : 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                  }`}>
+                    Risk: {aiInsight.riskLevel}
+                  </span>
+                </div>
+
+                <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-indigo-50/60 space-y-2">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Ringkasan AI</span>
+                    <p className="text-slate-700 leading-relaxed font-medium">{aiInsight.summary}</p>
+                  </div>
+                  <div className="border-t border-slate-100 pt-2">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Rekomendasi Aksi</span>
+                    <p className="text-slate-700 font-bold leading-relaxed">{aiInsight.suggestedNextAction}</p>
+                  </div>
+                </div>
+
+                {aiInsight.needsHuman && (
+                  <div className="flex items-start gap-2 bg-rose-50 border border-rose-100 rounded-xl p-3 text-rose-800 text-[11px] font-medium animate-in fade-in">
+                    <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0 mt-0.5 animate-bounce" />
+                    <div>
+                      <p className="font-bold">Eskalasi CS Manusia</p>
+                      <p className="text-rose-750 leading-relaxed">Percakapan terdeteksi sensitif (pembayaran/reschedule/komplain/batal). AI draft disarankan untuk review manual saja.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4 text-xs text-slate-400">
+                Belum ada analisis insight chat.
+                <button
+                  onClick={handleRefreshInsight}
+                  className="mt-2 text-indigo-600 hover:text-indigo-800 hover:underline block w-full text-center font-bold"
+                >
+                  Mulai Analisis
+                </button>
+              </div>
+            )}
           </div>
 
           {/* WhatsApp CRM Pipeline Section */}

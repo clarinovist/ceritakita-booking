@@ -899,6 +899,60 @@ function initializeSchema() {
     )
   `);
 
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_conversation_insights (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      summary TEXT,
+      intent TEXT,
+      sentiment TEXT,
+      urgency TEXT,
+      risk_level TEXT,
+      needs_human INTEGER DEFAULT 0,
+      suggested_next_action TEXT,
+      confidence REAL DEFAULT 0,
+      model_name TEXT,
+      source_message_id TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES whatsapp_conversations(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_ai_drafts (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      message_id TEXT,
+      draft_text TEXT NOT NULL,
+      draft_type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'drafted',
+      risk_level TEXT,
+      guardrail_notes TEXT,
+      created_by TEXT NOT NULL DEFAULT 'ai',
+      approved_by TEXT,
+      sent_outbox_id TEXT,
+      model_name TEXT,
+      prompt_version TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES whatsapp_conversations(id) ON DELETE CASCADE
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS whatsapp_ai_events (
+      id TEXT PRIMARY KEY,
+      conversation_id TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      input_snapshot TEXT,
+      output_snapshot TEXT,
+      actor TEXT NOT NULL,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (conversation_id) REFERENCES whatsapp_conversations(id) ON DELETE CASCADE
+    )
+  `);
+
   // Create indexes for WhatsApp tables
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_wa_raw_events_status ON wati_raw_events(processing_status);
@@ -914,6 +968,9 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_wa_conv_crm_label ON whatsapp_conversations(crm_label);
     CREATE INDEX IF NOT EXISTS idx_wa_conv_next_fu_at ON whatsapp_conversations(next_fu_at);
     CREATE INDEX IF NOT EXISTS idx_wa_conv_label_fu ON whatsapp_conversations(crm_label, next_fu_at);
+    CREATE INDEX IF NOT EXISTS idx_wa_insights_conv ON whatsapp_conversation_insights(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_drafts_conv ON whatsapp_ai_drafts(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_events_conv ON whatsapp_ai_events(conversation_id);
   `);
 }
 
