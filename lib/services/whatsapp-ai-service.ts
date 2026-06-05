@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { getSystemSettings } from '@/lib/repositories/settings';
 
 // Validation Schema matching prompt expectation
 export const WhatsAppAIInsightSchema = z.object({
@@ -21,19 +22,187 @@ export const WhatsAppAIInsightSchema = z.object({
 
 export type WhatsAppAIInsight = z.infer<typeof WhatsAppAIInsightSchema>;
 
+export interface AIRuntimeConfig {
+  enabled: boolean;
+  insightEnabled: boolean;
+  draftEnabled: boolean;
+  autoSendEnabled: boolean;
+  provider: string;
+  model: string;
+  baseUrl: string;
+  temperature: number;
+  maxContextMessages: number;
+  confidenceAutoSendThreshold: number;
+  allowedAutoIntents: string;
+  systemPromptTemplate: string;
+}
+
+function getDefaultBaseUrl(provider: string): string {
+  if (provider === 'gemini') return 'https://generativelanguage.googleapis.com/v1beta/openai';
+  if (provider === 'deepseek') return 'https://api.deepseek.com/v1';
+  if (provider === 'openrouter') return 'https://openrouter.ai/api/v1';
+  return 'https://api.openai.com/v1';
+}
+
+function sanitizeBaseUrl(rawUrl: string | undefined, provider: string): string {
+  const fallback = getDefaultBaseUrl(provider);
+  if (!rawUrl || !rawUrl.trim()) return fallback;
+
+  try {
+    const u = new URL(rawUrl.trim());
+    if (u.protocol !== 'https:') return fallback;
+
+    const hostname = u.hostname.toLowerCase();
+    // Block obvious local/private hosts to reduce SSRF/key-exfil risk
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname.endsWith('.local') ||
+      /^10\./.test(hostname) ||
+      /^127\./.test(hostname) ||
+      /^169\.254\./.test(hostname) ||
+      /^192\.168\./.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname) ||
+      hostname.startsWith('fe80:') ||
+      hostname.startsWith('fc') ||
+      hostname.startsWith('fd')
+    ) {
+      return fallback;
+    }
+
+    return u.origin + (u.pathname === '/' ? '' : u.pathname.replace(/\/$/, ''));
+  } catch {
+    return fallback;
+  }
+}
+
+function resolveBaseUrl(provider: string, rawUrl?: string): string {
+  const allowedProviders = new Set(['openai', 'gemini', 'deepseek', 'openrouter', 'custom']);
+  const normalizedProvider = allowedProviders.has(provider) ? provider : 'openai';
+
+  // Prevent custom endpoint override for known providers.
+  // Only provider=custom may define a custom base URL.
+  if (normalizedProvider !== 'custom') return getDefaultBaseUrl(normalizedProvider);
+
+  const sanitized = sanitizeBaseUrl(rawUrl, normalizedProvider);
+  if (!rawUrl || !rawUrl.trim()) return sanitized;
+
+  // Defense-in-depth: custom endpoints must be explicitly allowlisted.
+  const allowlist = (process.env.AI_CS_CUSTOM_BASE_URL_ALLOWLIST || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (allowlist.length === 0) {
+    logger.warn('[AI Brain] Custom base URL rejected: allowlist is empty');
+    return getDefaultBaseUrl('openai');
+  }
+
+  try {
+    const host = new URL(sanitized).hostname.toLowerCase();
+    const allowed = allowlist.some(pattern => host === pattern || host.endsWith(`.${pattern}`));
+    if (!allowed) {
+      logger.warn('[AI Brain] Custom base URL rejected: host not in allowlist', { host });
+      return getDefaultBaseUrl('openai');
+    }
+  } catch {
+    return getDefaultBaseUrl('openai');
+  }
+
+  return sanitized;
+}
+
+function toBool(value: unknown, fallback: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value === 'true' || value === '1';
+  return fallback;
+}
+
+function toNumber(value: unknown, fallback: number): number {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return fallback;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+export function getAIRuntimeConfig(): AIRuntimeConfig {
+  const envProvider = (process.env.AI_CS_PROVIDER || 'openai').toLowerCase();
+  const envModel = process.env.AI_CS_MODEL || (envProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+
+  try {
+    const settings = getSystemSettings();
+    const ai = settings.ai_brain;
+
+    if (!ai) {
+      return {
+        enabled: process.env.AI_CS_ENABLED === 'true',
+        insightEnabled: process.env.AI_CS_INSIGHT_ENABLED === 'true',
+        draftEnabled: process.env.AI_CS_DRAFT_ENABLED === 'true',
+        autoSendEnabled: process.env.AI_CS_AUTO_SEND_ENABLED === 'true',
+        provider: envProvider,
+        model: envModel,
+        baseUrl: resolveBaseUrl(envProvider, process.env.AI_CS_BASE_URL),
+        temperature: parseFloat(process.env.AI_CS_TEMPERATURE || '0.2'),
+        maxContextMessages: parseInt(process.env.AI_CS_MAX_CONTEXT_MESSAGES || '30', 10),
+        confidenceAutoSendThreshold: parseFloat(process.env.AI_CS_CONFIDENCE_AUTO_SEND_THRESHOLD || '0.85'),
+        allowedAutoIntents: process.env.AI_CS_ALLOWED_AUTO_INTENTS || 'schedule_check,booking_request,testimonial,unknown',
+        systemPromptTemplate: ''
+      };
+    }
+
+    const provider = (ai.ai_cs_provider || envProvider).toLowerCase();
+    return {
+      enabled: toBool(ai.ai_cs_enabled, process.env.AI_CS_ENABLED === 'true'),
+      insightEnabled: toBool(ai.ai_cs_insight_enabled, process.env.AI_CS_INSIGHT_ENABLED === 'true'),
+      draftEnabled: toBool(ai.ai_cs_draft_enabled, process.env.AI_CS_DRAFT_ENABLED === 'true'),
+      autoSendEnabled: toBool(ai.ai_cs_auto_send_enabled, process.env.AI_CS_AUTO_SEND_ENABLED === 'true'),
+      provider,
+      model: ai.ai_cs_model || envModel,
+      baseUrl: resolveBaseUrl(provider, ai.ai_cs_base_url || process.env.AI_CS_BASE_URL),
+      temperature: clamp(toNumber(ai.ai_cs_temperature, parseFloat(process.env.AI_CS_TEMPERATURE || '0.2')), 0, 2),
+      maxContextMessages: Math.floor(clamp(toNumber(ai.ai_cs_max_context_messages, parseInt(process.env.AI_CS_MAX_CONTEXT_MESSAGES || '30', 10)), 1, 200)),
+      confidenceAutoSendThreshold: clamp(toNumber(ai.ai_cs_confidence_auto_send_threshold, parseFloat(process.env.AI_CS_CONFIDENCE_AUTO_SEND_THRESHOLD || '0.85')), 0, 1),
+      allowedAutoIntents: ai.ai_cs_allowed_auto_intents || process.env.AI_CS_ALLOWED_AUTO_INTENTS || 'schedule_check,booking_request,testimonial,unknown',
+      systemPromptTemplate: ai.ai_cs_system_prompt || ''
+    };
+  } catch {
+    return {
+      enabled: process.env.AI_CS_ENABLED === 'true',
+      insightEnabled: process.env.AI_CS_INSIGHT_ENABLED === 'true',
+      draftEnabled: process.env.AI_CS_DRAFT_ENABLED === 'true',
+      autoSendEnabled: process.env.AI_CS_AUTO_SEND_ENABLED === 'true',
+      provider: envProvider,
+      model: envModel,
+      baseUrl: resolveBaseUrl(envProvider, process.env.AI_CS_BASE_URL),
+      temperature: parseFloat(process.env.AI_CS_TEMPERATURE || '0.2'),
+      maxContextMessages: parseInt(process.env.AI_CS_MAX_CONTEXT_MESSAGES || '30', 10),
+      confidenceAutoSendThreshold: parseFloat(process.env.AI_CS_CONFIDENCE_AUTO_SEND_THRESHOLD || '0.85'),
+      allowedAutoIntents: process.env.AI_CS_ALLOWED_AUTO_INTENTS || 'schedule_check,booking_request,testimonial,unknown',
+      systemPromptTemplate: ''
+    };
+  }
+}
+
 /**
- * Checks if the AI features are enabled globally via environment variables
+ * Checks if the AI features are enabled globally via runtime config (DB settings with env fallback)
  */
 export function isAIEnabled(): boolean {
-  return process.env.AI_CS_ENABLED === 'true';
+  return getAIRuntimeConfig().enabled;
 }
 
 export function isAIInsightEnabled(): boolean {
-  return process.env.AI_CS_INSIGHT_ENABLED === 'true';
+  return getAIRuntimeConfig().insightEnabled;
 }
 
 export function isAIDraftEnabled(): boolean {
-  return process.env.AI_CS_DRAFT_ENABLED === 'true';
+  return getAIRuntimeConfig().draftEnabled;
 }
 
 /**
@@ -156,19 +325,23 @@ export async function getAICompletion(customerContext: any, _promptType: 'insigh
     return generateDeterministicFallback(lastMsgText);
   }
 
-  const provider = (process.env.AI_CS_PROVIDER || 'openai').toLowerCase();
-  const model = process.env.AI_CS_MODEL || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
-  const temp = parseFloat(process.env.AI_CS_TEMPERATURE || '0.2');
+  const cfg = getAIRuntimeConfig();
+  const provider = cfg.provider;
+  const model = cfg.model;
+  const temp = cfg.temperature;
   
   let apiKey = '';
   let apiUrl = '';
 
+  const baseUrl = cfg.baseUrl;
+  apiUrl = `${baseUrl}/chat/completions`;
+
+  // API Key selection
   if (provider === 'gemini') {
     apiKey = process.env.GEMINI_API_KEY || '';
-    apiUrl = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
   } else {
+    // OpenAI, DeepSeek, OpenRouter, and custom providers all use OPENAI_API_KEY env
     apiKey = process.env.OPENAI_API_KEY || '';
-    apiUrl = 'https://api.openai.com/v1/chat/completions';
   }
 
   if (!apiKey || apiKey.startsWith('mock-')) {
@@ -198,20 +371,24 @@ export async function getAICompletion(customerContext: any, _promptType: 'insigh
     }
   });
 
-  const chatHistory = customerContext.messageHistory.map((m: any) => {
+  const messageHistory = Array.isArray(customerContext.messageHistory)
+    ? customerContext.messageHistory.slice(-cfg.maxContextMessages)
+    : [];
+
+  const chatHistory = messageHistory.map((m: any) => {
     const roleName = m.direction === 'incoming' ? 'Customer' : 'CS Agent';
     return `[${roleName}] at ${m.wati_timestamp}: ${m.text}`;
   }).join('\n');
 
-  const systemInstructions = `
+  const defaultSystemInstructions = `
 You are the central brain AI assistant for CeritaKita Studio customer service.
 Analyze the provided customer history and context to reply intelligently.
 
 CUSTOMER CONTEXT SUMMARY:
-${contextString}
+{{contextString}}
 
 CHAT HISTORY:
-${chatHistory}
+{{chatHistory}}
 
 Aturan Wajib (Guardrails):
 1. DILARANG KERAS mengarang/berhalusinasi mengenai harga paket, diskon, ketersediaan slot/jadwal, atau status pembayaran yang tidak tercantum di CUSTOMER CONTEXT SUMMARY.
@@ -241,6 +418,11 @@ You MUST respond strictly in the following JSON format:
   "guardrail_notes": "Note if any safety rule was triggered or if any information was missing."
 }
 `;
+
+  const promptTemplate = cfg.systemPromptTemplate?.trim() || defaultSystemInstructions;
+  const systemInstructions = promptTemplate
+    .replaceAll('{{contextString}}', contextString)
+    .replaceAll('{{chatHistory}}', chatHistory);
 
   try {
     const response = await fetch(apiUrl, {

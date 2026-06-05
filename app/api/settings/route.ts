@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAuth } from '@/lib/auth';
+import { getSession, requireAuth } from '@/lib/auth';
 import { getSystemSettings, updateSystemSettings } from '@/lib/storage-sqlite';
 import { FILE_CONSTRAINTS } from '@/lib/constants';
 import { logger, createErrorResponse } from '@/lib/logger';
@@ -26,18 +26,63 @@ function isValidImageUrl(url: string): boolean {
   }
 }
 
+function clampNumber(value: unknown, min: number, max: number, fallback: number): number {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
+function toBool(value: unknown, fallback = false): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value === 'true' || value === '1';
+  return fallback;
+}
+
+function normalizeAIBrainSettings(raw: any) {
+  const allowedProviders = new Set(['openai', 'gemini', 'deepseek', 'openrouter', 'custom']);
+  const provider = String(raw?.ai_cs_provider || 'openai').toLowerCase();
+
+  return {
+    ai_cs_enabled: toBool(raw?.ai_cs_enabled, false),
+    ai_cs_provider: allowedProviders.has(provider) ? provider : 'openai',
+    ai_cs_model: String(raw?.ai_cs_model || 'gpt-4o-mini').trim() || 'gpt-4o-mini',
+    ai_cs_base_url: String(raw?.ai_cs_base_url || '').trim(),
+    ai_cs_temperature: clampNumber(raw?.ai_cs_temperature, 0, 2, 0.2),
+    ai_cs_max_context_messages: Math.floor(clampNumber(raw?.ai_cs_max_context_messages, 1, 200, 30)),
+    ai_cs_confidence_auto_send_threshold: clampNumber(raw?.ai_cs_confidence_auto_send_threshold, 0, 1, 0.85),
+    ai_cs_allowed_auto_intents: String(raw?.ai_cs_allowed_auto_intents || 'schedule_check,booking_request,testimonial,unknown').trim(),
+    ai_cs_insight_enabled: toBool(raw?.ai_cs_insight_enabled, false),
+    ai_cs_draft_enabled: toBool(raw?.ai_cs_draft_enabled, false),
+    ai_cs_auto_send_enabled: toBool(raw?.ai_cs_auto_send_enabled, false),
+    ai_cs_system_prompt: String(raw?.ai_cs_system_prompt || '').trim()
+  };
+}
+
+function canManageSettings(user: any): boolean {
+  return user?.role === 'admin' || user?.permissions?.settings === true;
+}
+
 /**
  * GET /api/settings
  * Fetch all system settings
  */
 export async function GET(_req: NextRequest) {
   try {
+    const session = await getSession();
+    const canViewPrivateSettings = canManageSettings(session?.user as any);
     const settings = getSystemSettings();
+    const responseSettings = canViewPrivateSettings ? settings : { ...settings };
 
-    return NextResponse.json(settings, {
+    if (!canViewPrivateSettings) {
+      delete (responseSettings as any).ai_brain;
+    }
+
+    return NextResponse.json(responseSettings, {
       status: 200,
       headers: {
-        'Cache-Control': 'public, max-age=300, s-maxage=300'
+        'Cache-Control': canViewPrivateSettings
+          ? 'private, no-store'
+          : 'public, max-age=300, s-maxage=300'
       }
     });
   } catch (error) {
@@ -55,6 +100,14 @@ export async function POST(req: NextRequest) {
   try {
     const authCheck = await requireAuth(req);
     if (authCheck) return authCheck;
+    const session = await getSession();
+    const user = session?.user as any;
+    if (!canManageSettings(user)) {
+      return NextResponse.json(
+        { error: 'Forbidden. Settings permission required.' },
+        { status: 403 }
+      );
+    }
 
     const body = await req.json();
 
@@ -74,6 +127,13 @@ export async function POST(req: NextRequest) {
 
     // Perbaikan: Container untuk data yang sudah dikonversi ke string
     const settingsToUpdate: Record<string, string> = {};
+
+    // Normalize AI Brain payload first (server-side safety)
+    if (body.ai_brain && typeof body.ai_brain === 'object') {
+      const existing = getSystemSettings() as any;
+      const mergedAiBrain = { ...(existing.ai_brain || {}), ...(body.ai_brain || {}) };
+      body.ai_brain = normalizeAIBrainSettings(mergedAiBrain);
+    }
 
     // Perbaikan: Validasi type yang lebih fleksibel (String, Number, Boolean, Object)
     for (const [key, value] of Object.entries(body)) {
@@ -109,9 +169,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { getSession } = await import('@/lib/auth');
-    const session = await getSession();
-    const updatedBy = session?.user?.name || session?.user?.email || 'unknown';
+    const updatedBy = user?.name || user?.email || 'unknown';
 
     // Update settings using the converted string values
     updateSystemSettings(settingsToUpdate, updatedBy);

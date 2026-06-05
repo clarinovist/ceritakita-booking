@@ -8,7 +8,7 @@ import {
   getLatestConversationInsight,
   logAIEvent 
 } from '@/lib/repositories/whatsapp';
-import { getAICompletion, isAIEnabled, isAIInsightEnabled } from '@/lib/services/whatsapp-ai-service';
+import { getAICompletion, getAIRuntimeConfig, isAIEnabled, isAIInsightEnabled } from '@/lib/services/whatsapp-ai-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -95,8 +95,9 @@ export async function POST(_request: NextRequest, { params }: Context) {
     const completion = await getAICompletion(customerContext, 'insight');
 
     // 3. Save to DB
-    const provider = process.env.AI_CS_PROVIDER || 'openai';
-    const model = process.env.AI_CS_MODEL || (provider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini');
+    const cfg = getAIRuntimeConfig();
+    const provider = cfg.provider;
+    const model = cfg.model;
     const insightId = saveConversationInsight({
       conversationId,
       summary: completion.summary,

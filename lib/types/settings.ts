@@ -66,6 +66,22 @@ export interface EmailReportSettings {
   customer_email_sender_name?: string;
 }
 
+// 7. AI Brain Settings (WhatsApp CS)
+export interface AIBrainSettings {
+  ai_cs_enabled: boolean;
+  ai_cs_provider: string; // openai, gemini, deepseek, openrouter, custom
+  ai_cs_model: string;
+  ai_cs_base_url: string;
+  ai_cs_temperature: number;
+  ai_cs_max_context_messages: number;
+  ai_cs_confidence_auto_send_threshold: number;
+  ai_cs_allowed_auto_intents: string;
+  ai_cs_insight_enabled: boolean;
+  ai_cs_draft_enabled: boolean;
+  ai_cs_auto_send_enabled: boolean;
+  ai_cs_system_prompt: string;
+}
+
 // Combined System Settings Interface
 export interface SystemSettings
   extends GeneralSettings,
@@ -75,6 +91,7 @@ export interface SystemSettings
   TemplatesSettings,
   EmailReportSettings {
   seo?: SeoSettings;
+  ai_brain?: AIBrainSettings;
 }
 
 // Context Type

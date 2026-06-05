@@ -2,6 +2,44 @@ import { getDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { SystemSettings } from '@/lib/types/settings';
 
+// Default AI Brain System Prompt
+const DEFAULT_AI_SYSTEM_PROMPT = `You are the central brain AI assistant for CeritaKita Studio customer service.
+Analyze the provided customer history and context to reply intelligently.
+
+CUSTOMER CONTEXT SUMMARY:
+{{contextString}}
+
+CHAT HISTORY:
+{{chatHistory}}
+
+Aturan Wajib (Guardrails):
+1. DILARANG KERAS mengarang/berhalusinasi mengenai harga paket, diskon, ketersediaan slot/jadwal, atau status pembayaran yang tidak tercantum di CUSTOMER CONTEXT SUMMARY.
+2. Jika informasi pembayaran, refund, pembatalan (cancel), reschedule, komplain, atau kemarahan pelanggan terdeteksi:
+   - Set "needs_human" to true.
+   - Set "risk_level" to "high" or "medium".
+   - Draft a polite, empathetic response stating that a human CS agent is checking the details.
+3. Gunakan Bahasa Indonesia yang ramah, sopan, singkat, natural, dan hangat untuk WhatsApp (e.g. use "Kakak" or "Kak").
+4. Dilarang menyebut bahwa Anda adalah AI kecuali ditanya secara eksplisit.
+5. Bila pelanggan menanyakan harga atau paket:
+   - Jawab hanya dengan informasi yang ada di context.
+   - Jika tidak ada, sebutkan pilihan kategori (Prewedding, Wedding, Wisuda, Family) dan minta detail kebutuhan pelanggan.
+6. Bila pelanggan ingin booking, arahkan untuk menentukan tanggal/jam sesi terlebih dahulu.
+7. JANGAN PERNAH menyertakan data sensitif pelanggan lain.
+
+You MUST respond strictly in the following JSON format:
+{
+  "intent": "price_inquiry" | "schedule_check" | "booking_request" | "payment_confirmation" | "reschedule_request" | "cancel_request" | "complaint" | "testimonial" | "follow_up_needed" | "unknown",
+  "sentiment": "positive" | "neutral" | "negative",
+  "urgency": "low" | "normal" | "high",
+  "risk_level": "low" | "medium" | "high",
+  "needs_human": boolean,
+  "confidence": number (between 0.0 and 1.0),
+  "summary": "Short 1-2 sentences summarizing the current chat context.",
+  "suggested_next_action": "Recommended next action for CS.",
+  "draft_reply": "Your recommended friendly draft reply for the customer.",
+  "guardrail_notes": "Note if any safety rule was triggered or if any information was missing."
+}`;
+
 // Simple in-memory cache for system settings
 let cachedSystemSettings: SystemSettings | null = null;
 
@@ -25,12 +63,27 @@ export function getSystemSettings(): SystemSettings {
     business_address: 'Jalan Raya No. 123, Jakarta',
     whatsapp_admin_number: '+62 812 3456 7890',
     whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!',
-    initial_cash_balance: 0
+    initial_cash_balance: 0,
+    ai_brain: {
+      ai_cs_enabled: process.env.AI_CS_ENABLED === 'true',
+      ai_cs_provider: process.env.AI_CS_PROVIDER || 'openai',
+      ai_cs_model: process.env.AI_CS_MODEL || 'gpt-4o-mini',
+      ai_cs_base_url: process.env.AI_CS_BASE_URL || '',
+      ai_cs_temperature: parseFloat(process.env.AI_CS_TEMPERATURE || '0.2'),
+      ai_cs_max_context_messages: parseInt(process.env.AI_CS_MAX_CONTEXT_MESSAGES || '30', 10),
+      ai_cs_confidence_auto_send_threshold: parseFloat(process.env.AI_CS_CONFIDENCE_AUTO_SEND_THRESHOLD || '0.85'),
+      ai_cs_allowed_auto_intents: process.env.AI_CS_ALLOWED_AUTO_INTENTS || 'schedule_check,booking_request,testimonial,unknown',
+      ai_cs_insight_enabled: process.env.AI_CS_INSIGHT_ENABLED === 'true',
+      ai_cs_draft_enabled: process.env.AI_CS_DRAFT_ENABLED === 'true',
+      ai_cs_auto_send_enabled: process.env.AI_CS_AUTO_SEND_ENABLED === 'true',
+      ai_cs_system_prompt: DEFAULT_AI_SYSTEM_PROMPT
+    }
   };
 
   // Override with database values
-  const jsonKeys = ['invoice', 'seo'];
-  const numericKeys = ['deposit_amount', 'tax_rate', 'initial_cash_balance'];
+  const jsonKeys = ['invoice', 'seo', 'ai_brain'];
+  const numericKeys = ['deposit_amount', 'tax_rate', 'initial_cash_balance', 'ai_cs_temperature', 'ai_cs_max_context_messages', 'ai_cs_confidence_auto_send_threshold'];
+  const booleanKeys = ['requires_deposit', 'customer_email_enabled', 'ai_cs_enabled', 'ai_cs_insight_enabled', 'ai_cs_draft_enabled', 'ai_cs_auto_send_enabled'];
   rows.forEach(row => {
     if (jsonKeys.includes(row.key)) {
       try {
@@ -47,6 +100,8 @@ export function getSystemSettings(): SystemSettings {
       }
     } else if (numericKeys.includes(row.key)) {
       settings[row.key] = parseFloat(row.value) || 0;
+    } else if (booleanKeys.includes(row.key)) {
+      settings[row.key] = row.value === 'true' || row.value === '1';
     } else {
       settings[row.key] = row.value;
     }
@@ -128,7 +183,21 @@ export function initializeSystemSettings(): void {
     business_address: 'Jalan Raya No. 123, Jakarta',
     whatsapp_admin_number: '+62 812 3456 7890',
     whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!',
-    initial_cash_balance: '0'
+    initial_cash_balance: '0',
+    ai_brain: JSON.stringify({
+      ai_cs_enabled: process.env.AI_CS_ENABLED === 'true',
+      ai_cs_provider: process.env.AI_CS_PROVIDER || 'openai',
+      ai_cs_model: process.env.AI_CS_MODEL || 'gpt-4o-mini',
+      ai_cs_base_url: process.env.AI_CS_BASE_URL || '',
+      ai_cs_temperature: parseFloat(process.env.AI_CS_TEMPERATURE || '0.2'),
+      ai_cs_max_context_messages: parseInt(process.env.AI_CS_MAX_CONTEXT_MESSAGES || '30', 10),
+      ai_cs_confidence_auto_send_threshold: parseFloat(process.env.AI_CS_CONFIDENCE_AUTO_SEND_THRESHOLD || '0.85'),
+      ai_cs_allowed_auto_intents: process.env.AI_CS_ALLOWED_AUTO_INTENTS || 'schedule_check,booking_request,testimonial,unknown',
+      ai_cs_insight_enabled: process.env.AI_CS_INSIGHT_ENABLED === 'true',
+      ai_cs_draft_enabled: process.env.AI_CS_DRAFT_ENABLED === 'true',
+      ai_cs_auto_send_enabled: process.env.AI_CS_AUTO_SEND_ENABLED === 'true',
+      ai_cs_system_prompt: DEFAULT_AI_SYSTEM_PROMPT
+    })
   };
 
   const checkStmt = db.prepare('SELECT key FROM system_settings WHERE key = ?');

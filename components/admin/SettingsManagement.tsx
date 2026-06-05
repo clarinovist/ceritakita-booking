@@ -6,7 +6,7 @@ import { UPLOAD_FOLDERS } from '@/lib/constants';
 import {
   Info, Home, DollarSign, Calendar,
   MessageSquare, CreditCard, Users, Activity,
-  Mail,
+  Mail, Bot,
   type LucideIcon
 } from 'lucide-react';
 
@@ -16,6 +16,7 @@ import FinanceTab from './settings/FinanceTab';
 import RulesTab from './settings/RulesTab';
 import TemplatesTab from './settings/TemplatesTab';
 import { EmailReportsSettings } from './settings/EmailReportsSettings';
+import AIBrainTab from './settings/AIBrainTab';
 import UserManagement from './UserManagement';
 import PaymentMethodsManagement from './PaymentMethodsManagement';
 import { MonitoringDashboard } from './MonitoringDashboard';
@@ -23,7 +24,7 @@ import { InvoicePreviewModal } from './modals/InvoicePreviewModal';
 import { InvoiceSettings } from '@/lib/types/settings';
 
 // Tab type definition
-type TabType = 'general' | 'contact' | 'finance' | 'rules' | 'templates' | 'reports' | 'payment_methods' | 'users' | 'performance';
+type TabType = 'general' | 'contact' | 'finance' | 'rules' | 'templates' | 'reports' | 'ai_brain' | 'payment_methods' | 'users' | 'performance';
 
 interface TabConfig {
   id: TabType;
@@ -38,6 +39,7 @@ const TABS: TabConfig[] = [
   { id: 'rules', label: 'Booking Rules', icon: Calendar },
   { id: 'templates', label: 'Templates', icon: MessageSquare },
   { id: 'reports', label: 'Emails', icon: Mail },
+  { id: 'ai_brain', label: 'AI Brain', icon: Bot },
   { id: 'payment_methods', label: 'Payment Methods', icon: CreditCard },
   { id: 'users', label: 'Team Access', icon: Users },
   { id: 'performance', label: 'Performance', icon: Activity }
@@ -74,7 +76,23 @@ export default function SettingsManagement() {
     whatsapp_message_template: 'Halo {{customer_name}}!\n\nBooking Anda untuk {{service}} pada {{date}} pukul {{time}} telah dikonfirmasi.\n\nTotal: Rp {{total_price}}\nID Booking: {{booking_id}}\n\nTerima kasih telah memilih Cerita Kita!',
 
     // Cash Position
-    initial_cash_balance: 0
+    initial_cash_balance: 0,
+
+    // AI Brain
+    ai_brain: {
+      ai_cs_enabled: false,
+      ai_cs_provider: 'openai',
+      ai_cs_model: 'gpt-4o-mini',
+      ai_cs_base_url: '',
+      ai_cs_temperature: 0.2,
+      ai_cs_max_context_messages: 30,
+      ai_cs_confidence_auto_send_threshold: 0.85,
+      ai_cs_allowed_auto_intents: 'schedule_check,booking_request,testimonial,unknown',
+      ai_cs_insight_enabled: false,
+      ai_cs_draft_enabled: false,
+      ai_cs_auto_send_enabled: false,
+      ai_cs_system_prompt: ''
+    }
   });
 
   const [loading, setLoading] = useState(true);
@@ -126,6 +144,28 @@ export default function SettingsManagement() {
         companyEmail: '',
         footerNote: '',
         ...(prev.invoice || {}),
+        [key]: value
+      }
+    }));
+  };
+
+  const handleAIBrainChange = (key: string, value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      ai_brain: {
+        ai_cs_enabled: false,
+        ai_cs_provider: 'openai',
+        ai_cs_model: 'gpt-4o-mini',
+        ai_cs_base_url: '',
+        ai_cs_temperature: 0.2,
+        ai_cs_max_context_messages: 30,
+        ai_cs_confidence_auto_send_threshold: 0.85,
+        ai_cs_allowed_auto_intents: 'schedule_check,booking_request,testimonial,unknown',
+        ai_cs_insight_enabled: false,
+        ai_cs_draft_enabled: false,
+        ai_cs_auto_send_enabled: false,
+        ai_cs_system_prompt: '',
+        ...(prev.ai_brain || {}),
         [key]: value
       }
     }));
@@ -292,6 +332,13 @@ export default function SettingsManagement() {
             <EmailReportsSettings
               settings={settings}
               onChange={handleInputChange as any}
+            />
+          )}
+
+          {activeTab === 'ai_brain' && (
+            <AIBrainTab
+              settings={settings}
+              onAIChange={handleAIBrainChange}
             />
           )}
 
