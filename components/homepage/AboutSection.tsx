@@ -34,14 +34,14 @@ export function AboutSection() {
                             {about.label || 'Tentang Kami'}
                         </p>
                         <h2 className="font-display text-3xl md:text-4xl lg:text-5xl text-cream-100 tracking-wide mb-6">
-                            {about.headline || 'Studio Foto untuk Setiap Cerita Anda'}
-                        </h2>
-                        <div className="space-y-4 text-cream-300/80 leading-relaxed">
+                            {about.headline || 'Studio Foto Lengkap untuk Setiap Cerita'}
+                            </h2>
+                            <div className="space-y-4 text-cream-300/80 leading-relaxed">
                             <p>
-                                {about.body_1 || 'CeritaKita hadir untuk mengabadikan momen-momen penting dalam hidup Anda.'}
+                                {about.body_1 || 'CeritaKita Studio adalah studio foto di Sukoharjo yang melayani berbagai kebutuhan: self photo, family, wisuda, pas foto, sesi fotografer, dan prewedding.'}
                             </p>
                             <p>
-                                {about.body_2 || 'Dengan tim fotografer profesional dan studio yang nyaman, kami memastikan setiap sesi foto menjadi pengalaman yang menyenangkan.'}
+                                {about.body_2 || 'Mau foto sendiri? Bisa. Mau dibantu fotografer? Buga bisa. Tinggal pilih paket yang paling cocok buat momen kamu.'}
                             </p>
                         </div>
                     </div>

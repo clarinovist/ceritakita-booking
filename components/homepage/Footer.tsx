@@ -27,7 +27,7 @@ export function Footer() {
                             </p>
                         </Link>
                         <p className="text-cream-300/70 leading-relaxed max-w-md">
-                            {footer.tagline || 'Studio foto profesional untuk prewedding, wedding, wisuda, birthday, family portrait, dan momen spesial lainnya di Jakarta.'}
+                            {footer.tagline || 'Studio foto di Sukoharjo untuk self photo, family, wisuda, pas foto, prewedding, dan momen spesial lainnya.'}
                         </p>
                     </div>
 

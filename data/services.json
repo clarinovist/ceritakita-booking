@@ -50,17 +50,44 @@
     "badgeText": ""
   },
   {
-    "id": "7",
-    "name": "Indoor Wisuda",
+    "id": "11",
+    "name": "Self Photo",
     "basePrice": 150000,
     "discountValue": 0,
     "isActive": true,
-    "badgeText": ""
+    "badgeText": "Best deal",
+    "benefits": [
+      "Self photo tanpa fotografer — kamu pegang kontrol",
+      "Sesi 30 menit",
+      "Simple touch-up makeup include",
+      "Baju adat Jawa include",
+      "Kamera pro + lighting studio",
+      "Pose guide / contoh gaya tersedia",
+      "Staff bantu setup awal",
+      "Semua file JPG high-res via Google Drive"
+    ]
   },
   {
     "id": "8",
     "name": "Family",
     "basePrice": 300000,
+    "discountValue": 0,
+    "isActive": true,
+    "badgeText": "",
+    "benefits": [
+      "Sampai 6 orang anggota keluarga",
+      "Photographer include",
+      "Asisten bantu sesi foto",
+      "Semua file via Google Drive",
+      "Cetak 4 lembar ukuran 4R",
+      "Cetak 1 lembar ukuran 10R",
+      "Tambah orang +Rp15.000/orang"
+    ]
+  },
+  {
+    "id": "7",
+    "name": "Indoor Wisuda",
+    "basePrice": 150000,
     "discountValue": 0,
     "isActive": true,
     "badgeText": ""
@@ -79,15 +106,13 @@
     "basePrice": 40000,
     "discountValue": 0,
     "isActive": true,
-    "badgeText": ""
-  },
-  {
-    "id": "11",
-    "name": "Self Photo",
-    "basePrice": 50000,
-    "discountValue": 0,
-    "isActive": true,
-    "badgeText": ""
+    "badgeText": "",
+    "benefits": [
+      "Pas foto untuk dokumen resmi",
+      "Background & ukuran disesuaikan kebutuhan",
+      "File digital dan/atau cetak langsung",
+      "Untuk nikah, visa, kerja, luar negeri, ijazah"
+    ]
   },
   {
     "id": "0a9f53a2-cf84-44ef-a006-28d6dd87f7fd",
@@ -115,7 +140,7 @@
   },
   {
     "id": "af17cca7-d511-429f-82f8-5fab9733c14e",
-    "name": "wedding gold",
+    "name": "Wedding Gold",
     "basePrice": 1300000,
     "discountValue": 0,
     "isActive": true,
@@ -123,7 +148,7 @@
   },
   {
     "id": "54178184-8a2a-46fc-8e82-cbb8f9a88ae2",
-    "name": "cute pas foto",
+    "name": "Cute Pas Foto",
     "basePrice": 150000,
     "discountValue": 25000,
     "isActive": true,

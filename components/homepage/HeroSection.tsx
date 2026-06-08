@@ -47,11 +47,11 @@ export function HeroSection() {
             <div className="relative z-20 h-full flex flex-col items-center justify-center text-center px-6">
                 <div className="relative inline-block">
                     <h1 className="font-display text-4xl md:text-6xl lg:text-7xl text-cream-100 tracking-wide mb-6 animate-slide-up relative z-10">
-                        {hero.tagline || 'Abadikan Setiap Momen Berharga dalam Hidupmu'}
+                        {hero.tagline || 'Lagi Butuh Foto Apa?'}
                     </h1>
                 </div>
                 <p className="font-serif text-lg md:text-xl text-cream-200 max-w-3xl leading-relaxed mb-10 animate-fade-in relative">
-                    {hero.subtagline || 'Dari wisuda hingga pernikahan — CeritaKita hadir untuk mengabadikan pencapaian dan kebahagiaan terbaik dalam hidupmu.'}
+                    {hero.subtagline || 'Foto sendiri bisa. Difotoin juga bisa. Dari self photo, family, wisuda, pas foto, sampai prewedding — semua ada di CeritaKita Studio Sukoharjo.'}
                 </p>
 
                 {/* CTA Button */}

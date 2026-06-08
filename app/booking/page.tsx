@@ -5,8 +5,8 @@ import JsonLd from '@/components/seo/JsonLd';
 import { buildBookingJsonLd } from '@/lib/seo/schema';
 
 export const metadata: Metadata = {
-    title: 'Booking Sesi Foto | CeritaKita Studio',
-    description: 'Booking sesi foto profesional bersama CeritaKita Studio. Pilih layanan, tentukan jadwal, dan abadikan momen terbaik Anda.',
+    title: 'Booking Foto Online — Self Photo, Family, Wisuda | CeritaKita Studio',
+    description: 'Pilih layanan foto CeritaKita: self photo, family, wisuda, pas foto, prewedding, dan lainnya. Booking online mudah, studio buka 10.00–18.00 WIB.',
     alternates: {
         canonical: '/booking',
     },
@@ -49,8 +49,8 @@ export default function BookingPage() {
             <footer className="bg-olive-900 border-t border-olive-700 mt-12">
                 <div className="max-w-6xl mx-auto px-4 py-6">
                     <div className="text-center text-sm text-cream-300/70 mb-4">
-                        <p>© 2024 CeritaKita Studio. All rights reserved.</p>
-                        <p className="mt-1">Booking sesi foto profesional dengan layanan terbaik</p>
+                        <p>© {new Date().getFullYear()} CeritaKita Studio. All rights reserved.</p>
+                        <p className="mt-1">Studio foto di Sukoharjo untuk self photo, family, wisuda, pas foto, dan prewedding.</p>
                     </div>
 
                     {/* Admin Login */}

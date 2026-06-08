@@ -17,21 +17,35 @@ export function buildHomeJsonLd() {
         name,
         url: siteUrl,
         logo: `${siteUrl}/site-logo.png`,
+        areaServed: {
+          "@type": "City",
+          name: "Sukoharjo",
+          containedInPlace: {
+            "@type": "State",
+            name: "Jawa Tengah"
+          }
+        },
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "customer service",
+          availableLanguage: "Indonesian"
+        }
       },
       {
         "@type": "WebSite",
         "@id": websiteId,
         url: siteUrl,
         name,
-        publisher: { "@id": orgId },
+        publisher: { "@id": orgId }
       },
       {
         "@type": "WebPage",
         "@id": pageId,
         url: `${siteUrl}/`,
-        name: `${name} - Booking Sesi Foto`,
+        name: `${name} — Self Photo, Family, Wisuda & Pas Foto Sukoharjo`,
         isPartOf: { "@id": websiteId },
         about: { "@id": orgId },
+        description: "Studio foto Sukoharjo untuk self photo, family, wisuda, pas foto, dan prewedding. Booking online atau via WhatsApp."
       },
     ],
   };

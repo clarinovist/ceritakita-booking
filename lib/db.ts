@@ -362,10 +362,10 @@ function initializeSchema() {
   const settingsCount = db.prepare('SELECT COUNT(*) as count FROM system_settings').get() as { count: number };
   if (settingsCount.count === 0) {
     const defaultSettings = [
-      { key: 'site_name', value: 'Cerita Kita' },
+      { key: 'site_name', value: 'CeritaKita Studio' },
       { key: 'site_logo', value: '/images/default-logo.png' },
       { key: 'business_phone', value: '+62 812 3456 7890' },
-      { key: 'business_address', value: 'Jalan Raya No. 123, Jakarta' },
+      { key: 'business_address', value: 'Sukoharjo, Jawa Tengah, Indonesia' },
       { key: 'initial_cash_balance', value: '0' }
     ];
 
@@ -638,32 +638,32 @@ function initializeSchema() {
   if (homepageContentCount.count === 0) {
     const seedContent = [
       // Hero
-      { section: 'hero', key: 'tagline', value: 'Abadikan Setiap Momen Berharga' },
-      { section: 'hero', key: 'subtagline', value: 'Dari wisuda hingga pernikahan, kami siap merekam cerita indah Anda dalam bingkai kenangan yang tak terlupakan.' },
+      { section: 'hero', key: 'tagline', value: 'Lagi Butuh Foto Apa?' },
+      { section: 'hero', key: 'subtagline', value: 'Foto sendiri bisa. Difotoin juga bisa. Dari self photo, family, wisuda, pas foto, sampai prewedding — semua ada di CeritaKita Studio Sukoharjo.' },
       { section: 'hero', key: 'cta_text', value: 'Booking Sekarang' },
       { section: 'hero', key: 'background_image', value: '/images/hero_photography.png' },
       // About
       { section: 'about', key: 'label', value: 'Tentang Kami' },
-      { section: 'about', key: 'headline', value: 'Studio Foto untuk Setiap Cerita Anda' },
-      { section: 'about', key: 'body_1', value: 'CeritaKita hadir untuk mengabadikan setiap detik kebahagiaan Anda. Kami percaya bahwa setiap foto memiliki cerita yang layak untuk dikenang selamanya.' },
-      { section: 'about', key: 'body_2', value: 'Dengan tim fotografer profesional dan peralatan modern, kami menjamin kualitas terbaik untuk setiap sesi pemotretan Anda.' },
+      { section: 'about', key: 'headline', value: 'Studio Foto Lengkap untuk Setiap Cerita' },
+      { section: 'about', key: 'body_1', value: 'CeritaKita Studio adalah studio foto di Sukoharjo yang melayani berbagai kebutuhan: self photo, family, wisuda, pas foto, sesi fotografer, dan prewedding.' },
+      { section: 'about', key: 'body_2', value: 'Mau foto sendiri? Bisa. Mau dibantu fotografer? Buga bisa. Tinggal pilih paket yang paling cocok buat momen kamu.' },
       { section: 'about', key: 'image', value: '/images/studio_interior.png' },
       // Promo
-      { section: 'promo', key: 'title', value: 'Promo Spesial Bulan Ini' },
-      { section: 'promo', key: 'description', value: 'Jangan lewatkan penawaran terbatas untuk paket Prewedding dan Family.' },
+      { section: 'promo', key: 'title', value: 'Self Photo Rp150K — Makeup + Baju Adat Jawa Include' },
+      { section: 'promo', key: 'description', value: 'Self photo 30 menit dengan kamera pro, lighting studio, makeup, baju adat Jawa, pose guide, dan semua file high-res via Google Drive.' },
       { section: 'promo', key: 'is_active', value: 'true' },
       // CTA
-      { section: 'cta', key: 'headline', value: 'Siap Mengabadikan Momen Anda?' },
-      { section: 'cta', key: 'description', value: 'Pilih layanan, tentukan jadwal, dan biarkan kami yang mengurus sisanya.' },
+      { section: 'cta', key: 'headline', value: 'Siap Mengabadikan Momen Kamu?' },
+      { section: 'cta', key: 'description', value: 'Pilih layanan, tentukan jadwal, dan biarkan kami yang mengurus sisanya. Booking online atau konsultasi via WhatsApp.' },
       { section: 'cta', key: 'primary_button', value: 'Mulai Booking' },
       { section: 'cta', key: 'secondary_button', value: 'Konsultasi via WhatsApp' },
       // Footer
-      { section: 'footer', key: 'tagline', value: 'Studio foto profesional untuk prewedding, wedding, wisuda, dan momen spesial lainnya.' },
-      { section: 'footer', key: 'email', value: 'hello@ceritakita.studio' },
+      { section: 'footer', key: 'tagline', value: 'Studio foto di Sukoharjo untuk self photo, family, wisuda, pas foto, prewedding, dan momen spesial lainnya.' },
+      { section: 'footer', key: 'email', value: 'hello@ceritakitastudio.site' },
       { section: 'footer', key: 'phone', value: '+62 812 3456 7890' },
-      { section: 'footer', key: 'address', value: 'Jakarta, Indonesia' },
+      { section: 'footer', key: 'address', value: 'Sukoharjo, Jawa Tengah, Indonesia' },
       { section: 'footer', key: 'whatsapp', value: '6281234567890' },
-      { section: 'footer', key: 'instagram', value: 'https://instagram.com/ceritakita' },
+      { section: 'footer', key: 'instagram', value: 'https://instagram.com/ceritakitastudio' },
     ];
 
     const insertStmt = db.prepare('INSERT INTO homepage_content (id, section, content_key, content_value) VALUES (?, ?, ?, ?)');
@@ -695,12 +695,13 @@ function initializeSchema() {
   const categoryCount = db.prepare('SELECT COUNT(*) as count FROM service_categories').get() as { count: number };
   if (categoryCount.count === 0) {
     const seedCategories = [
-      { name: 'Prewedding', slug: 'prewedding', description: 'Abadikan kemesraan sebelum hari bahagia.', thumbnail_url: '/images/prewedding.png', display_order: 1 },
-      { name: 'Wedding', slug: 'wedding', description: 'Dokumentasi lengkap hari pernikahan Anda.', thumbnail_url: '/images/wedding.png', display_order: 2 },
-      { name: 'Wisuda', slug: 'graduation', description: 'Rayakan kelulusan dengan foto profesional.', thumbnail_url: '/images/graduation.png', display_order: 3 },
-      { name: 'Birthday', slug: 'birthday', description: 'Kenangan manis pesta ulang tahun.', thumbnail_url: '/images/birthday.png', display_order: 4 },
-      { name: 'Family', slug: 'family', description: 'Foto keluarga di studio yang nyaman.', thumbnail_url: '/images/family.png', display_order: 5 },
-      { name: 'Tematik', slug: 'themed', description: 'Foto dengan tema khusus sesuai keinginan.', thumbnail_url: '/images/themed.png', display_order: 6 },
+      { name: 'Self Photo', slug: 'self-photo', description: 'Foto sendiri dengan kamera pro, lighting studio, makeup + baju adat Jawa include. Rp150k.', thumbnail_url: '/images/self-photo.png', display_order: 1 },
+      { name: 'Family', slug: 'family', description: 'Foto keluarga sampai 6 orang. Include photographer + asisten + cetak + file GDrive. Rp300k.', thumbnail_url: '/images/family.png', display_order: 2 },
+      { name: 'Wisuda', slug: 'graduation', description: 'Foto wisuda personal, bareng teman, atau keluarga. Studio atau outdoor.', thumbnail_url: '/images/graduation.png', display_order: 3 },
+      { name: 'Pas Foto', slug: 'pas-foto', description: 'Pas foto untuk nikah, visa, kerja, luar negeri, dan dokumen resmi. Bisa file digital atau cetak.', thumbnail_url: '/images/pas-foto.png', display_order: 4 },
+      { name: 'Prewedding', slug: 'prewedding', description: 'Sesi foto pasangan dengan fotografer, pose direction, dan konsep yang lebih niat.', thumbnail_url: '/images/prewedding.png', display_order: 5 },
+      { name: 'Wedding', slug: 'wedding', description: 'Dokumentasi lengkap hari pernikahan Anda.', thumbnail_url: '/images/wedding.png', display_order: 6 },
+      { name: 'Birthday', slug: 'birthday', description: 'Kenangan manis pesta ulang tahun.', thumbnail_url: '/images/birthday.png', display_order: 7 },
     ];
 
     const insertStmt = db.prepare('INSERT INTO service_categories (id, name, slug, description, thumbnail_url, display_order) VALUES (?, ?, ?, ?, ?, ?)');
@@ -764,10 +765,10 @@ function initializeSchema() {
   const valuePropCount = db.prepare('SELECT COUNT(*) as count FROM value_propositions').get() as { count: number };
   if (valuePropCount.count === 0) {
     const seedValueProps = [
-      { title: "Fotografer Profesional", description: "Tim berpengalaman yang siap mengarahkan gaya terbaik Anda.", icon: "Camera" },
-      { title: "Studio Nyaman", description: "Ruang studio full AC dengan berbagai pilihan background.", icon: "Home" },
-      { title: "Harga Terjangkau", description: "Paket lengkap dengan harga yang bersahabat.", icon: "CreditCard" },
-      { title: "Proses Cepat", description: "Preview foto instan dan hasil edit maksimal 3 hari.", icon: "Zap" },
+      { title: "Foto Sendiri atau Dibantu Fotografer", description: "Self photo untuk yang mau pegang kontrol sendiri. Paket fotografer untuk yang mau diarahkan penuh.", icon: "Camera" },
+      { title: "Paket Jelas & Fleksibel", description: "Self Photo Rp150k, Family Rp300k, plus add-on sesuai kebutuhan. Transparan, tanpa biaya tersembunyi.", icon: "CreditCard" },
+      { title: "File High-Res via Google Drive", description: "Semua file JPG high-res bisa diakses dan di-download kapan saja melalui Google Drive.", icon: "Cloud" },
+      { title: "Studio Nyaman, Kamera & Lighting Siap", description: "Studio indoor nyaman dengan kamera profesional dan lighting yang disiapkan sesuai kebutuhan sesi.", icon: "Zap" },
     ];
 
     const insertStmt = db.prepare('INSERT INTO value_propositions (id, title, description, icon, display_order) VALUES (?, ?, ?, ?, ?)');

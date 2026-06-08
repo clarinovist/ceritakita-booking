@@ -74,10 +74,10 @@ async function getLayoutSettings() {
     siteName: settingsMap.site_name || "CeritaKita Studio",
     metaTitle:
       settingsMap.meta_title ||
-      `${settingsMap.site_name || "CeritaKita Studio"} - Booking Sesi Foto`,
+      `${settingsMap.site_name || "CeritaKita Studio"} — Self Photo, Family, Wisuda & Pas Foto Sukoharjo`,
     metaDescription:
       settingsMap.meta_description ||
-      "Booking sesi foto profesional bersama CeritaKita Studio. Pilih layanan, tentukan jadwal, dan abadikan momen terbaik Anda.",
+      "Studio foto Sukoharjo untuk self photo Rp150k, family Rp300k, wisuda, pas foto, dan prewedding. Booking online atau konsultasi via WhatsApp.",
     seoSettings,
   };
 }
@@ -96,7 +96,13 @@ export async function generateMetadata(): Promise<Metadata> {
     description: metaDescription,
     applicationName: siteName,
     authors: [{ name: siteName }],
-    keywords: ["foto", "photography", "booking", "sesi foto", siteName, "studio"],
+    keywords: [
+      "foto", "photography", "booking", "sesi foto", siteName, "studio",
+      "self photo", "family", "wisuda", "pas foto", "prewedding",
+      "Sukoharjo", "Solo", "Karanganyar", "studio foto Sukoharjo",
+      "self photo Solo", "foto keluarga Sukoharjo", "pas foto Solo",
+      "prewedding murah Solo", "foto wisuda"
+    ],
     creator: siteName,
     publisher: siteName,
     formatDetection: {
@@ -126,8 +132,8 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-video-preview": -1,
         "max-image-preview": "large",
         "max-snippet": -1,
-      },
-    },
+      }
+    }
   };
 }
 
