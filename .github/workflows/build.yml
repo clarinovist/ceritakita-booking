@@ -49,7 +49,9 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          pull: true
           push: true
+          provenance: false
           tags: |
             ${{ env.REGISTRY }}/${{ env.REPO }}:latest
             ${{ env.REGISTRY }}/${{ env.REPO }}:buildcache
