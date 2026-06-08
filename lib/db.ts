@@ -691,12 +691,12 @@ function initializeSchema() {
     )
   `);
 
-  // Seed Service Categories
+  // Seed Service Categories (only on first run)
   const categoryCount = db.prepare('SELECT COUNT(*) as count FROM service_categories').get() as { count: number };
   if (categoryCount.count === 0) {
     const seedCategories = [
       { name: 'Self Photo', slug: 'self-photo', description: 'Foto sendiri dengan kamera pro, lighting studio, makeup + baju adat Jawa include. Rp150k.', thumbnail_url: '/images/self-photo.png', display_order: 1 },
-      { name: 'Family', slug: 'family', description: 'Foto keluarga sampai 6 orang. Include photographer + asisten + cetak + file GDrive. Rp300k.', thumbnail_url: '/images/family.png', display_order: 2 },
+      { name: 'Family', slug: 'family', description: 'Foto keluarga 6 orang Rp300k. Include photographer + asisten + cetak 4R & 10R + file GDrive.', thumbnail_url: '/images/family.png', display_order: 2 },
       { name: 'Wisuda', slug: 'graduation', description: 'Foto wisuda personal, bareng teman, atau keluarga. Studio atau outdoor.', thumbnail_url: '/images/graduation.png', display_order: 3 },
       { name: 'Pas Foto', slug: 'pas-foto', description: 'Pas foto untuk nikah, visa, kerja, luar negeri, dan dokumen resmi. Bisa file digital atau cetak.', thumbnail_url: '/images/pas-foto.png', display_order: 4 },
       { name: 'Prewedding', slug: 'prewedding', description: 'Sesi foto pasangan dengan fotografer, pose direction, dan konsep yang lebih niat.', thumbnail_url: '/images/prewedding.png', display_order: 5 },
@@ -713,6 +713,9 @@ function initializeSchema() {
     insertMany();
     console.log('✅ Database seeded: Service Categories');
   }
+
+  // Ensure critical categories exist and are active (runs every startup, idempotent)
+  ensureCategoriesExist(db);
 
   // 3. Testimonials
   db.exec(`
@@ -973,6 +976,58 @@ function initializeSchema() {
     CREATE INDEX IF NOT EXISTS idx_wa_drafts_conv ON whatsapp_ai_drafts(conversation_id);
     CREATE INDEX IF NOT EXISTS idx_wa_events_conv ON whatsapp_ai_events(conversation_id);
   `);
+}
+
+/**
+ * Ensure critical categories exist and are active.
+ * Runs every startup — idempotent, safe for existing production DBs.
+ * Uses INSERT OR IGNORE for new categories, UPDATE to activate existing ones.
+ */
+function ensureCategoriesExist(db: Database.Database) {
+  const requiredCategories = [
+    {
+      name: 'Self Photo',
+      slug: 'self-photo',
+      description: 'Foto sendiri dengan kamera pro, lighting studio, makeup + baju adat Jawa include. Rp150k.',
+      thumbnail_url: '/images/self-photo.png',
+      display_order: 1,
+    },
+    {
+      name: 'Family',
+      slug: 'family',
+      description: 'Foto keluarga 6 orang Rp300k. Include photographer + asisten + cetak 4R & 10R + file GDrive.',
+      thumbnail_url: '/images/family.png',
+      display_order: 2,
+    },
+    {
+      name: 'Pas Foto',
+      slug: 'pas-foto',
+      description: 'Pas foto untuk nikah, visa, kerja, luar negeri, dan dokumen resmi. Bisa file digital atau cetak.',
+      thumbnail_url: '/images/pas-foto.png',
+      display_order: 4,
+    },
+  ];
+
+  const insertStmt = db.prepare(`
+    INSERT OR IGNORE INTO service_categories (id, name, slug, description, thumbnail_url, display_order, is_active)
+    VALUES (?, ?, ?, ?, ?, ?, 1)
+  `);
+  const activateStmt = db.prepare(`
+    UPDATE service_categories SET is_active = 1, display_order = ? WHERE slug = ? AND is_active = 0
+  `);
+  const updateDescStmt = db.prepare(`
+    UPDATE service_categories SET description = ? WHERE slug = ? AND description != ?
+  `);
+
+  const tx = db.transaction(() => {
+    for (const cat of requiredCategories) {
+      insertStmt.run(randomUUID(), cat.name, cat.slug, cat.description, cat.thumbnail_url, cat.display_order);
+      activateStmt.run(cat.display_order, cat.slug);
+      updateDescStmt.run(cat.description, cat.slug, cat.description);
+    }
+  });
+  tx();
+  console.log('✅ ensureCategoriesExist: Self Photo, Family, Pas Foto verified');
 }
 
 /**
