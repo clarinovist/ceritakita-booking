@@ -38,7 +38,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.CR_PAT }}
 
       - name: Lowercase Repository Name
         id: lowercase_repo
@@ -72,7 +72,7 @@ jobs:
           debug: true
           script: |
             cd ${{ secrets.DEPLOY_PATH }}
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             git fetch --all
             git reset --hard origin/main
             docker compose pull
