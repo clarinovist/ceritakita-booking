@@ -698,7 +698,6 @@ function initializeSchema() {
       { name: 'Self Photo', slug: 'self-photo', description: 'Foto sendiri dengan kamera pro, lighting studio, makeup + baju adat Jawa include. Rp150k.', thumbnail_url: '/images/self-photo.png', display_order: 1 },
       { name: 'Family', slug: 'family', description: 'Foto keluarga 6 orang Rp300k. Include photographer + asisten + cetak 4R & 10R + file GDrive.', thumbnail_url: '/images/family.png', display_order: 2 },
       { name: 'Wisuda', slug: 'graduation', description: 'Foto wisuda personal, bareng teman, atau keluarga. Studio atau outdoor.', thumbnail_url: '/images/graduation.png', display_order: 3 },
-      { name: 'Pas Foto', slug: 'pas-foto', description: 'Pas foto untuk nikah, visa, kerja, luar negeri, dan dokumen resmi. Bisa file digital atau cetak.', thumbnail_url: '/images/pas-foto.png', display_order: 4 },
       { name: 'Prewedding', slug: 'prewedding', description: 'Sesi foto pasangan dengan fotografer, pose direction, dan konsep yang lebih niat.', thumbnail_url: '/images/prewedding.png', display_order: 5 },
       { name: 'Wedding', slug: 'wedding', description: 'Dokumentasi lengkap hari pernikahan Anda.', thumbnail_url: '/images/wedding.png', display_order: 6 },
       { name: 'Birthday', slug: 'birthday', description: 'Kenangan manis pesta ulang tahun.', thumbnail_url: '/images/birthday.png', display_order: 7 },
@@ -716,6 +715,8 @@ function initializeSchema() {
 
   // Ensure critical categories exist and are active (runs every startup, idempotent)
   ensureCategoriesExist(db);
+  // Deactivate Pas Foto on homepage grid (utility service, not aspirational)
+  deactivateNonVisualCategories(db);
 
   // 3. Testimonials
   db.exec(`
@@ -999,13 +1000,6 @@ function ensureCategoriesExist(db: Database.Database) {
       thumbnail_url: '/images/family.png',
       display_order: 2,
     },
-    {
-      name: 'Pas Foto',
-      slug: 'pas-foto',
-      description: 'Pas foto untuk nikah, visa, kerja, luar negeri, dan dokumen resmi. Bisa file digital atau cetak.',
-      thumbnail_url: '/images/pas-foto.png',
-      display_order: 4,
-    },
   ];
 
   const insertStmt = db.prepare(`
@@ -1027,7 +1021,25 @@ function ensureCategoriesExist(db: Database.Database) {
     }
   });
   tx();
-  console.log('✅ ensureCategoriesExist: Self Photo, Family, Pas Foto verified');
+  console.log('✅ ensureCategoriesExist: Self Photo, Family verified');
+}
+
+/**
+ * Deactivate non-visual/utility categories from homepage grid.
+ * Pas Foto is a utility service (document/ID photos) — not aspirational,
+ * doesn't belong in the visual browsing grid. It stays available via
+ * WA quick reply, Google Maps, and service detail page.
+ */
+function deactivateNonVisualCategories(db: Database.Database) {
+  const nonVisualSlugs = ['pas-foto'];
+  const stmt = db.prepare(`UPDATE service_categories SET is_active = 0 WHERE slug = ?`);
+  const tx = db.transaction(() => {
+    for (const slug of nonVisualSlugs) {
+      stmt.run(slug);
+    }
+  });
+  tx();
+  console.log('✅ deactivateNonVisualCategories: Pas Foto hidden from grid');
 }
 
 /**
