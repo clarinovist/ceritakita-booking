@@ -26,10 +26,23 @@ export async function POST(req: NextRequest) {
         // Validate services array using Zod
         const validationResult = servicesArraySchema.safeParse(body);
         if (!validationResult.success) {
+            // Collect all invalid service entries for logging
+            const invalidEntries = validationResult.error.issues.reduce((acc: Record<string, string[]>, issue) => {
+              const idx = issue.path[0] as number;
+              const field = issue.path.slice(1).join('.');
+              const key = `services[${idx}]`;
+              if (!acc[key]) acc[key] = [];
+              acc[key].push(`${field}: ${issue.message}`);
+              return acc;
+            }, {});
+
             logger.error('Services validation failed', {
-                issueCount: validationResult.error.issues.length,
-                issues: validationResult.error.issues,
-                payloadPreview: body.slice(0, 2) // Log a bit of the payload for context
+              issueCount: validationResult.error.issues.length,
+              issues: validationResult.error.issues,
+              invalidEntries,
+              payloadPreview: body.filter((_, i) =>
+                validationResult.error.issues.some(issue => issue.path[0] === i)
+              ).slice(0, 5)
             });
             return NextResponse.json(
                 { error: 'Validation failed', details: validationResult.error.issues },
