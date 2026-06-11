@@ -27,7 +27,9 @@ const AD_CONFIG: Record<string, { text: string; pkg: string }> = {
   },
 };
 
-const WA_NUMBER = '6282324021938';
+// WA_NUMBER from env — allows changing without code deploy
+// Fallback is the WABA-connected number (as of Jun 2026)
+const WA_NUMBER = process.env.WA_NUMBER || '6285190832058';
 
 // Fallback config literal to satisfy TS strictness
 const FALLBACK_CONFIG = { text: 'Halo CeritaKita Studio, saya tertarik info paket foto', pkg: 'General' };
