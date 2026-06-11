@@ -75,6 +75,11 @@ jobs:
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             git fetch --all
             git reset --hard origin/main
+            mkdir -p data uploads
+            chown -R 1001:1001 data uploads
+            chmod 775 data uploads
+            find data uploads -type d -exec chmod 775 {} \;
+            find data uploads -type f -exec chmod 664 {} \;
             docker compose pull
             docker compose up -d
             docker image prune -f
