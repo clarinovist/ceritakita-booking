@@ -40,6 +40,20 @@ export default function DynamicAnalytics({ seoSettings }: DynamicAnalyticsProps)
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '${metaPixelId}');
               fbq('track', 'PageView');
+
+              // CAPI Gateway - server-side tracking for deduplication
+              (function(){
+                function getCookie(n){var m=document.cookie.match(new RegExp('(^| )'+n+'=([^;]+)'));return m?m[2]:null;}
+                function capiTrack(evt,data){
+                  var eid='capi-'+Date.now()+'-'+Math.random().toString(36).substr(2,9);
+                  fbq('track',evt,data||{},{eventID:eid});
+                  var p={event_name:evt,event_source_url:location.href,event_id:eid,fbp:getCookie('_fbp'),fbc:getCookie('_fbc'),custom_data:data||{}};
+                  if(navigator.sendBeacon)navigator.sendBeacon('/api/capi/events',JSON.stringify(p));
+                  else fetch('/api/capi/events',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p),keepalive:true});
+                  return eid;
+                }
+                window.ckCapi={track:capiTrack,pageView:function(){return capiTrack('PageView')},lead:function(d){return capiTrack('Lead',d)},contact:function(d){return capiTrack('Contact',d)},viewContent:function(d){return capiTrack('ViewContent',d)}};
+              })();
             `,
                     }}
                 />
