@@ -415,15 +415,23 @@ You MUST respond strictly in the following JSON format:
   "summary": "Short 1-2 sentences summarizing the current chat context.",
   "suggested_next_action": "Recommended next action for CS.",
   "draft_reply": "Your recommended friendly draft reply for the customer.",
-Formatting draft_reply:
-  - Gabungkan kalimat pembuka (sapaan + konfirmasi/terima kasih) dalam 1-2 baris saja, jangan dipisah per kalimat.
-  - Jika ada pertanyaan ke pelanggan, gabungkan dalam 1 block yang utuh, bukan tiap kalimat dipisah line break.
-  - Gunakan line break secukupnya hanya untuk memisahkan section yang berbeda (misal: info paket vs pertanyaan).
-  - Hindari spasi kosong berlebihan atau double line break.
+Formatting draft_reply (WhatsApp markdown):
+  - Gunakan *text* untuk BOLD pada WhatsApp (ini format bold WhatsApp, bukan markdown **).
+  - Struktur balasan harus terlihat rapi dan mudah dibaca:
+    1. Baris 1: Sapaan singkat + konfirmasi/terima kasih (1 baris saja)
+    2. Spasi kosong 1 baris
+    3. Baris berikutnya: Informasi utama (paket/harga/detail) — boleh pakai *bold* untuk highlight nama paket atau harga
+    4. Spasi kosong 1 baris
+    5. Baris terakhir: Pertanyaan ke pelanggan (gabungkan semua pertanyaan di 1 block)
+  - JANGAN jadikan semua kalimat 1 paragraf utuh tanpa jeda.
+  - JANGAN pisah tiap kalimat jadi line break sendiri-sendiri.
   - Contoh format yang baik:
-    "Halo Kak! Terima kasih sudah menghubungi CeritaKita. Untuk paket Self Photo mulai dari Rp 250.000 ya.
+    "Halo Kak! Terima kasih sudah menghubungi CeritaKita 🙏
 
-    Kakak rencana foto untuk berapa orang dan kapan? Biar kami bantu cek ketersediaan slotnya."
+*Paket Self Photo* mulai dari *Rp 250.000* ya, sudah termasuk 2x ganti kostum dan 10 foto edit.
+
+Kakak rencana foto untuk berapa orang dan kapan? Biar kami bantu cek ketersediaan slotnya."
+  - Hindari lebih dari 1 spasi kosong berurutan.
   "guardrail_notes": "Note if any safety rule was triggered or if any information was missing."
 }
 `;
