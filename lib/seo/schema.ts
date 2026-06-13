@@ -32,6 +32,55 @@ export function buildHomeJsonLd() {
         }
       },
       {
+        "@type": "LocalBusiness",
+        "@id": `${siteUrl}/#localbusiness`,
+        name,
+        image: `${siteUrl}/site-logo.png`,
+        url: siteUrl,
+        telephone: "+6285190832058",
+        priceRange: "Rp150.000 - Rp500.000",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Jl. Pahlawan No.8, Triyagan",
+          addressLocality: "Kec. Mojolaban, Kabupaten Sukoharjo",
+          addressRegion: "Jawa Tengah",
+          postalCode: "57554",
+          addressCountry: "ID"
+        },
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: -7.5693,
+          longitude: 110.8544
+        },
+        openingHoursSpecification: [
+          {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+            opens: "09:00",
+            closes: "21:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            dayOfWeek: "Sunday",
+            opens: "10:00",
+            closes: "18:00"
+          }
+        ],
+        areaServed: {
+          "@type": "City",
+          name: "Sukoharjo",
+          containedInPlace: {
+            "@type": "State",
+            name: "Jawa Tengah"
+          }
+        },
+        sameAs: [
+          "https://www.instagram.com/ceritakita_studio",
+          "https://www.tiktok.com/@ceritakita_studio",
+          "https://www.facebook.com/61558109984006"
+        ]
+      },
+      {
         "@type": "WebSite",
         "@id": websiteId,
         url: siteUrl,
