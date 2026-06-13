@@ -415,6 +415,15 @@ You MUST respond strictly in the following JSON format:
   "summary": "Short 1-2 sentences summarizing the current chat context.",
   "suggested_next_action": "Recommended next action for CS.",
   "draft_reply": "Your recommended friendly draft reply for the customer.",
+Formatting draft_reply:
+  - Gabungkan kalimat pembuka (sapaan + konfirmasi/terima kasih) dalam 1-2 baris saja, jangan dipisah per kalimat.
+  - Jika ada pertanyaan ke pelanggan, gabungkan dalam 1 block yang utuh, bukan tiap kalimat dipisah line break.
+  - Gunakan line break secukupnya hanya untuk memisahkan section yang berbeda (misal: info paket vs pertanyaan).
+  - Hindari spasi kosong berlebihan atau double line break.
+  - Contoh format yang baik:
+    "Halo Kak! Terima kasih sudah menghubungi CeritaKita. Untuk paket Self Photo mulai dari Rp 250.000 ya.
+
+    Kakak rencana foto untuk berapa orang dan kapan? Biar kami bantu cek ketersediaan slotnya."
   "guardrail_notes": "Note if any safety rule was triggered or if any information was missing."
 }
 `;
