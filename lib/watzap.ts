@@ -139,8 +139,17 @@ export function extractWatzapInboundEvents(payload: any): Array<{
     timestampIso: string;
   }> = [];
 
-  // Meta/WABA-style payload
-  const entries = Array.isArray(payload?.entry) ? payload.entry : [];
+  // Meta/WABA-style payload — try top-level first, then Watzap Plus nested format
+  let entries = Array.isArray(payload?.entry) ? payload.entry : [];
+
+  // Watzap Plus wraps the Meta WABA payload inside payload.data.root_value
+  if (entries.length === 0 && payload?.data?.root_value) {
+    const rv = payload.data.root_value;
+    if (Array.isArray(rv.messages) || Array.isArray(rv.contacts) || Array.isArray(rv.statuses)) {
+      entries = [{ changes: [{ value: rv }] }];
+    }
+  }
+
   for (const entry of entries) {
     const changes = Array.isArray(entry?.changes) ? entry.changes : [];
     for (const ch of changes) {
@@ -197,9 +206,11 @@ export function extractWatzapInboundEvents(payload: any): Array<{
     }
   }
 
-  // Fallback generic payload (compat existing)
+  // Fallback generic payload (compat existing + Watzap Plus data-level fields)
   if (out.length === 0) {
-    const phone = payload?.waId || payload?.phone || payload?.whatsappNumber || payload?.senderNumber || null;
+    const dataLevel = payload?.data || {};
+    const phone = payload?.waId || payload?.phone || payload?.whatsappNumber || payload?.senderNumber
+      || dataLevel.phone || dataLevel.waId || null;
     if (phone) {
       const tsRaw = payload?.timestamp;
       let timestampIso = new Date().toISOString();
@@ -215,10 +226,13 @@ export function extractWatzapInboundEvents(payload: any): Array<{
 
       const isOwner = payload?.owner === true || payload?.isOwner === true || payload?.direction === 'outgoing';
       out.push({
-        providerMessageId: payload?.id || payload?.messageId || payload?.wamid || null,
+        providerMessageId: payload?.id || payload?.messageId || payload?.wamid
+          || dataLevel.message_raw?.id || null,
         phone: String(phone),
-        senderName: payload?.senderName || payload?.name || payload?.displayName || null,
-        text: payload?.text || payload?.messageText || payload?.message || payload?.body || '',
+        senderName: payload?.senderName || payload?.name || payload?.displayName
+          || dataLevel.root_value?.contacts?.[0]?.profile?.name || null,
+        text: payload?.text || payload?.messageText || payload?.message || payload?.body
+          || dataLevel.message_text || '',
         messageType: payload?.messageType || payload?.type || 'text',
         mediaUrl: payload?.mediaUrl || null,
         mediaMimeType: payload?.mediaMimeType || null,
