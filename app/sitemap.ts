@@ -9,7 +9,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
   const lastModified = new Date();
 
-  const urls = ["/", "/booking", "/gallery", "/blog", "/blog/studio-foto-solo", "/blog/self-photo-sukoharjo", "/blog/harga-prewedding-solo"];
+  const urls = ["/", "/booking", "/gallery", "/blog", "/blog/studio-foto-solo", "/blog/self-photo-sukoharjo", "/blog/harga-prewedding-solo", "/blog/wisuda-solo", "/blog/foto-keluarga-solo", "/blog/birthday-photo-solo", "/blog/pas-foto-solo"];
 
   return urls.map((path) => ({
     url: `${siteUrl}${path}`,
