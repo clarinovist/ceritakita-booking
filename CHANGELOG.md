@@ -5,6 +5,35 @@ All notable changes to the CeritaKita Studio Booking System will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.1.0...v1.2.0) (2026-06-14)
+
+
+### Features
+
+* add /api/watzap/webhook route with shared webhook handler ([f0d07a9](https://github.com/clarinovist/ceritakita-booking/commit/f0d07a9d64c9bdf973110d2444c3a5e46666b162))
+* add CAPI Gateway client-side tracking for Meta Conversions API deduplication ([aaa26a4](https://github.com/clarinovist/ceritakita-booking/commit/aaa26a4f33ef6729decbc5f13083f54e942090df))
+* add FAQ structured data (JSON-LD) for Google Featured Snippets ([a78db3d](https://github.com/clarinovist/ceritakita-booking/commit/a78db3d68548d5f20a7d6040ba26a11115e84bac))
+* add LocalBusiness schema for Google Maps SEO ([c16e3c7](https://github.com/clarinovist/ceritakita-booking/commit/c16e3c7f8203a24b32c609c4fcc33e9398a0faa4))
+* add SEO blog articles for local search ranking ([cd3576d](https://github.com/clarinovist/ceritakita-booking/commit/cd3576d83e2cb2e90a70295779a92a987882348e))
+* real pricing + Product schema for rich results ([59bd1c3](https://github.com/clarinovist/ceritakita-booking/commit/59bd1c38a1718b470a8f0c2f66cf516e0e349e5a))
+* SEO/GEO optimization — robots.txt, 4 new blog articles, sitemap ([98702a3](https://github.com/clarinovist/ceritakita-booking/commit/98702a32b58965321899ad06a7aaec6156edfb1b))
+* use WA_NUMBER env var, update default to WABA number (6285190832058) ([39a458c](https://github.com/clarinovist/ceritakita-booking/commit/39a458c0e462046f7193d55a3cbe484a0d7ea3ae))
+
+
+### Bug Fixes
+
+* add provenance:false and pull:true to docker build-push ([3d6a095](https://github.com/clarinovist/ceritakita-booking/commit/3d6a0956f9524f7467b2095adcdf388e20ab937c))
+* AI draft pakai bold + line break terstruktur untuk WhatsApp ([3ccbb43](https://github.com/clarinovist/ceritakita-booking/commit/3ccbb43a59d52d7c5b76105ce4992fe2a18cca58))
+* ensure Self Photo, Family, Pas Foto categories active on startup ([33fd6c9](https://github.com/clarinovist/ceritakita-booking/commit/33fd6c9340ea4be1b0b7d168d9d68aa4277299c9))
+* force-dynamic on GET /api/services to prevent stale cache on booking page ([f6d41b9](https://github.com/clarinovist/ceritakita-booking/commit/f6d41b973fefea3c92992c8b4ff5eacda7e76800))
+* format AI draft reply — compact opening, grouped questions, minimal line breaks ([0ba211e](https://github.com/clarinovist/ceritakita-booking/commit/0ba211ee5a99f01da091aad485b0c752593275e5))
+* parse Watzap Plus nested payload format (data.root_value) ([b192434](https://github.com/clarinovist/ceritakita-booking/commit/b192434f654dea2c14146ebd5ced7242b4454c9f))
+* raise benefits max limit 5→10 and improve validation error logging ([2b75409](https://github.com/clarinovist/ceritakita-booking/commit/2b7540912e63d45efd4748a4609d7b2bb8f4902d))
+* remove Pas Foto from homepage grid, keep only visual/aspirational categories ([1130072](https://github.com/clarinovist/ceritakita-booking/commit/1130072593464046b1c88f9d14feeab2770599fd))
+* restore CR_PAT secret for GHCR login and push ([c791530](https://github.com/clarinovist/ceritakita-booking/commit/c791530d93f6779617c9422d3785ce18d889c6e3))
+* use GITHUB_TOKEN instead of CR_PAT for GHCR login ([c517393](https://github.com/clarinovist/ceritakita-booking/commit/c517393ffffbd14442f893cb63d8e4bd25c2884b))
+* website P0+P1 updates for Meta Ads campaign refresh ([e7b1bdd](https://github.com/clarinovist/ceritakita-booking/commit/e7b1bdda92a50337fd9af722442941951f195487))
+
 ## [1.1.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.0.0...v1.1.0) (2026-06-05)
 
 
