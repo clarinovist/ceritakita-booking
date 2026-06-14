@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import JsonLd from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Harga Prewedding Solo 2026 — Paket Mulai Rp2 Juta | CeritaKita Studio",
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 export default function HargaPreweddingSoloPage() {
   return (
     <main className="bg-olive-900 min-h-screen">
+      <JsonLd data={{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Berapa harga prewedding di Solo?", "acceptedAnswer": {"@type": "Answer", "text": "Harga prewedding di Solo mulai dari Rp1,5 juta hingga Rp10 juta. Di CeritaKita Studio, paket studio mulai Rp2 juta."}}, {"@type": "Question", "name": "Berapa lama sesi foto prewedding?", "acceptedAnswer": {"@type": "Answer", "text": "Tergantung paket: studio 2 jam, outdoor 3-4 jam, premium/full day 8-10 jam."}}, {"@type": "Question", "name": "Kapan waktu terbaik foto prewedding?", "acceptedAnswer": {"@type": "Answer", "text": "Pagi hari (06.00-09.00) untuk cahaya golden hour, atau sore hari (15.00-17.00) untuk cahaya hangat. Hindari siang hari karena bayangan keras."}}, {"@type": "Question", "name": "Berapa lama hasil foto prewedding jadi?", "acceptedAnswer": {"@type": "Answer", "text": "File digital 1-2 minggu, album cetak 2-3 minggu setelah approval layout."}}]}} />
       <article className="max-w-4xl mx-auto px-6 py-20 text-cream-100">
         <nav className="text-sm text-cream-400 mb-8">
           <Link href="/" className="hover:text-gold-400">Home</Link>{" "}/{" "}

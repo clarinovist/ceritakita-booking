@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import JsonLd from "@/components/seo/JsonLd";
 
 export const metadata: Metadata = {
   title: "Self Photo Studio Sukoharjo — Mulai Rp150K | CeritaKita Studio",
@@ -24,6 +25,7 @@ export const metadata: Metadata = {
 export default function SelfPhotoSukoharjoPage() {
   return (
     <main className="bg-olive-900 min-h-screen">
+      <JsonLd data={{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Berapa harga self photo di Sukoharjo?", "acceptedAnswer": {"@type": "Answer", "text": "Di CeritaKita Studio, self photo mulai dari Rp150.000 sudah termasuk makeup, kostum adat Jawa, sesi foto, dan editing."}}, {"@type": "Question", "name": "Apakah self photo bisa sendirian?", "acceptedAnswer": {"@type": "Answer", "text": "Bisa! Self photo dirancang untuk solo player. Kamu akan dapat remote shutter dan bisa foto sepuasnya."}}, {"@type": "Question", "name": "Berapa lama sesi self photo?", "acceptedAnswer": {"@type": "Answer", "text": "Sesi basic 30 menit, couple 45 menit, group 60 menit. Waktu sudah termasuk ganti kostum dan makeup."}}, {"@type": "Question", "name": "Apakah hasilnya bisa langsung dibawa pulang?", "acceptedAnswer": {"@type": "Answer", "text": "File digital dikirim via Google Drive maksimal 3 hari kerja. Untuk cetak, bisa diambil di studio atau dikirim."}}]}} />
       <article className="max-w-4xl mx-auto px-6 py-20 text-cream-100">
         <nav className="text-sm text-cream-400 mb-8">
           <Link href="/" className="hover:text-gold-400">Home</Link>{" "}/{" "}
