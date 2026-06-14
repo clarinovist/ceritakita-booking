@@ -26,6 +26,10 @@ export default function HargaPreweddingSoloPage() {
   return (
     <main className="bg-olive-900 min-h-screen">
       <JsonLd data={{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Berapa harga prewedding di Solo?", "acceptedAnswer": {"@type": "Answer", "text": "Harga prewedding di Solo mulai dari Rp1,5 juta hingga Rp10 juta. Di CeritaKita Studio, paket studio mulai Rp2 juta."}}, {"@type": "Question", "name": "Berapa lama sesi foto prewedding?", "acceptedAnswer": {"@type": "Answer", "text": "Tergantung paket: studio 2 jam, outdoor 3-4 jam, premium/full day 8-10 jam."}}, {"@type": "Question", "name": "Kapan waktu terbaik foto prewedding?", "acceptedAnswer": {"@type": "Answer", "text": "Pagi hari (06.00-09.00) untuk cahaya golden hour, atau sore hari (15.00-17.00) untuk cahaya hangat. Hindari siang hari karena bayangan keras."}}, {"@type": "Question", "name": "Berapa lama hasil foto prewedding jadi?", "acceptedAnswer": {"@type": "Answer", "text": "File digital 1-2 minggu, album cetak 2-3 minggu setelah approval layout."}}]}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Prewedding Bronze Solo", "description": "15 foto edit, 1 jam studio, max 2 orang, 1 outfit", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 400000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Prewedding Silver Solo", "description": "Makeup & hairdo, fotografer & pengarah gaya, 10 foto edit, cetak 4R", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 600000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Prewedding Gold Solo", "description": "Paket prewedding lengkap premium", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 800000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Java Pride Prewedding Solo", "description": "Prewedding tema adat Jawa, diskon dari Rp750.000", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 500000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
       <article className="max-w-4xl mx-auto px-6 py-20 text-cream-100">
         <nav className="text-sm text-cream-400 mb-8">
           <Link href="/" className="hover:text-gold-400">Home</Link>{" "}/{" "}
@@ -61,24 +65,39 @@ export default function HargaPreweddingSoloPage() {
               </thead>
               <tbody className="text-cream-300">
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Prewedding Studio</td>
-                  <td className="p-3 font-bold text-gold-400">Rp2.000.000</td>
-                  <td className="p-3">2 jam studio, makeup, 2 kostum, 20 foto edit, file GDrive</td>
+                  <td className="p-3">Prewedding Bronze</td>
+                  <td className="p-3 font-bold text-gold-400">Rp400.000</td>
+                  <td className="p-3">15 foto edit, 1 jam studio, max 2 orang, 1 outfit</td>
                 </tr>
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Prewedding Outdoor</td>
-                  <td className="p-3 font-bold text-gold-400">Rp3.000.000</td>
-                  <td className="p-3">3 lokasi outdoor, makeup, 3 kostum, 30 foto edit, file GDrive</td>
+                  <td className="p-3">Prewedding Silver</td>
+                  <td className="p-3 font-bold text-gold-400">Rp600.000</td>
+                  <td className="p-3">Makeup & hairdo, fotografer & pengarah gaya, 10 foto edit, cetak 4R</td>
                 </tr>
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Prewedding Premium</td>
-                  <td className="p-3 font-bold text-gold-400">Rp5.000.000</td>
-                  <td className="p-3">Studio + outdoor, makeup premium, 4 kostum, 50 foto edit, album, video</td>
+                  <td className="p-3">Prewedding Gold</td>
+                  <td className="p-3 font-bold text-gold-400">Rp800.000</td>
+                  <td className="p-3">Paket prewedding lengkap premium</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Java Pride Prewedding ⭐</td>
+                  <td className="p-3 font-bold text-gold-400">Rp500.000 <span className="text-cream-400 line-through text-xs">Rp750.000</span></td>
+                  <td className="p-3">Prewedding tema adat Jawa, diskon Rp250.000!</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Simple Outdoor</td>
+                  <td className="p-3 font-bold text-gold-400">Rp500.000</td>
+                  <td className="p-3">Sesi foto outdoor simpel</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Premium Outdoor</td>
+                  <td className="p-3 font-bold text-gold-400">Rp750.000</td>
+                  <td className="p-3">Outdoor premium dengan hasil lebih banyak</td>
                 </tr>
                 <tr>
-                  <td className="p-3">Prewedding All-In</td>
-                  <td className="p-3 font-bold text-gold-400">Rp8.000.000</td>
-                  <td className="p-3">Full day, 5+ lokasi, makeup premium, unlimited kostum, 80 foto edit, album premium, cinematic video</td>
+                  <td className="p-3">Outdoor / On Location ⭐</td>
+                  <td className="p-3 font-bold text-gold-400">Rp1.300.000 <span className="text-cream-400 line-through text-xs">Rp1.500.000</span></td>
+                  <td className="p-3">30+ foto edit, 2 jam, 1 lokasi pilihan, file GDrive</td>
                 </tr>
               </tbody>
             </table>

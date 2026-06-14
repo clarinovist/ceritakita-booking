@@ -26,6 +26,8 @@ export default function SelfPhotoSukoharjoPage() {
   return (
     <main className="bg-olive-900 min-h-screen">
       <JsonLd data={{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Berapa harga self photo di Sukoharjo?", "acceptedAnswer": {"@type": "Answer", "text": "Di CeritaKita Studio, self photo mulai dari Rp150.000 sudah termasuk makeup, kostum adat Jawa, sesi foto, dan editing."}}, {"@type": "Question", "name": "Apakah self photo bisa sendirian?", "acceptedAnswer": {"@type": "Answer", "text": "Bisa! Self photo dirancang untuk solo player. Kamu akan dapat remote shutter dan bisa foto sepuasnya."}}, {"@type": "Question", "name": "Berapa lama sesi self photo?", "acceptedAnswer": {"@type": "Answer", "text": "Sesi basic 30 menit, couple 45 menit, group 60 menit. Waktu sudah termasuk ganti kostum dan makeup."}}, {"@type": "Question", "name": "Apakah hasilnya bisa langsung dibawa pulang?", "acceptedAnswer": {"@type": "Answer", "text": "File digital dikirim via Google Drive maksimal 3 hari kerja. Untuk cetak, bisa diambil di studio atau dikirim."}}]}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Self Photo Studio Sukoharjo", "description": "Self photo tanpa fotografer, sesi 30 menit, makeup, kostum adat Jawa, semua file high-res", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 150000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Self Photo + Family Sukoharjo", "description": "Self photo + foto keluarga max 6 orang, photographer include", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 300000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
       <article className="max-w-4xl mx-auto px-6 py-20 text-cream-100">
         <nav className="text-sm text-cream-400 mb-8">
           <Link href="/" className="hover:text-gold-400">Home</Link>{" "}/{" "}
@@ -73,24 +75,24 @@ export default function SelfPhotoSukoharjoPage() {
               </thead>
               <tbody className="text-cream-300">
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Self Photo Basic</td>
+                  <td className="p-3">Self Photo ⭐ Best Deal</td>
                   <td className="p-3 font-bold text-gold-400">Rp150.000</td>
-                  <td className="p-3">Makeup, kostum adat Jawa, sesi 30 menit, 5 foto edit</td>
+                  <td className="p-3">Simple makeup, kostum adat Jawa, sesi 30 menit, semua file high-res via GDrive</td>
                 </tr>
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Self Photo Couple</td>
-                  <td className="p-3 font-bold text-gold-400">Rp200.000</td>
-                  <td className="p-3">Makeup 2 orang, kostum, sesi 45 menit, 8 foto edit</td>
+                  <td className="p-3">Self Photo + Cute Pas Foto</td>
+                  <td className="p-3 font-bold text-gold-400">Rp125.000 <span className="text-cream-400 line-through text-xs">Rp150.000</span></td>
+                  <td className="p-3">Paket combo self photo + pas foto estetik</td>
                 </tr>
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Self Photo Group (3-5 orang)</td>
-                  <td className="p-3 font-bold text-gold-400">Rp250.000</td>
-                  <td className="p-3">Makeup, kostum, sesi 60 menit, 10 foto edit</td>
+                  <td className="p-3">Self Photo + Family</td>
+                  <td className="p-3 font-bold text-gold-400">Rp300.000</td>
+                  <td className="p-3">Foto bareng keluarga (max 6 orang), photographer, cetak 4R & 10R</td>
                 </tr>
                 <tr>
-                  <td className="p-3">Self Photo + Cetak</td>
-                  <td className="p-3 font-bold text-gold-400">Rp200.000</td>
-                  <td className="p-3">Paket Basic + cetak 4R & 10R + file GDrive</td>
+                  <td className="p-3">Mini Album (10 lembar @4R)</td>
+                  <td className="p-3 font-bold text-gold-400">Rp150.000</td>
+                  <td className="p-3">Tambahan album untuk hasil foto self photo kamu</td>
                 </tr>
               </tbody>
             </table>

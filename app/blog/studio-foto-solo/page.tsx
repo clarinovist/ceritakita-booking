@@ -26,6 +26,9 @@ export default function StudioFotoSoloPage() {
   return (
     <main className="bg-olive-900 min-h-screen">
       <JsonLd data={{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Berapa harga self photo di Solo?", "acceptedAnswer": {"@type": "Answer", "text": "Di CeritaKita Studio, self photo mulai dari Rp150.000 sudah termasuk makeup, kostum adat Jawa, sesi foto, dan editing."}}, {"@type": "Question", "name": "Apakah ada studio foto murah dekat Solo?", "acceptedAnswer": {"@type": "Answer", "text": "Ya, CeritaKita Studio berlokasi di Sukoharjo, hanya 15 menit dari pusat kota Solo. Harga mulai Rp150K untuk self photo."}}, {"@type": "Question", "name": "Berapa lama proses editing foto?", "acceptedAnswer": {"@type": "Answer", "text": "Hasil edit maksimal 3 hari kerja. File dikirim via Google Drive dan bisa diambil langsung di studio."}}, {"@type": "Question", "name": "Apakah bisa booking online?", "acceptedAnswer": {"@type": "Answer", "text": "Bisa! Anda bisa booking melalui WhatsApp atau langsung di website kami di halaman Booking."}}]}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Self Photo Studio Solo", "description": "Self photo tanpa fotografer, sesi 30 menit, makeup, kostum adat Jawa, semua file high-res via Google Drive", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 150000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Foto Keluarga Solo", "description": "Foto keluarga max 6 orang, photographer, asisten, cetak 4R & 10R, file GDrive", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 300000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
+      <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Prewedding Studio Solo", "description": "Prewedding Bronze: 15 foto edit, 1 jam studio, max 2 orang", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 400000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
       <article className="max-w-4xl mx-auto px-6 py-20 text-cream-100">
         {/* Breadcrumb */}
         <nav className="text-sm text-cream-400 mb-8">
@@ -97,37 +100,54 @@ export default function StudioFotoSoloPage() {
               </thead>
               <tbody className="text-cream-300">
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Self Photo</td>
+                  <td className="p-3">Pas Foto</td>
+                  <td className="p-3 font-bold text-gold-400">Rp40.000</td>
+                  <td className="p-3">Pas foto dokumen (nikah, visa, kerja, ijazah)</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Self Photo ⭐</td>
                   <td className="p-3 font-bold text-gold-400">Rp150.000</td>
-                  <td className="p-3">Makeup, kostum adat, sesi foto, edit</td>
+                  <td className="p-3">Makeup, kostum adat Jawa, sesi 30 menit, semua file high-res</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Indoor Wisuda</td>
+                  <td className="p-3 font-bold text-gold-400">Rp150.000</td>
+                  <td className="p-3">Studio, background wisuda, file digital</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Birthday</td>
+                  <td className="p-3 font-bold text-gold-400">Rp150.000</td>
+                  <td className="p-3">Sesi foto spesial ulang tahun</td>
                 </tr>
                 <tr className="border-b border-cream-300/10">
                   <td className="p-3">Foto Keluarga (6 orang)</td>
                   <td className="p-3 font-bold text-gold-400">Rp300.000</td>
-                  <td className="p-3">
-                    Photographer, asisten, cetak 4R & 10R, file GDrive
-                  </td>
+                  <td className="p-3">Photographer, asisten, cetak 4R & 10R, file GDrive</td>
                 </tr>
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Prewedding</td>
-                  <td className="p-3 font-bold text-gold-400">Hubungi kami</td>
-                  <td className="p-3">
-                    Indoor/outdoor, makeup, kostum, album
-                  </td>
+                  <td className="p-3">Prewedding Bronze</td>
+                  <td className="p-3 font-bold text-gold-400">Rp400.000</td>
+                  <td className="p-3">15 foto edit, 1 jam studio, max 2 orang, 1 outfit</td>
                 </tr>
                 <tr className="border-b border-cream-300/10">
-                  <td className="p-3">Wisuda</td>
-                  <td className="p-3 font-bold text-gold-400">Hubungi kami</td>
-                  <td className="p-3">
-                    Toga, background wisuda, cetak, file digital
-                  </td>
+                  <td className="p-3">Prewedding Silver</td>
+                  <td className="p-3 font-bold text-gold-400">Rp600.000</td>
+                  <td className="p-3">Makeup & hairdo, fotografer, 10 foto edit, cetak 4R</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Prewedding Gold</td>
+                  <td className="p-3 font-bold text-gold-400">Rp800.000</td>
+                  <td className="p-3">Paket lengkap prewedding premium</td>
+                </tr>
+                <tr className="border-b border-cream-300/10">
+                  <td className="p-3">Outdoor / On Location ⭐</td>
+                  <td className="p-3 font-bold text-gold-400">Rp1.300.000 <span className="text-cream-400 line-through text-xs">Rp1.500.000</span></td>
+                  <td className="p-3">30+ foto edit, 2 jam, 1 lokasi outdoor, file GDrive</td>
                 </tr>
                 <tr>
-                  <td className="p-3">Wedding</td>
-                  <td className="p-3 font-bold text-gold-400">Hubungi kami</td>
-                  <td className="p-3">
-                    Full day, 2 fotografer, video, album premium
-                  </td>
+                  <td className="p-3">Wedding Gold</td>
+                  <td className="p-3 font-bold text-gold-400">Rp1.300.000</td>
+                  <td className="p-3">Full day, fotografer profesional, album</td>
                 </tr>
               </tbody>
             </table>
