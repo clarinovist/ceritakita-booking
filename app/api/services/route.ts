@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { readServices, writeServices } from '@/lib/repositories/services';
 import { requireAuth } from '@/lib/auth';
 import { servicesArraySchema } from '@/lib/validation';
 import { logger, createErrorResponse } from '@/lib/logger';
+
+// Force dynamic — always read fresh data from disk (never serve stale cached response)
+export const dynamic = 'force-dynamic';
 
 // Public endpoint - customers need to see active services
 export async function GET() {
@@ -51,6 +55,11 @@ export async function POST(req: NextRequest) {
         }
 
         await writeServices(validationResult.data);
+
+        // Invalidate cache so booking page sees fresh data immediately
+        revalidatePath('/booking');
+        revalidatePath('/api/services');
+
         return NextResponse.json(validationResult.data);
     } catch (error) {
         const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
