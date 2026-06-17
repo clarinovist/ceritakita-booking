@@ -5,39 +5,45 @@ const crypto = require('crypto');
 
 const DB_PATH = path.join(process.cwd(), 'data', 'bookings.db');
 
-// Initialize predefined addons
+// Initialize predefined addons with fixed IDs so they can be safely referenced in code
 const predefinedAddons = [
     {
+        id: "cff63d0e-9eca-49aa-9142-82195ea1d28b",
         name: "Tambah Orang",
         price: 40000,
         applicable_categories: JSON.stringify(["Pas Foto", "Self Photo", "Birthday", "Family"]),
         is_active: 1
     },
     {
+        id: "ad642dfe-8538-4148-9861-89c3161938a6",
         name: "Upgrade ke Prewedding Silver",
         price: 280000,  // Selisih Bronze -> Silver
         applicable_categories: JSON.stringify(["Prewedding Bronze"]),
         is_active: 1
     },
     {
+        id: "f9ec4884-95af-41e7-bbf6-fb2af429046e",
         name: "Downgrade ke Prewedding Bronze",
         price: -280000,
         applicable_categories: JSON.stringify(["Prewedding Silver"]),
         is_active: 1
     },
     {
+        id: "9ee77fe3-d8bb-40a2-bc64-c71f9dd2eb2e",
         name: "Tambah Jam Foto",
         price: 200000,
         applicable_categories: JSON.stringify(["Wedding", "Prewedding Bronze", "Prewedding Silver", "Prewedding Gold"]),
         is_active: 1
     },
     {
+        id: "84b453dc-2cba-4369-b034-f900c934acba",
         name: "Percepat Editing (Rush Order)",
         price: 150000,
         applicable_categories: null,
         is_active: 1
     },
     {
+        id: "3eb8bfa0-16eb-431b-94fd-1290f81e4ee6",
         name: "Penyesuaian Lainnya",
         price: 0,
         applicable_categories: null,
@@ -83,7 +89,7 @@ try {
             }
 
             insertStmt.run(
-                crypto.randomUUID(),
+                addon.id,
                 addon.name,
                 addon.price,
                 addon.applicable_categories,
