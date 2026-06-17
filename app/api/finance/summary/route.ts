@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
         // Or just total price of bookings in that period?
         // Let's use payments for cash flow accuracy.
 
-        const bookings = readBookings();
+        const bookings = readBookings(startDate, endDate);
         let totalRevenue = 0;
         let outstandingRevenue = 0;
 
@@ -56,9 +56,8 @@ export async function GET(req: NextRequest) {
         const end = endDate ? new Date(endDate) : new Date(8640000000000000);
 
         // Ensure we handle date filtering correctly
-        // If filtering by payment date, we iterate payments.
-        // If filtering by booking date, we iterate bookings.
         // Summary usually implies "In this period, what happened?"
+        // Bookings are already filtered by booking_date via readBookings(startDate, endDate)
 
         // Revenue logic: Sum of payments made within the date range
         bookings.forEach(booking => {
@@ -68,6 +67,10 @@ export async function GET(req: NextRequest) {
 
             booking.finance.payments.forEach(payment => {
                 const paymentDate = new Date(payment.date);
+                // We still check payment date because payments can happen outside the booking date range,
+                // but since bookings are already restricted to the start/end date range, this means
+                // we are ONLY calculating revenue for bookings CREATED in this period, and only counting
+                // payments that also occurred in this period.
                 if (paymentDate >= start && paymentDate <= end) {
                     totalRevenue += payment.amount;
                 }
@@ -87,10 +90,10 @@ export async function GET(req: NextRequest) {
         // 3. Category Breakdown (Revenue)
         const revenueByCategory: Record<string, number> = {};
         bookings.forEach(booking => {
-            const bookingDate = new Date(booking.booking.date);
             // Attribute revenue to booking date or payment date?
             // For "Revenue by Category", usually it's based on sales (booking date).
-            if (bookingDate >= start && bookingDate <= end && booking.status !== 'Cancelled') {
+            // Bookings are already filtered by date from DB.
+            if (booking.status !== 'Cancelled') {
                 const cat = booking.customer.category || 'Uncategorized';
                 revenueByCategory[cat] = (revenueByCategory[cat] || 0) + booking.finance.total_price;
             }
