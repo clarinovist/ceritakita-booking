@@ -49,9 +49,12 @@ export async function GET(req: NextRequest) {
 
         // Single Pass for Bookings
         for (let i = 0; i < allBookings.length; i++) {
-            const payments = allBookings[i].finance.payments;
+            const booking = allBookings[i];
+            if (!booking) continue;
+            const payments = booking.finance.payments;
             for (let j = 0; j < payments.length; j++) {
                 const payment = payments[j];
+                if (!payment) continue;
                 const amount = payment.amount;
                 totalCashIn += amount;
 
@@ -70,6 +73,7 @@ export async function GET(req: NextRequest) {
         // Single Pass for Expenses
         for (let i = 0; i < expenses.length; i++) {
             const expense = expenses[i];
+            if (!expense) continue;
             const amount = expense.amount;
             totalCashOut += amount;
 

@@ -1,8 +1,5 @@
-import { readData as readBookings } from '../lib/repositories/bookings';
-import { getExpenses } from '../lib/storage-expenses';
-import { getSystemSettings } from '../lib/repositories/settings';
-
-// Ensure data exists, otherwise populate some dummy data or use what's there
+// Benchmark script: tests original vs optimized cash position calculation
+// Uses dummy data to measure performance difference
 
 function runOriginal(allBookings: any[], expenses: any[], start: Date, end: Date, initialCashBalance: number) {
     const monthlyData: Record<string, { cashIn: number; cashOut: number }> = {};
@@ -14,7 +11,7 @@ function runOriginal(allBookings: any[], expenses: any[], start: Date, end: Date
     }
 
     // 1. Process Payments (Cash In)
-    allBookings.forEach(booking => {
+    allBookings.forEach((booking: any) => {
         booking.finance.payments.forEach((payment: any) => {
             const pDate = new Date(payment.date);
             const key = pDate.toISOString().substring(0, 7);
@@ -37,7 +34,7 @@ function runOriginal(allBookings: any[], expenses: any[], start: Date, end: Date
     let totalCashIn = 0;
     let totalCashOut = 0;
 
-    allBookings.forEach(b => {
+    allBookings.forEach((b: any) => {
         b.finance.payments.forEach((p: any) => totalCashIn += p.amount);
     });
     expenses.forEach((e: any) => totalCashOut += e.amount);
@@ -48,7 +45,7 @@ function runOriginal(allBookings: any[], expenses: any[], start: Date, end: Date
     let priorCashIn = 0;
     let priorCashOut = 0;
 
-    allBookings.forEach(booking => {
+    allBookings.forEach((booking: any) => {
         booking.finance.payments.forEach((payment: any) => {
             if (new Date(payment.date) < start) {
                 priorCashIn += payment.amount;
@@ -63,12 +60,10 @@ function runOriginal(allBookings: any[], expenses: any[], start: Date, end: Date
 
     let runningBalance = initialCashBalance + priorCashIn - priorCashOut;
 
-    // just do some work
-    const breakdown = Object.keys(monthlyData).sort().map(month => {
+    // Consume monthly data to simulate real workload
+    Object.keys(monthlyData).sort().forEach(month => {
         const data = monthlyData[month];
-        if (!data) return null;
-        runningBalance += (data.cashIn - data.cashOut);
-        return { runningBalance };
+        if (data) runningBalance += (data.cashIn - data.cashOut);
     });
 
     return currentPosition;
@@ -90,16 +85,16 @@ function runOptimized(allBookings: any[], expenses: any[], start: Date, end: Dat
 
     // SINGLE PASS for bookings
     for (let i = 0; i < allBookings.length; i++) {
-        const payments = allBookings[i].finance.payments;
+        const booking = allBookings[i];
+        if (!booking) continue;
+        const payments = booking.finance.payments;
         for (let j = 0; j < payments.length; j++) {
             const payment = payments[j];
+            if (!payment) continue;
             const amount = payment.amount;
             totalCashIn += amount;
 
-            // Assuming ISO date string like YYYY-MM-DDTHH:mm:ss.sssZ
-            // Extract YYYY-MM quickly without Date object for the key
             const dateStr = payment.date;
-
             const pDate = new Date(dateStr);
             if (pDate < start) {
                 priorCashIn += amount;
@@ -115,6 +110,7 @@ function runOptimized(allBookings: any[], expenses: any[], start: Date, end: Dat
     // SINGLE PASS for expenses
     for (let i = 0; i < expenses.length; i++) {
         const expense = expenses[i];
+        if (!expense) continue;
         const amount = expense.amount;
         totalCashOut += amount;
 
@@ -133,11 +129,10 @@ function runOptimized(allBookings: any[], expenses: any[], start: Date, end: Dat
     const currentPosition = initialCashBalance + totalCashIn - totalCashOut;
     let runningBalance = initialCashBalance + priorCashIn - priorCashOut;
 
-    const breakdown = Object.keys(monthlyData).sort().map(month => {
+    // Consume monthly data to simulate real workload
+    Object.keys(monthlyData).sort().forEach(month => {
         const data = monthlyData[month];
-        if (!data) return null;
-        runningBalance += (data.cashIn - data.cashOut);
-        return { runningBalance };
+        if (data) runningBalance += (data.cashIn - data.cashOut);
     });
 
     return currentPosition;
@@ -165,14 +160,12 @@ const end = new Date();
 runOriginal(dummyBookings, dummyExpenses, start, end, 1000);
 runOptimized(dummyBookings, dummyExpenses, start, end, 1000);
 
-let originalTotal = 0;
 console.time('Original');
 for (let i = 0; i < 5; i++) {
     runOriginal(dummyBookings, dummyExpenses, start, end, 1000);
 }
 console.timeEnd('Original');
 
-let optimizedTotal = 0;
 console.time('Optimized');
 for (let i = 0; i < 5; i++) {
     runOptimized(dummyBookings, dummyExpenses, start, end, 1000);
