@@ -42,58 +42,49 @@ export async function GET(req: NextRequest) {
             current.setMonth(current.getMonth() + 1);
         }
 
-        // 1. Process Payments (Cash In)
-        allBookings.forEach(booking => {
-            booking.finance.payments.forEach(payment => {
-                const pDate = new Date(payment.date);
-                const key = pDate.toISOString().substring(0, 7);
-                // We only care about payments within the specified range for the chart, 
-                // but we need to calculate running balance from the very beginning of the system or at least prior months
-                if (monthlyData[key]) {
-                    monthlyData[key].cashIn += payment.amount;
-                }
-            });
-        });
-
-        // 2. Process Expenses (Cash Out)
-        expenses.forEach(expense => {
-            const eDate = new Date(expense.date);
-            const key = eDate.toISOString().substring(0, 7);
-            if (monthlyData[key]) {
-                monthlyData[key].cashOut += expense.amount;
-            }
-        });
-
-        // 3. Calculate Running Balance
-        // For total current position, we need sum of ALL payments and ALL expenses since beginning + initial balance
         let totalCashIn = 0;
         let totalCashOut = 0;
-
-        allBookings.forEach(b => {
-            b.finance.payments.forEach(p => totalCashIn += p.amount);
-        });
-        expenses.forEach(e => totalCashOut += e.amount);
-
-        const currentPosition = initialCashBalance + totalCashIn - totalCashOut;
-
-        // Prepare monthly breakdown with running balance
-        // Note: For a true running balance, we'd need to sum everything PRIOR to the 'start' date first.
         let priorCashIn = 0;
         let priorCashOut = 0;
 
-        allBookings.forEach(booking => {
-            booking.finance.payments.forEach(payment => {
-                if (new Date(payment.date) < start) {
-                    priorCashIn += payment.amount;
-                }
-            });
-        });
-        expenses.forEach(expense => {
-            if (new Date(expense.date) < start) {
-                priorCashOut += expense.amount;
-            }
-        });
+        // Single Pass for Bookings
+        for (let i = 0; i < allBookings.length; i++) {
+            const payments = allBookings[i].finance.payments;
+            for (let j = 0; j < payments.length; j++) {
+                const payment = payments[j];
+                const amount = payment.amount;
+                totalCashIn += amount;
 
+                const pDate = new Date(payment.date);
+                if (pDate < start) {
+                    priorCashIn += amount;
+                }
+
+                const key = pDate.toISOString().substring(0, 7);
+                if (monthlyData[key]) {
+                    monthlyData[key].cashIn += amount;
+                }
+            }
+        }
+
+        // Single Pass for Expenses
+        for (let i = 0; i < expenses.length; i++) {
+            const expense = expenses[i];
+            const amount = expense.amount;
+            totalCashOut += amount;
+
+            const eDate = new Date(expense.date);
+            if (eDate < start) {
+                priorCashOut += amount;
+            }
+
+            const key = eDate.toISOString().substring(0, 7);
+            if (monthlyData[key]) {
+                monthlyData[key].cashOut += amount;
+            }
+        }
+
+        const currentPosition = initialCashBalance + totalCashIn - totalCashOut;
         let runningBalance = initialCashBalance + priorCashIn - priorCashOut;
 
         const breakdown = Object.keys(monthlyData).sort().map(month => {
