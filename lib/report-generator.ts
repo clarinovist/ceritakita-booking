@@ -2,6 +2,7 @@ import { readData as readBookings } from '@/lib/repositories/bookings';
 import { getExpenses } from '@/lib/storage-expenses';
 import { getLeads } from '@/lib/leads';
 import { getSystemSettings } from '@/lib/repositories/settings';
+import { getTotalCashIn, getTotalCashOut } from '@/lib/repositories/finance';
 import { getWaClicksByDay, getWaClicksCount } from '@/lib/repositories/analytics';
 import { Booking, Payment } from '@/lib/types';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
@@ -369,13 +370,9 @@ export async function generateMonthlyReport(): Promise<MonthlyReportData> {
     const netProfit = revenue - expenses;
 
     // 3. Overall Cash Position (All Time)
-    let totalCashIn = 0;
-    let totalCashOut = 0;
-
-    allBookings.forEach(b => {
-        b.finance.payments.forEach(p => totalCashIn += p.amount);
-    });
-    allExpenses.forEach(e => totalCashOut += e.amount);
+    // Optimized: Uses SQL aggregations instead of in-memory loops to prevent performance degradation as data grows
+    const totalCashIn = getTotalCashIn();
+    const totalCashOut = getTotalCashOut();
 
     const initialCashBalance = settings.initial_cash_balance || 0;
     const cashPosition = initialCashBalance + totalCashIn - totalCashOut;
