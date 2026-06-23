@@ -5,6 +5,19 @@ All notable changes to the CeritaKita Studio Booking System will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.2.0...v1.3.0) (2026-06-23)
+
+
+### Features
+
+* add /api/v1/ agent API with Bearer token auth ([040da08](https://github.com/clarinovist/ceritakita-booking/commit/040da087a621dad5574ce3f31bc0a95e11b729f5))
+* add /api/v1/ discovery endpoint for auto-discoverable API ([6d36b27](https://github.com/clarinovist/ceritakita-booking/commit/6d36b2749cd04638fe10569214a04338a6104048))
+
+
+### Bug Fixes
+
+* TypeScript errors in cash-position route and benchmark script ([4b405a4](https://github.com/clarinovist/ceritakita-booking/commit/4b405a466e5c6d4807aafe514f9584b710545578))
+
 ## [1.2.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.1.0...v1.2.0) (2026-06-14)
 
 
