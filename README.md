@@ -409,6 +409,49 @@ import { formatDate } from '@/utils/dateFormatter';
 - **Validation**: Use Zod schemas for all API inputs
 - **Components**: Keep components focused and under 300 lines
 
+## 🤖 Agent API (v1)
+
+External Hermes agents can access the database via REST API without Docker access.
+
+### Authentication
+```bash
+curl -H "Authorization: Bearer <AGENT_API_KEY>" \
+  https://ceritakitastudio.site/api/v1/bookings
+```
+API key is stored in `.env.local` as `AGENT_API_KEY`. Read-only by default.
+
+### Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/v1/bookings` | GET | List bookings (filters: status, startDate, endDate, photographer) |
+| `/api/v1/bookings/:id` | GET | Booking detail (payments, addons, reschedules) |
+| `/api/v1/leads` | GET | List leads (filters: status, source, assigned_to) |
+| `/api/v1/payments` | GET | List payments (filters: booking_id, startDate, endDate) |
+| `/api/v1/cash-position` | GET | Cash position summary (filters: startDate, endDate) |
+| `/api/v1/pnl` | GET | P&L report (filters: startDate, endDate) |
+
+### Pagination
+All list endpoints support `?page=N&limit=N` (default: page=1, limit=50, max=100).
+
+### Rate Limiting
+60 requests per minute per API key.
+
+### Example
+```bash
+# Get active bookings
+curl -H "Authorization: Bearer $AGENT_API_KEY" \
+  "https://ceritakitastudio.site/api/v1/bookings?status=Active"
+
+# Get booking detail
+curl -H "Authorization: Bearer $AGENT_API_KEY" \
+  "https://ceritakitastudio.site/api/v1/bookings/27a91b2d-bd0c-4372-a1fa-271c6854fe6f"
+
+# Get cash position for June 2026
+curl -H "Authorization: Bearer $AGENT_API_KEY" \
+  "https://ceritakitastudio.site/api/v1/cash-position?startDate=2026-06-01&endDate=2026-06-30"
+```
+
 ## 🤝 Contributing
 
 This is a private project for CeritaKita photography services. All changes should be documented and tested.
