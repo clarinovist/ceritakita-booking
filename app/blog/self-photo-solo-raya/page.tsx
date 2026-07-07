@@ -29,8 +29,8 @@ export default function SelfPhotoSoloRayaPage() {
       <JsonLd data={{"@context": "https://schema.org", "@type": "Product", "name": "Self Photo Solo Raya", "description": "Self photo tanpa fotografer, sesi 30 menit, makeup, kostum adat Jawa, semua file high-res. Melayani seluruh Solo Raya.", "brand": {"@type": "Brand", "name": "CeritaKita Studio"}, "offers": {"@type": "Offer", "price": 150000, "priceCurrency": "IDR", "availability": "https://schema.org/InStock", "seller": {"@type": "Organization", "name": "CeritaKita Studio"}}, "aggregateRating": {"@type": "AggregateRating", "ratingValue": "4.8", "reviewCount": "50"}}} />
       <article className="max-w-4xl mx-auto px-6 py-20 text-cream-100">
         <nav className="text-sm text-cream-400 mb-8">
-          <Link href="/" className="hover:text-gold-400">Home</Link>{" "}/{\" \"}
-          <Link href="/blog" className="hover:text-gold-400">Blog</Link>{" "}/{\" \"}
+          <Link href="/" className="hover:text-gold-400">Home</Link>{" "}/{" "}
+          <Link href="/blog" className="hover:text-gold-400">Blog</Link>{" "}/{" "}
           <span>Self Photo Solo Raya</span>
         </nav>
 
