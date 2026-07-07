@@ -17,7 +17,8 @@ const articles = [
   { slug: "pas-foto-solo", title: "Pas Foto Solo: Foto Dokumen Profesional Mulai Rp40K", excerpt: "Pas foto di Solo mulai Rp40K untuk semua kebutuhan dokumen.", date: "14 Juni 2026", readTime: "3 menit" },
   { slug: "studio-foto-klaten", title: "Studio Foto di Klaten: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Klaten? CeritaKita Studio Sukoharjo cuma 25 menit. Mulai Rp150K.", date: "7 Juli 2026", readTime: "5 menit" },
   { slug: "studio-foto-wonogiri", title: "Studio Foto di Wonogiri: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Wonogiri? CeritaKita Studio Sukoharjo cuma 30 menit. Mulai Rp150K.", date: "7 Juli 2026", readTime: "5 menit" },
-
+  { slug: "studio-foto-sragen", title: "Studio Foto di Sragen: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Sragen? CeritaKita Studio Sukoharjo cuma 35 menit. Mulai Rp150K.", date: "14 Juli 2026", readTime: "5 menit" },
+  { slug: "studio-foto-karanganyar", title: "Studio Foto di Karanganyar: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Karanganyar? CeritaKita Studio Sukoharjo cuma 20 menit. Mulai Rp150K.", date: "14 Juli 2026", readTime: "5 menit" },
 ];
 
 export default function BlogPage() {
