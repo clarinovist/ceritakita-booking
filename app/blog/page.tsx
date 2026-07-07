@@ -15,6 +15,9 @@ const articles = [
   { slug: "foto-keluarga-solo", title: "Foto Keluarga Solo: Abadikan Momen Berharga Bersama", excerpt: "Foto keluarga di Solo mulai Rp300K untuk 6 orang.", date: "14 Juni 2026", readTime: "4 menit" },
   { slug: "birthday-photo-solo", title: "Foto Birthday Solo: Abadikan Momen Spesial Ulang Tahun", excerpt: "Foto birthday di Solo mulai Rp150K.", date: "14 Juni 2026", readTime: "3 menit" },
   { slug: "pas-foto-solo", title: "Pas Foto Solo: Foto Dokumen Profesional Mulai Rp40K", excerpt: "Pas foto di Solo mulai Rp40K untuk semua kebutuhan dokumen.", date: "14 Juni 2026", readTime: "3 menit" },
+  { slug: "studio-foto-klaten", title: "Studio Foto di Klaten: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Klaten? CeritaKita Studio Sukoharjo cuma 25 menit. Mulai Rp150K.", date: "7 Juli 2026", readTime: "5 menit" },
+  { slug: "studio-foto-wonogiri", title: "Studio Foto di Wonogiri: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Wonogiri? CeritaKita Studio Sukoharjo cuma 30 menit. Mulai Rp150K.", date: "7 Juli 2026", readTime: "5 menit" },
+
 ];
 
 export default function BlogPage() {
