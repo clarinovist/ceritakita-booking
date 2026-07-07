@@ -19,6 +19,27 @@ const articles = [
   { slug: "studio-foto-wonogiri", title: "Studio Foto di Wonogiri: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Wonogiri? CeritaKita Studio Sukoharjo cuma 30 menit. Mulai Rp150K.", date: "7 Juli 2026", readTime: "5 menit" },
   { slug: "studio-foto-sragen", title: "Studio Foto di Sragen: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Sragen? CeritaKita Studio Sukoharjo cuma 35 menit. Mulai Rp150K.", date: "14 Juli 2026", readTime: "5 menit" },
   { slug: "studio-foto-karanganyar", title: "Studio Foto di Karanganyar: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Karanganyar? CeritaKita Studio Sukoharjo cuma 20 menit. Mulai Rp150K.", date: "14 Juli 2026", readTime: "5 menit" },
+  // Batch 3
+  { slug: "studio-foto-boyolali", title: "Studio Foto di Boyolali: Panduan Lengkap + Harga 2026", excerpt: "Cari studio foto di Boyolali? CeritaKita Studio Sukoharjo cuma 30 menit. Mulai Rp150K.", date: "21 Juli 2026", readTime: "5 menit" },
+  { slug: "studio-foto-klaten-murah", title: "Studio Foto Murah di Klaten: Harga Mulai Rp40K", excerpt: "Cari studio foto murah di Klaten? CeritaKita Studio mulai Rp40K untuk pas foto.", date: "21 Juli 2026", readTime: "4 menit" },
+  { slug: "fotografer-wonogiri", title: "Fotografer Wonogiri: Jasa Foto Profesional Mulai Rp150K", excerpt: "Butuh fotografer di Wonogiri? CeritaKita Studio sediakan fotografer profesional mulai Rp150K.", date: "21 Juli 2026", readTime: "5 menit" },
+  // Batch 4
+  { slug: "foto-wisuda-sragen", title: "Foto Wisuda Sragen: Panduan Lengkap + Harga 2026", excerpt: "Foto wisuda di Sragen mulai Rp150K. Studio & outdoor, hasil profesional.", date: "28 Juli 2026", readTime: "4 menit" },
+  { slug: "self-photo-klaten", title: "Self Photo Studio Klaten: Seru, Mudah, Mulai Rp150K", excerpt: "Self photo studio dekat Klaten mulai Rp150K. Include makeup dan kostum adat Jawa.", date: "28 Juli 2026", readTime: "4 menit" },
+  { slug: "foto-prewedding-wonogiri", title: "Foto Prewedding Wonogiri: Panduan + Harga 2026", excerpt: "Foto prewedding dekat Wonogiri mulai Rp400K. Indoor & outdoor.", date: "28 Juli 2026", readTime: "5 menit" },
+  // Batch 5
+  { slug: "foto-keluarga-sragen", title: "Foto Keluarga Sragen: Abadikan Momen Berharga", excerpt: "Foto keluarga dekat Sragen mulai Rp300K untuk 6 orang. Fotografer profesional.", date: "4 Agustus 2026", readTime: "4 menit" },
+  { slug: "pas-foto-solo-murah", title: "Pas Foto Solo Murah: Mulai Rp40K | CeritaKita Studio", excerpt: "Pas foto murah di Solo mulai Rp40K. Untuk KTP, SIM, visa, ijazah.", date: "4 Agustus 2026", readTime: "3 menit" },
+  { slug: "foto-wisuda-solo-2026", title: "Foto Wisuda Solo 2026: Panduan Terbaru + Harga", excerpt: "Foto wisuda di Solo 2026 mulai Rp150K. Tips persiapan & rekomendasi studio.", date: "4 Agustus 2026", readTime: "5 menit" },
+  // Batch 6
+  { slug: "self-photo-solo-raya", title: "Self Photo Solo Raya: Panduan Lengkap 2026", excerpt: "Self photo terjangkau di Solo Raya mulai Rp150K. Sukoharjo, Klaten, Wonogiri.", date: "11 Agustus 2026", readTime: "4 menit" },
+  { slug: "tips-foto-studio-pertama-kali", title: "Tips Foto Studio Pertama Kali: Panduan Pemula 2026", excerpt: "Baru pertama kali foto studio? Ini tips lengkap agar hasilnya maksimal.", date: "11 Agustus 2026", readTime: "5 menit" },
+  { slug: "persiapan-foto-prewedding", title: "Persiapan Foto Prewedding: Checklist Lengkap 2026", excerpt: "Mau foto prewedding? Ini checklist persiapan dari kostum hingga lokasi.", date: "11 Agustus 2026", readTime: "6 menit" },
+  // Batch 7
+  { slug: "harga-foto-wisuda-2026", title: "Harga Foto Wisuda 2026: Perbandingan Solo Raya", excerpt: "Daftar harga foto wisuda 2026 di Solo, Sukoharjo, Klaten. Mulai Rp150K.", date: "18 Agustus 2026", readTime: "5 menit" },
+  { slug: "ide-pose-self-photo", title: "20 Ide Pose Self Photo Studio yang Instagramable", excerpt: "Inspirasi pose self photo yang estetik dan Instagramable. Cocok untuk pemula!", date: "18 Agustus 2026", readTime: "4 menit" },
+  { slug: "perbedaan-self-photo-dan-foto-studio", title: "Self Photo vs Foto Studio: Mana yang Lebih Cocok?", excerpt: "Bingung pilih self photo atau foto studio biasa? Ini perbedaannya.", date: "18 Agustus 2026", readTime: "4 menit" },
+  { slug: "foto-studio-untuk-cv-kerja", title: "Foto Profesional untuk CV Kerja: Tips & Harga 2026", excerpt: "Butuh foto profesional untuk CV? Mulai Rp40K di CeritaKita Studio.", date: "18 Agustus 2026", readTime: "3 menit" },
 ];
 
 export default function BlogPage() {
