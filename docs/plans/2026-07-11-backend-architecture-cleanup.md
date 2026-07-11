@@ -37,16 +37,14 @@ rg "from '@/lib/storage-sqlite'" --glob 'app/**/*'                    # 0
 rg "getDb\(" --glob 'app/api/**/*.ts' | rg -v 'health/route.ts'       # 0
 ```
 
-### Residual / next tracks (bukan blocker completion)
+### Residual / next tracks
 
-Lihat juga §9. Follow-up hygiene yang disarankan setelah review:
+Hygiene follow-up (server-only, call-site cutover, AI guardrails, `writeData` deprecate, typed updates, migrations v1) **sudah dikerjakan** setelah completion Phase 1–4.
 
-1. Seragamkan `import 'server-only'` di semua `lib/repositories/*`
-2. Cutover call site `app/api/**` dari shim path → `@/lib/repositories/*`, lalu hapus shim / `storage-sqlite` bila 0 usage
-3. Extract AI draft guardrails dari `app/api/admin/whatsapp/.../ai/draft/route.ts` → `whatsapp-ai-service`
-4. Split god-module `lib/repositories/whatsapp.ts`
-5. `@deprecated` / guard pada `writeData` di bookings repo
-6. Type `updates` di `updateBooking` (hindari `any`)
+Prioritas produk/ops **ke depan** (bukan arsitektur):  
+→ **`docs/plans/2026-07-11-product-and-ops-roadmap.md`** (single source of truth).
+
+Utang teknis menengah (park): split `whatsapp` repo, admin frontend, `requirePermission` — detail di roadmap §3.
 
 ---
 

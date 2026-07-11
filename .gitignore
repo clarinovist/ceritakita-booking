@@ -45,11 +45,21 @@ node_modules/
 /data/bookings.db
 /data/bookings.db-shm
 /data/bookings.db-wal
+/data/bookings.backup.*.db
 /data/backups/
 
 # uploaded files
 /uploads/
 .aider*
+
+# logs (local dev only)
+/logs/
+
+# temp scripts
+/tmp/
+
+# codegraph
+/.codegraph/
 
 # generated analysis artifacts
 graphify-out/
