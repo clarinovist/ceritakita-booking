@@ -4,6 +4,7 @@ import React from 'react';
 import { Lead } from '@/lib/types';
 import { Phone, Mail, MoreHorizontal, User as UserIcon, MessageCircle } from 'lucide-react';
 import { getLeadStatusColor } from '@/lib/types/leads';
+import { calculateLeadScore } from '@/lib/lead-scoring';
 
 interface LeadsRecordsTableProps {
     leads: Lead[];
@@ -13,15 +14,11 @@ interface LeadsRecordsTableProps {
     isLoading: boolean;
 }
 
-// Utility to generate a pseudo-random lead score for UI demonstration
+// Real lead score from scoring algorithm
 const getLeadScore = (lead: Lead) => {
-    // New leads have high potential, Won leads are 100%, Lost are 0%
     if (lead.status === 'Won' || lead.status === 'Converted') return 100;
     if (lead.status === 'Lost') return 0;
-
-    // Seeded pseudo-random based on id
-    const seed = lead.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    return 20 + (seed % 75); // Range 20-95
+    return calculateLeadScore(lead).total;
 };
 
 export function LeadsRecordsTable({ leads, onSelectLead, onDeleteLead, onConvertToBooking, isLoading }: LeadsRecordsTableProps) {

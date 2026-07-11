@@ -96,6 +96,7 @@ export function getFilteredMenuItems(permissions: any, role: string) {
     { id: 'calendar', icon: 'Calendar', label: 'Calendar', permission: 'booking.view' },
     { id: 'table', icon: 'List', label: 'Bookings', permission: 'booking.view' },
     { id: 'leads', icon: 'Target', label: 'Leads', permission: 'leads.view' },
+    { id: 'follow-up', icon: 'MessageSquare', label: 'Follow-Up', permission: 'leads.view', isLink: true, href: '/admin/follow-up' },
     { id: 'catalog', icon: 'ShoppingBag', label: 'Catalog', permission: 'catalog' },
     { id: 'coupons', icon: 'Tag', label: 'Kupon', permission: 'coupons.view' },
     { id: 'users', icon: 'Users', label: 'Users', permission: 'users' },

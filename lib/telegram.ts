@@ -163,6 +163,53 @@ export function formatDailyReport(data: DailyReportData): string {
         lines.push(`📅 _Tidak ada jadwal dalam 3 hari ke depan_`);
     }
 
+    // Overdue Follow-ups — lead yang perlu di-follow up
+    if (data.overdueFollowUps.length > 0) {
+        lines.push('');
+        lines.push(`⏰ *Follow-Up Overdue (${data.overdueFollowUps.length}):*`);
+        data.overdueFollowUps.slice(0, 10).forEach((l) => {
+            const followUpDate = new Date(l.next_follow_up);
+            const today = new Date(data.date);
+            const daysOverdue = Math.floor((today.getTime() - followUpDate.getTime()) / (1000 * 60 * 60 * 24));
+            const label = daysOverdue > 0 ? `${daysOverdue}hr lalu` : 'hari ini';
+            lines.push(`• ${l.name} — ${l.status} _(${l.source || '-'})_ — FU ${label}`);
+        });
+        if (data.overdueFollowUps.length > 10) {
+            lines.push(`  _...dan ${data.overdueFollowUps.length - 10} lainnya_`);
+        }
+    } else {
+        lines.push('');
+        lines.push(`✅ _Tidak ada follow-up overdue_`);
+    }
+
+    // Outstanding Payments — booking dengan sisa bayar
+    if (data.outstandingPayments.length > 0) {
+        const totalOutstanding = data.outstandingPayments.reduce((sum, p) => sum + p.balance, 0);
+        lines.push('');
+        lines.push(`💰 *Sisa Bayar (${data.outstandingPayments.length} booking):*`);
+        lines.push(`   Total outstanding: *${formatRupiah(totalOutstanding)}*`);
+        data.outstandingPayments.slice(0, 8).forEach((p) => {
+            lines.push(`• ${p.customerName} — ${formatRupiah(p.balance)} dari ${formatRupiah(p.totalPrice)} _(${p.category})_`);
+        });
+        if (data.outstandingPayments.length > 8) {
+            lines.push(`  _...dan ${data.outstandingPayments.length - 8} lainnya_`);
+        }
+    } else {
+        lines.push('');
+        lines.push(`✅ _Semua booking sudah lunas_`);
+    }
+
+    // Top Scored Leads — lead bernilai tinggi
+    if (data.topScoredLeads.length > 0) {
+        lines.push('');
+        lines.push(`🔥 *Top Lead (Score Tertinggi):*`);
+        data.topScoredLeads.forEach((l) => {
+            const scoreEmoji = l.scoreLabel === 'Hot' ? '🔴' : l.scoreLabel === 'Warm' ? '🟡' : '⚪';
+            const contactInfo = l.daysSinceContact !== null ? `${l.daysSinceContact}hr lalu` : 'baru';
+            lines.push(`• ${scoreEmoji} ${l.name} — ${l.score}pts _(${l.source}, ${contactInfo})_`);
+        });
+    }
+
     // Ads + WA Click insights
     if (data.adsInsights) {
         const ads = data.adsInsights;
@@ -289,8 +336,12 @@ export function formatStatusMessage(data: DailyReportData): string {
     lines.push(`📋 *Booking Bulan Ini:* ${data.metrics.newBookingsThisMonthCount}`);
     lines.push(`💰 *Revenue Bulan Ini:* ${formatRupiah(data.metrics.revenueThisMonth)}`);
     lines.push(`📅 *Jadwal Mendatang:* ${data.upcomingBookings.length} sesi`);
+    lines.push(`⏰ *Follow-Up Overdue:* ${data.overdueFollowUps.length}`);
 
-    // Overdue follow-ups section removed
+    if (data.outstandingPayments.length > 0) {
+        const totalOutstanding = data.outstandingPayments.reduce((sum, p) => sum + p.balance, 0);
+        lines.push(`💰 *Sisa Bayar:* ${formatRupiah(totalOutstanding)} (${data.outstandingPayments.length} booking)`);
+    }
 
     return lines.join('\n');
 }

@@ -76,10 +76,17 @@ export const leadCreateSchema = z.object({
   next_follow_up: optionalDateString,
 });
 
-export const leadUpdateSchema = leadCreateSchema.partial().refine(
-  (value) => Object.keys(value).length > 0,
-  'At least one field must be provided for update'
-);
+export const leadUpdateSchema = leadCreateSchema
+  .extend({
+    booking_id: optionalTrimmedString(100),
+    converted_at: optionalDateString,
+    last_contacted_at: optionalDateString,
+  })
+  .partial()
+  .refine(
+    (value) => Object.keys(value).length > 0,
+    'At least one field must be provided for update'
+  );
 
 export const leadStatusUpdateSchema = z.object({
   status: leadStatusSchema,

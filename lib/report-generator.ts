@@ -6,6 +6,7 @@ import { getTotalCashIn, getTotalCashOut } from '@/lib/repositories/finance';
 import { getWaClicksByDay, getWaClicksCount } from '@/lib/repositories/analytics';
 import { Booking, Payment } from '@/lib/types';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { calculateLeadScore } from '@/lib/lead-scoring';
 
 export interface AdsInsights {
     campaignName: string;
@@ -22,6 +23,27 @@ export interface AdsInsights {
     waClicksBySource: Array<{ source: string; clicks: number }>;
 }
 
+export interface OutstandingPayment {
+    bookingId: string;
+    customerName: string;
+    whatsapp: string;
+    category: string;
+    bookingDate: string;
+    totalPrice: number;
+    totalPaid: number;
+    balance: number;
+    daysSinceBooking: number;
+}
+
+export interface TopScoredLead {
+    name: string;
+    source: string;
+    status: string;
+    score: number;
+    scoreLabel: 'Hot' | 'Warm' | 'Cold';
+    daysSinceContact: number | null;
+}
+
 export interface DailyReportData {
     date: string;
     metrics: {
@@ -34,6 +56,8 @@ export interface DailyReportData {
     newLeads: any[];
     upcomingBookings: Booking[];
     overdueFollowUps: any[];
+    outstandingPayments: OutstandingPayment[];
+    topScoredLeads: TopScoredLead[];
     adsInsights?: AdsInsights | null;
 }
 
@@ -146,7 +170,71 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
         return dateA - dateB; // Oldest first
     });
 
-    // 6. Meta Ads + WA Click insights (non-blocking — failures result in null)
+    // 6. Outstanding Payments — active bookings with balance > 0
+    const todayMs = targetDate.getTime();
+    const outstandingPayments: Array<{
+        bookingId: string;
+        customerName: string;
+        whatsapp: string;
+        category: string;
+        bookingDate: string;
+        totalPrice: number;
+        totalPaid: number;
+        balance: number;
+        daysSinceBooking: number;
+    }> = allBookings
+        .filter(b => {
+            if (b.status !== 'Active') return false;
+            const totalPaid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
+            return b.finance.total_price - totalPaid > 0;
+        })
+        .map(b => {
+            const totalPaid = b.finance.payments.reduce((sum, p) => sum + p.amount, 0);
+            const bookingMs = new Date(b.booking.date).getTime();
+            const daysSinceBooking = Math.floor((todayMs - bookingMs) / (1000 * 60 * 60 * 24));
+            return {
+                bookingId: b.id,
+                customerName: b.customer.name,
+                whatsapp: b.customer.whatsapp,
+                category: b.customer.category || '-',
+                bookingDate: b.booking.date,
+                totalPrice: b.finance.total_price,
+                totalPaid,
+                balance: b.finance.total_price - totalPaid,
+                daysSinceBooking,
+            };
+        })
+        .sort((a, b) => b.daysSinceBooking - a.daysSinceBooking);
+
+    // 7. Top Scored Leads — leads with highest scores for quick action
+    const ELIGIBLE_STATUSES = new Set(['New', 'Contacted', 'Follow Up']);
+    const topScoredLeads: Array<{
+        name: string;
+        source: string;
+        status: string;
+        score: number;
+        scoreLabel: 'Hot' | 'Warm' | 'Cold';
+        daysSinceContact: number | null;
+    }> = allLeads
+        .filter(l => ELIGIBLE_STATUSES.has(l.status))
+        .map(l => {
+            const leadScore = calculateLeadScore(l, now);
+            const daysSinceContact = l.last_contacted_at
+                ? Math.floor((now.getTime() - new Date(l.last_contacted_at).getTime()) / (1000 * 60 * 60 * 24))
+                : null;
+            return {
+                name: l.name,
+                source: l.source || '-',
+                status: l.status,
+                score: leadScore.total,
+                scoreLabel: leadScore.label,
+                daysSinceContact,
+            };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+    // 8. Meta Ads + WA Click insights (non-blocking — failures result in null)
     let adsInsights: AdsInsights | null = null;
     try {
         const metaToken = process.env.META_ACCESS_TOKEN_CK;
@@ -212,6 +300,8 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
         newLeads,
         upcomingBookings,
         overdueFollowUps,
+        outstandingPayments,
+        topScoredLeads,
         adsInsights,
     };
 }
