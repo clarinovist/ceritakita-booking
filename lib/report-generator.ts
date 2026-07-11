@@ -1,6 +1,6 @@
 import { readData as readBookings } from '@/lib/repositories/bookings';
-import { getExpenses } from '@/lib/storage-expenses';
-import { getLeads } from '@/lib/leads';
+import { getExpenses } from '@/lib/repositories/expenses';
+import { getLeads } from '@/lib/repositories/leads';
 import { getSystemSettings } from '@/lib/repositories/settings';
 import { getTotalCashIn, getTotalCashOut } from '@/lib/repositories/finance';
 import { getWaClicksByDay, getWaClicksCount } from '@/lib/repositories/analytics';

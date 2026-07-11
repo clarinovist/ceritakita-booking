@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 // ✅ Ganti import lama dengan ini:
-import { getAdsLog } from '@/lib/storage-sqlite';
+import { getAdsLog } from '@/lib/repositories/analytics';
 import { logger, createErrorResponse } from '@/lib/logger';
 
 // Force dynamic rendering to handle search params properly

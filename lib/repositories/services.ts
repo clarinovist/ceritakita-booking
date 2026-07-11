@@ -1,3 +1,4 @@
+import 'server-only';
 import fs from 'fs/promises';
 import path from 'path';
 import lockfile from 'proper-lockfile';

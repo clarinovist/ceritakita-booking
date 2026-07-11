@@ -1,3 +1,4 @@
+import 'server-only';
 import { getDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { SystemSettings } from '@/lib/types/settings';

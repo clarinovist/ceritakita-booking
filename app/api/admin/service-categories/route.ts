@@ -1,13 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { randomUUID } from 'crypto';
+import { getAllServiceCategories, createServiceCategory } from '@/lib/repositories/cms';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
-        const db = getDb();
-        const categories = db.prepare('SELECT * FROM service_categories ORDER BY display_order ASC').all();
+        const categories = getAllServiceCategories();
         return NextResponse.json(categories);
     } catch (error) {
         console.error('Error fetching service categories:', error);
@@ -19,18 +17,8 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { name, slug, description, thumbnail_url, is_active } = body;
-        const db = getDb();
 
-        // Get max display_order
-        const maxOrder = db.prepare('SELECT MAX(display_order) as max FROM service_categories').get() as { max: number };
-        const nextOrder = (maxOrder.max || 0) + 1;
-
-        const stmt = db.prepare(`
-      INSERT INTO service_categories (id, name, slug, description, thumbnail_url, display_order, is_active)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-
-        stmt.run(randomUUID(), name, slug, description, thumbnail_url, nextOrder, is_active ? 1 : 0);
+        createServiceCategory({ name, slug, description, thumbnail_url, is_active });
 
         return NextResponse.json({ success: true });
     } catch (error) {

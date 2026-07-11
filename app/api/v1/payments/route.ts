@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgentAuth } from '@/lib/api-v1-auth';
-import { getDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { getRawPaymentsList } from '@/lib/repositories/bookings';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,39 +23,13 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10) || 50));
     const offset = (page - 1) * limit;
 
-    const db = getDb();
-    const conditions: string[] = [];
-    const params: (string | number)[] = [];
-
-    if (bookingId) {
-      conditions.push('pay.booking_id = ?');
-      params.push(bookingId);
-    }
-    if (startDate) {
-      conditions.push('pay.date >= ?');
-      params.push(startDate);
-    }
-    if (endDate) {
-      conditions.push('pay.date <= ?');
-      params.push(endDate);
-    }
-
-    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-
-    const countRow = db.prepare(`SELECT COUNT(*) as total FROM payments pay ${where}`).get(...params) as { total: number };
-
-    const payments = db.prepare(`
-      SELECT
-        pay.id, pay.booking_id, pay.date, pay.amount,
-        pay.note, pay.proof_filename, pay.proof_url,
-        pay.storage_backend, pay.created_at,
-        b.customer_name, b.customer_whatsapp
-      FROM payments pay
-      LEFT JOIN bookings b ON pay.booking_id = b.id
-      ${where}
-      ORDER BY pay.date DESC
-      LIMIT ? OFFSET ?
-    `).all(...params, limit, offset);
+    const { total, payments } = getRawPaymentsList({
+      bookingId,
+      startDate,
+      endDate,
+      limit,
+      offset
+    });
 
     logger.info('Agent API: payments listed', { count: payments.length, page, limit });
 
@@ -64,8 +38,8 @@ export async function GET(req: NextRequest) {
       pagination: {
         page,
         limit,
-        total: countRow.total,
-        totalPages: Math.ceil(countRow.total / limit),
+        total,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {

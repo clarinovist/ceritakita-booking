@@ -1,3 +1,4 @@
+import 'server-only';
 import { getDb } from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { normalizePhoneNumber } from '@/lib/whatsapp-template';
@@ -1261,4 +1262,132 @@ export function buildWhatsAppCustomerContext(conversationId: string) {
       linkedBooking
     }
   };
+}
+
+export interface WhatsappSummaryMetrics {
+  last24hIncoming: number;
+  last24hOutgoing: number;
+  openConversations: number;
+  resolvedConversations: number;
+  pendingHumanConversations: number;
+  responseTimes: Array<{ diff_minutes: number }>;
+}
+
+export function getWhatsappSummaryMetrics(): WhatsappSummaryMetrics {
+  const db = getDb();
+  
+  const last24hIncoming = db.prepare(`
+    SELECT COUNT(*) as count FROM whatsapp_messages
+    WHERE direction = 'incoming' AND wati_timestamp >= datetime('now', '-1 day')
+  `).get() as { count: number };
+
+  const last24hOutgoing = db.prepare(`
+    SELECT COUNT(*) as count FROM whatsapp_messages
+    WHERE direction = 'outgoing' AND wati_timestamp >= datetime('now', '-1 day')
+  `).get() as { count: number };
+
+  const openConversations = db.prepare(`
+    SELECT COUNT(*) as count FROM whatsapp_conversations WHERE status = 'open'
+  `).get() as { count: number };
+
+  const resolvedConversations = db.prepare(`
+    SELECT COUNT(*) as count FROM whatsapp_conversations WHERE status = 'resolved'
+  `).get() as { count: number };
+
+  const pendingHumanConversations = db.prepare(`
+    SELECT COUNT(*) as count FROM whatsapp_conversations WHERE status = 'pending_human'
+  `).get() as { count: number };
+
+  const responseTimes = db.prepare(`
+    WITH first_replies AS (
+      SELECT 
+        inc.id as inc_id,
+        inc.wati_timestamp as inc_time,
+        MIN(out.wati_timestamp) as reply_time
+      FROM whatsapp_messages inc
+      JOIN whatsapp_messages out ON inc.conversation_id = out.conversation_id
+        AND out.direction = 'outgoing'
+        AND out.wati_timestamp > inc.wati_timestamp
+      WHERE inc.direction = 'incoming'
+        AND inc.wati_timestamp >= datetime('now', '-7 days')
+      GROUP BY inc.id
+    )
+    SELECT 
+      (strftime('%s', reply_time) - strftime('%s', inc_time)) / 60.0 as diff_minutes
+    FROM first_replies
+    WHERE diff_minutes >= 0
+    ORDER BY diff_minutes ASC
+  `).all() as { diff_minutes: number }[];
+
+  return {
+    last24hIncoming: last24hIncoming?.count || 0,
+    last24hOutgoing: last24hOutgoing?.count || 0,
+    openConversations: openConversations?.count || 0,
+    resolvedConversations: resolvedConversations?.count || 0,
+    pendingHumanConversations: pendingHumanConversations?.count || 0,
+    responseTimes
+  };
+}
+
+export function getWhatsappConversationById(id: string): { id: string } | undefined {
+  const db = getDb();
+  return db.prepare('SELECT id FROM whatsapp_conversations WHERE id = ?').get(id) as { id: string } | undefined;
+}
+
+export function updateWhatsappConversation(id: string, data: { status?: string; assignedTo?: string }): void {
+  const db = getDb();
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (data.status !== undefined) {
+    updates.push('status = ?');
+    values.push(data.status);
+  }
+
+  if (data.assignedTo !== undefined) {
+    updates.push('assigned_to = ?');
+    values.push(data.assignedTo);
+  }
+
+  if (updates.length > 0) {
+    db.prepare(`
+      UPDATE whatsapp_conversations
+      SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(...values, id);
+  }
+}
+
+export interface WhatsappConversationDetail {
+  id: string;
+  contact_id: string;
+  last_inbound_at: string | null;
+  phone_number: string;
+}
+
+export function getWhatsappConversationDetail(id: string): WhatsappConversationDetail | undefined {
+  const db = getDb();
+  return db.prepare(`
+    SELECT c.id, c.contact_id, c.last_inbound_at, con.phone_number
+    FROM whatsapp_conversations c
+    JOIN whatsapp_contacts con ON con.id = c.contact_id
+    WHERE c.id = ?
+  `).get(id) as WhatsappConversationDetail | undefined;
+}
+
+export function getWhatsappConversationContactPhone(id: string): { contact_id: string; phone_number: string } | undefined {
+  const db = getDb();
+  return db.prepare(`
+    SELECT c.contact_id, con.phone_number
+    FROM whatsapp_conversations c
+    JOIN whatsapp_contacts con ON con.id = c.contact_id
+    WHERE c.id = ?
+  `).get(id) as { contact_id: string; phone_number: string } | undefined;
+}
+
+export function getMessageOutboxStatus(outboxId: string): { id: string; status: string; last_error: string | null } | undefined {
+  const db = getDb();
+  return db.prepare(`
+    SELECT id, status, last_error FROM message_outbox WHERE id = ?
+  `).get(outboxId) as { id: string; status: string; last_error: string | null } | undefined;
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgentAuth } from '@/lib/api-v1-auth';
-import { getDb } from '@/lib/db';
+import { getInitialCashBalance, getAllPaymentsForCashFlow, getAllExpensesForCashFlow } from '@/lib/repositories/finance';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -23,25 +23,14 @@ export async function GET(req: NextRequest) {
     const start = startDateParam ? new Date(startDateParam) : new Date(new Date().setMonth(end.getMonth() - 5));
     start.setDate(1);
 
-    const db = getDb();
-
     // Get initial cash balance from system_settings
-    const settingRow = db.prepare("SELECT value FROM system_settings WHERE key = 'initial_cash_balance'").get() as { value: string } | undefined;
-    const initialCashBalance = settingRow ? Number(settingRow.value) || 0 : 0;
+    const initialCashBalance = getInitialCashBalance();
 
     // Get all payments for cash-in
-    const payments = db.prepare(`
-      SELECT pay.amount, pay.date
-      FROM payments pay
-      ORDER BY pay.date ASC
-    `).all() as Array<{ amount: number; date: string }>;
+    const payments = getAllPaymentsForCashFlow();
 
     // Get all expenses for cash-out
-    const expenses = db.prepare(`
-      SELECT amount, date
-      FROM expenses
-      ORDER BY date ASC
-    `).all() as Array<{ amount: number; date: string }>;
+    const expenses = getAllExpensesForCashFlow();
 
     // Build monthly data
     const monthlyData: Record<string, { cashIn: number; cashOut: number }> = {};

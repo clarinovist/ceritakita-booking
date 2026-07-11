@@ -2,23 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { uploadToB2 } from '@/lib/b2-s3-client';
 import { randomUUID } from 'crypto';
-import { getDb } from '@/lib/db';
 import { AppError, logger, createErrorResponse, createValidationError } from '@/lib/logger';
 import { paymentSettingsSchema, validateImageUpload } from '@/lib/validation/api-routes';
-
-interface PaymentMethod {
-  id: string;
-  name: string;
-  account_name: string;
-  account_number: string;
-  qris_image_url: string | null;
-  updated_at: string;
-}
+import {
+  getActivePaymentMethod,
+  getFirstActivePaymentMethodId,
+  updatePaymentMethod,
+  insertPaymentMethod
+} from '@/lib/repositories/payment-settings';
 
 export async function GET() {
   try {
-    const db = getDb();
-    const method = db.prepare('SELECT * FROM payment_methods WHERE is_active = 1 ORDER BY display_order ASC LIMIT 1').get() as PaymentMethod | null;
+    const method = getActivePaymentMethod();
 
     if (method) {
       return NextResponse.json({
@@ -82,22 +77,26 @@ export async function POST(req: NextRequest) {
     }
 
     const { bank_name, account_name, account_number } = validationResult.data;
-    const db = getDb();
-    const methodId = randomUUID();
-    const existing = db.prepare('SELECT id FROM payment_methods WHERE is_active = 1 LIMIT 1').get() as { id: string } | null;
+    const existingId = getFirstActivePaymentMethodId();
 
-    if (existing) {
-      db.prepare(`
-        UPDATE payment_methods
-        SET name = ?, account_name = ?, account_number = ?,
-            qris_image_url = COALESCE(?, qris_image_url), updated_at = ?
-        WHERE id = ?
-      `).run(bank_name, account_name, account_number, qrisImageUrl, new Date().toISOString(), existing.id);
+    if (existingId) {
+      updatePaymentMethod(existingId, {
+        name: bank_name,
+        account_name,
+        account_number,
+        qris_image_url: qrisImageUrl
+      });
     } else {
-      db.prepare(`
-        INSERT INTO payment_methods (id, name, provider_name, account_name, account_number, qris_image_url, display_order, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(methodId, bank_name, bank_name, account_name, account_number, qrisImageUrl, 0, new Date().toISOString());
+      const methodId = randomUUID();
+      insertPaymentMethod({
+        id: methodId,
+        name: bank_name,
+        provider_name: bank_name,
+        account_name,
+        account_number,
+        qris_image_url: qrisImageUrl,
+        display_order: 0
+      });
     }
 
     return NextResponse.json({ success: true });

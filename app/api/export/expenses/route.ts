@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { getExpenses } from '@/lib/storage-expenses';
+import { getExpenses } from '@/lib/repositories/expenses';
 import { logger, createErrorResponse } from '@/lib/logger';
 import * as XLSX from 'xlsx';
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgentAuth } from '@/lib/api-v1-auth';
-import { getDb } from '@/lib/db';
+import { getRevenueForPnL, getExpensesForPnL } from '@/lib/repositories/finance';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -17,26 +17,10 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get('startDate');
-
-    const db = getDb();
+    const endDate = searchParams.get('endDate');
 
     // 1. Revenue (from bookings, excluding cancelled)
-    let bookingsQuery = 'SELECT customer_category, total_price FROM bookings WHERE status != ?';
-    const revenueParams: string[] = ['Cancelled'];
-
-    if (startDate) {
-      bookingsQuery += ' AND booking_date >= ?';
-      revenueParams.push(startDate);
-    }
-    if (searchParams.get('endDate')) {
-      bookingsQuery += ' AND booking_date <= ?';
-      revenueParams.push(searchParams.get('endDate')!);
-    }
-
-    const bookings = db.prepare(bookingsQuery).all(...revenueParams) as Array<{
-      customer_category: string;
-      total_price: number;
-    }>;
+    const bookings = getRevenueForPnL({ startDate, endDate });
 
     const revenueByCategory = new Map<string, number>();
     let totalRevenue = 0;
@@ -53,26 +37,7 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.amount - a.amount);
 
     // 2. Expenses
-    let expenseQuery = 'SELECT category, amount FROM expenses';
-    const expenseParams: string[] = [];
-    const expenseConditions: string[] = [];
-
-    if (startDate) {
-      expenseConditions.push('date >= ?');
-      expenseParams.push(startDate);
-    }
-    if (searchParams.get('endDate')) {
-      expenseConditions.push('date <= ?');
-      expenseParams.push(searchParams.get('endDate')!);
-    }
-    if (expenseConditions.length > 0) {
-      expenseQuery += ` WHERE ${expenseConditions.join(' AND ')}`;
-    }
-
-    const expenses = db.prepare(expenseQuery).all(...expenseParams) as Array<{
-      category: string;
-      amount: number;
-    }>;
+    const expenses = getExpensesForPnL({ startDate, endDate });
 
     const expensesByCategory = new Map<string, number>();
     let totalExpenses = 0;

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
     readData as readDataSQLite
-} from '@/lib/storage-sqlite';
+} from '@/lib/repositories/bookings';
 import { requireAuth } from '@/lib/auth';
 import { createBookingSchema } from '@/lib/validation';
 import { rateLimiters } from '@/lib/rate-limit';
@@ -62,7 +62,7 @@ export async function GET(req: NextRequest) {
 
         if (bookingId) {
             // Get single booking
-            const { readBooking } = await import('@/lib/storage-sqlite');
+            const { readBooking } = await import('@/lib/repositories/bookings');
             const booking = readBooking(bookingId);
 
             if (!booking) {
@@ -239,7 +239,7 @@ export async function DELETE(req: NextRequest) {
         }
 
         // Import deleteBooking function
-        const { deleteBooking, readBooking } = await import('@/lib/storage-sqlite');
+        const { deleteBooking, readBooking } = await import('@/lib/repositories/bookings');
 
         // Check if booking exists
         const existingBooking = readBooking(bookingId);

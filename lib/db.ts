@@ -16,17 +16,63 @@ export function getDb(): Database.Database {
     db = new Database(DB_PATH);
     db.pragma('journal_mode = WAL'); // Write-Ahead Logging for better concurrency
     db.pragma('foreign_keys = ON'); // Enable foreign key constraints
-    initializeSchema();
+    runMigrations(db);
+    ensureCategoriesExist(db);
+    deactivateNonVisualCategories(db);
   }
   return db;
 }
 
 /**
- * Initialize database schema
+ * Migration engine to apply schema changes incrementally using user_version
  */
-function initializeSchema() {
-  if (!db) return;
+function runMigrations(db: Database.Database) {
+  // Create migrations table if not exists
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      version INTEGER PRIMARY KEY,
+      migrated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 
+  const row = db.prepare('SELECT MAX(version) as current_version FROM schema_migrations').get() as { current_version: number | null };
+  let currentVersion = row?.current_version || 0;
+
+  const TARGET_VERSION = 1;
+
+  if (currentVersion >= TARGET_VERSION) {
+    return;
+  }
+
+  const migrationsList = [
+    {
+      version: 1,
+      name: 'baseline',
+      up: (database: Database.Database) => {
+        runBaselineSchema(database);
+      }
+    }
+  ];
+
+  const runTx = db.transaction(() => {
+    for (const migration of migrationsList) {
+      if (migration.version > currentVersion) {
+        console.log(`Applying database migration version ${migration.version}: ${migration.name}...`);
+        migration.up(db);
+        db.prepare('INSERT INTO schema_migrations (version) VALUES (?)').run(migration.version);
+        currentVersion = migration.version;
+        console.log(`Successfully migrated database to version ${migration.version}`);
+      }
+    }
+  });
+
+  runTx();
+}
+
+/**
+ * Baseline schema initialization
+ */
+function runBaselineSchema(db: Database.Database) {
   // Create photographers table
   db.exec(`
     CREATE TABLE IF NOT EXISTS photographers (
@@ -712,11 +758,6 @@ function initializeSchema() {
     insertMany();
     console.log('✅ Database seeded: Service Categories');
   }
-
-  // Ensure critical categories exist and are active (runs every startup, idempotent)
-  ensureCategoriesExist(db);
-  // Deactivate Pas Foto on homepage grid (utility service, not aspirational)
-  deactivateNonVisualCategories(db);
 
   // 3. Testimonials
   db.exec(`

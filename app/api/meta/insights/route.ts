@@ -1,7 +1,6 @@
-import { type AdsData } from '@/lib/storage-sqlite';
+import { type AdsData } from '@/lib/types';
 import { NextRequest, NextResponse } from 'next/server';
-// ✅ Ganti import lama dengan ini:
-import { saveAdsLog } from '@/lib/storage-sqlite';
+import { saveAdsLog } from '@/lib/repositories/analytics';
 import { logger } from '@/lib/logger';
 
 // Force dynamic rendering to handle search params properly

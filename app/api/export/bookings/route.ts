@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 // ✅ Ganti import lama dengan ini:
-import { readData } from '@/lib/storage-sqlite';
+import { readData } from '@/lib/repositories/bookings';
 import { requireAuth } from '@/lib/auth';
 import { logger, createErrorResponse } from '@/lib/logger';
 import * as XLSX from 'xlsx';

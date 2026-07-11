@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, requireAuth } from '@/lib/auth';
-import { getSystemSettings, updateSystemSettings } from '@/lib/storage-sqlite';
+import { getSystemSettings, updateSystemSettings } from '@/lib/repositories/settings';
 import { FILE_CONSTRAINTS } from '@/lib/constants';
 import { logger, createErrorResponse } from '@/lib/logger';
 

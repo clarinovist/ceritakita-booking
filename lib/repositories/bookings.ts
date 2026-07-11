@@ -1,6 +1,6 @@
 import 'server-only';
 import { getDb } from '@/lib/db';
-import { getBookingAddons, getBookingAddonsForBookings, setBookingAddons, type BookingAddon } from '@/lib/addons';
+import { getBookingAddons, getBookingAddonsForBookings, setBookingAddons, type BookingAddon } from '@/lib/repositories/addons';
 import { logger, AppError } from '@/lib/logger';
 import { normalizeBookingStatus, safeString, safeNumber, executeTransaction } from '@/lib/type-utils';
 import { Booking, Payment, RescheduleHistory } from '@/lib/types';
@@ -329,9 +329,8 @@ export function readBooking(id: string): Booking | null {
 }
 
 /**
- * Write/Update bookings
- * This replaces the entire booking (used for updates)
- * Uses transaction with rollback support
+ * @deprecated DANGER: This function deletes the entire bookings and payments tables 
+ * and rebuilds them. Do not use this in application code. Use createBooking or updateBooking instead.
  */
 export async function writeData(bookings: Booking[]): Promise<void> {
   const db = getDb();
@@ -786,4 +785,234 @@ export function checkSlotAvailability(
 
   const result = stmt.get(date, excludeBookingId || '') as { count: number };
   return result.count === 0;
+}
+
+export function getPaymentByProofFilename(filename: string): { proof_url?: string; storage_backend?: string } | undefined {
+  const db = getDb();
+  return db.prepare(`
+    SELECT proof_url, storage_backend
+    FROM payments
+    WHERE proof_filename = ?
+    LIMIT 1
+  `).get(filename) as { proof_url?: string; storage_backend?: string } | undefined;
+}
+
+export interface RawBookingDetail {
+  id: string;
+  created_at: string;
+  status: string;
+  customer_name: string;
+  customer_whatsapp: string;
+  customer_category: string;
+  customer_service_id: string | null;
+  booking_date: string;
+  booking_notes: string | null;
+  booking_location_link: string | null;
+  drive_link: string | null;
+  total_price: number;
+  service_base_price: number | null;
+  base_discount: number | null;
+  addons_total: number | null;
+  coupon_discount: number | null;
+  coupon_code: string | null;
+  photographer_id: string | null;
+  updated_at: string;
+  photographer_name: string | null;
+}
+
+export interface RawPayment {
+  id: number;
+  booking_id: string;
+  date: string;
+  amount: number;
+  note: string | null;
+  proof_filename: string | null;
+  proof_url: string | null;
+  storage_backend: string;
+  created_at: string;
+}
+
+export interface RawAddon {
+  addon_id: string;
+  quantity: number;
+  price_at_booking: number;
+  name: string;
+}
+
+export interface RawReschedule {
+  old_date: string;
+  new_date: string;
+  rescheduled_at: string;
+  reason: string | null;
+}
+
+export function getRawBookingDetail(id: string): RawBookingDetail | undefined {
+  const db = getDb();
+  return db.prepare(`
+    SELECT
+      b.*, p.name as photographer_name
+    FROM bookings b
+    LEFT JOIN photographers p ON b.photographer_id = p.id
+    WHERE b.id = ?
+  `).get(id) as RawBookingDetail | undefined;
+}
+
+export function getRawPaymentsForBooking(bookingId: string): RawPayment[] {
+  const db = getDb();
+  return db.prepare(
+    'SELECT id, booking_id, date, amount, note, proof_filename, proof_url, storage_backend, created_at FROM payments WHERE booking_id = ? ORDER BY date ASC'
+  ).all(bookingId) as RawPayment[];
+}
+
+export function getRawAddonsForBooking(bookingId: string): RawAddon[] {
+  const db = getDb();
+  return db.prepare(`
+    SELECT ba.addon_id, ba.quantity, ba.price_at_booking, a.name
+    FROM booking_addons ba
+    JOIN addons a ON ba.addon_id = a.id
+    WHERE ba.booking_id = ?
+  `).all(bookingId) as RawAddon[];
+}
+
+export function getRawReschedulesForBooking(bookingId: string): RawReschedule[] {
+  const db = getDb();
+  return db.prepare(
+    'SELECT old_date, new_date, rescheduled_at, reason FROM reschedule_history WHERE booking_id = ? ORDER BY rescheduled_at DESC'
+  ).all(bookingId) as RawReschedule[];
+}
+
+export function getRawBookingsList(filters: {
+  status?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  photographer?: string | null;
+  limit: number;
+  offset: number;
+}): { total: number; bookings: any[] } {
+  const db = getDb();
+  const conditions: string[] = [];
+  const params: (string | number)[] = [];
+
+  if (filters.status) {
+    conditions.push('b.status = ?');
+    params.push(filters.status);
+  }
+  if (filters.startDate) {
+    conditions.push('b.booking_date >= ?');
+    params.push(filters.startDate);
+  }
+  if (filters.endDate) {
+    conditions.push('b.booking_date <= ?');
+    params.push(filters.endDate);
+  }
+  if (filters.photographer) {
+    conditions.push('b.photographer_id = ?');
+    params.push(filters.photographer);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const countRow = db.prepare(`SELECT COUNT(*) as total FROM bookings b ${where}`).get(...params) as { total: number };
+
+  const bookings = db.prepare(`
+    SELECT
+      b.id, b.created_at, b.status,
+      b.customer_name, b.customer_whatsapp, b.customer_category,
+      b.booking_date, b.booking_notes,
+      b.total_price, b.service_base_price, b.base_discount,
+      b.addons_total, b.coupon_discount, b.coupon_code,
+      b.photographer_id, b.updated_at,
+      p.name as photographer_name
+    FROM bookings b
+    LEFT JOIN photographers p ON b.photographer_id = p.id
+    ${where}
+    ORDER BY b.booking_date DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, filters.limit, filters.offset);
+
+  return {
+    total: countRow.total,
+    bookings
+  };
+}
+
+export function getRawPaymentsList(filters: {
+  bookingId?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  limit: number;
+  offset: number;
+}): { total: number; payments: any[] } {
+  const db = getDb();
+  const conditions: string[] = [];
+  const params: (string | number)[] = [];
+
+  if (filters.bookingId) {
+    conditions.push('pay.booking_id = ?');
+    params.push(filters.bookingId);
+  }
+  if (filters.startDate) {
+    conditions.push('pay.date >= ?');
+    params.push(filters.startDate);
+  }
+  if (filters.endDate) {
+    conditions.push('pay.date <= ?');
+    params.push(filters.endDate);
+  }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const countRow = db.prepare(`SELECT COUNT(*) as total FROM payments pay ${where}`).get(...params) as { total: number };
+
+  const payments = db.prepare(`
+    SELECT
+      pay.id, pay.booking_id, pay.date, pay.amount,
+      pay.note, pay.proof_filename, pay.proof_url,
+      pay.storage_backend, pay.created_at,
+      b.customer_name, b.customer_whatsapp
+    FROM payments pay
+    LEFT JOIN bookings b ON pay.booking_id = b.id
+    ${where}
+    ORDER BY pay.date DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, filters.limit, filters.offset);
+
+  return {
+    total: countRow.total,
+    payments
+  };
+}
+
+export function createBasicBookingFromLead(data: {
+  id: string;
+  createdAt: string;
+  customerName: string;
+  customerWhatsapp: string;
+  bookingDate: string;
+  notes: string;
+}): void {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO bookings (
+      id, created_at, status,
+      customer_name, customer_whatsapp, customer_category,
+      booking_date, booking_notes,
+      total_price
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    data.id,
+    data.createdAt,
+    'Active',
+    data.customerName,
+    data.customerWhatsapp,
+    'General', // Default category
+    data.bookingDate,
+    data.notes,
+    0 // Default price
+  );
+}
+
+export function getRawBookingRowById(id: string): any {
+  const db = getDb();
+  return db.prepare('SELECT * FROM bookings WHERE id = ?').get(id);
 }

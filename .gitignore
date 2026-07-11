@@ -45,6 +45,7 @@ node_modules/
 /data/bookings.db
 /data/bookings.db-shm
 /data/bookings.db-wal
+/data/backups/
 
 # uploaded files
 /uploads/

@@ -1,16 +1,20 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
-import { HomepageData, HomepageContent, ServiceCategory, Testimonial, ValueProposition, PortfolioImage } from '@/types/homepage';
+import { HomepageData } from '@/types/homepage';
 import { createErrorResponse } from '@/lib/logger';
+import {
+  getAllHomepageContent,
+  getActiveServiceCategories,
+  getActiveTestimonials,
+  getActiveValuePropositions,
+  getActivePortfolioImagesWithService
+} from '@/lib/repositories/homepage';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export async function GET() {
   try {
-    const db = getDb();
-
-    const contentRows = db.prepare('SELECT * FROM homepage_content').all() as HomepageContent[];
+    const contentRows = getAllHomepageContent();
 
     const contentMap: Record<string, Record<string, string>> = {
       hero: {},
@@ -28,17 +32,10 @@ export async function GET() {
       }
     });
 
-    const categories = db.prepare('SELECT * FROM service_categories WHERE is_active = 1 ORDER BY display_order ASC').all() as ServiceCategory[];
-    const testimonials = db.prepare('SELECT * FROM testimonials WHERE is_active = 1 ORDER BY display_order ASC').all() as Testimonial[];
-    const valueProps = db.prepare('SELECT * FROM value_propositions WHERE is_active = 1 ORDER BY display_order ASC').all() as ValueProposition[];
-
-    const portfolioImages = db.prepare(`
-      SELECT p.id, p.image_url, p.service_id, s.name as service_name, p.display_order
-      FROM portfolio_images p
-      JOIN service_categories s ON p.service_id = s.id
-      WHERE p.is_active = 1 AND s.is_active = 1
-      ORDER BY p.display_order ASC
-    `).all() as (PortfolioImage & { service_name: string })[];
+    const categories = getActiveServiceCategories();
+    const testimonials = getActiveTestimonials();
+    const valueProps = getActiveValuePropositions();
+    const portfolioImages = getActivePortfolioImagesWithService();
 
     const responseData: HomepageData = {
       hero: contentMap.hero || {},

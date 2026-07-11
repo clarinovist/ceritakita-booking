@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllCoupons, createCoupon, updateCoupon, deleteCoupon, getCouponById, type Coupon } from '@/lib/coupons';
+import { getAllCoupons, createCoupon, updateCoupon, deleteCoupon, getCouponById, type Coupon } from '@/lib/repositories/coupons';
 import { requireAuth } from '@/lib/auth';
 import { logger, createErrorResponse } from '@/lib/logger';
 

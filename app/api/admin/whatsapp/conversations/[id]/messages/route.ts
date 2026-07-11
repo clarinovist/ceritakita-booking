@@ -6,10 +6,12 @@ import {
   getSessionWindow,
   queueOutbox,
   processOutboxQueue,
-  syncOutgoingStatusesForPhone
+  syncOutgoingStatusesForPhone,
+  getWhatsappConversationDetail,
+  getWhatsappConversationContactPhone,
+  getMessageOutboxStatus
 } from '@/lib/repositories/whatsapp';
 import { watzapSyncTemplates } from '@/lib/watzap';
-import { getDb } from '@/lib/db';
 import { AppError, createErrorResponse } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -37,13 +39,7 @@ export async function GET(request: NextRequest, { params }: Context) {
       throw new AppError('Forbidden. WhatsApp permission required.', 403, 'FORBIDDEN');
     }
 
-    const db = getDb();
-    const conv = db.prepare(`
-      SELECT c.id, c.contact_id, c.last_inbound_at, con.phone_number
-      FROM whatsapp_conversations c
-      JOIN whatsapp_contacts con ON con.id = c.contact_id
-      WHERE c.id = ?
-    `).get(params.id) as { id: string; contact_id: string; last_inbound_at: string | null; phone_number: string } | undefined;
+    const conv = getWhatsappConversationDetail(params.id);
 
     if (!conv) {
       throw new AppError('Conversation not found', 404, 'NOT_FOUND');
@@ -127,13 +123,7 @@ export async function POST(request: NextRequest, { params }: Context) {
       }
     }
 
-    const db = getDb();
-    const conv = db.prepare(`
-      SELECT c.contact_id, con.phone_number
-      FROM whatsapp_conversations c
-      JOIN whatsapp_contacts con ON con.id = c.contact_id
-      WHERE c.id = ?
-    `).get(params.id) as { contact_id: string; phone_number: string } | undefined;
+    const conv = getWhatsappConversationContactPhone(params.id);
 
     if (!conv) {
       throw new AppError('Conversation not found', 404, 'NOT_FOUND');
@@ -172,9 +162,7 @@ export async function POST(request: NextRequest, { params }: Context) {
 
     const messages = getMessages(params.id);
     const created = messages.find((m) => m.id === messageId) || null;
-    const outbox = db.prepare(`
-      SELECT id, status, last_error FROM message_outbox WHERE id = ?
-    `).get(outboxId) as { id: string; status: string; last_error: string | null } | undefined;
+    const outbox = getMessageOutboxStatus(outboxId);
 
     const sendFailed = outbox?.status === 'failed' || created?.status === 'failed';
 

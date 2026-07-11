@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { getExpense, updateExpense, deleteExpense } from '@/lib/storage-expenses';
+import { getExpense, updateExpense, deleteExpense } from '@/lib/repositories/expenses';
 import { expenseSchema } from '@/lib/validation';
 import { logger, createErrorResponse, createValidationError } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';

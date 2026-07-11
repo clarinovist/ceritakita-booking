@@ -1,6 +1,6 @@
 
-import { type Booking } from './storage-sqlite';
-import { type BookingAddon, getAddonById } from './addons';
+import { type Booking } from '@/lib/types';
+import { type BookingAddon, getAddonById } from '@/lib/repositories/addons';
 import { safeNumber } from './type-utils';
 
 export interface PriceAdjustmentInput {

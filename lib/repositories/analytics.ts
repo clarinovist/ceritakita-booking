@@ -1,3 +1,4 @@
+import 'server-only';
 import { getDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { AdsData } from '@/lib/types';
@@ -738,4 +739,51 @@ export function getWaClicksCount(since?: string, until?: string): number {
     logger.error('Failed to get WA click count', { error });
     return 0;
   }
+}
+
+export interface LeadAgentStat {
+  username: string | null;
+  assigned_to: string | null;
+  total: number;
+  won: number;
+}
+
+export function getLeadAnalyticsStats(startDateStr: string, endDateStr: string): {
+  totalLeads: number;
+  totalWon: number;
+  agentStats: LeadAgentStat[];
+} {
+  const db = getDb();
+
+  const totalLeadsResult = db.prepare(`
+    SELECT COUNT(*) as count 
+    FROM leads 
+    WHERE created_at >= ? AND created_at <= ?
+  `).get(startDateStr, endDateStr) as { count: number };
+
+  const totalWonResult = db.prepare(`
+    SELECT COUNT(*) as count 
+    FROM leads 
+    WHERE status IN ('Won', 'Converted') 
+    AND created_at >= ? AND created_at <= ?
+  `).get(startDateStr, endDateStr) as { count: number };
+
+  const agentStats = db.prepare(`
+    SELECT 
+      u.username,
+      l.assigned_to,
+      COUNT(*) as total,
+      SUM(CASE WHEN l.status IN ('Won', 'Converted') THEN 1 ELSE 0 END) as won
+    FROM leads l
+    LEFT JOIN users u ON l.assigned_to = u.id
+    WHERE l.created_at >= ? AND l.created_at <= ?
+    GROUP BY l.assigned_to
+    ORDER BY total DESC
+  `).all(startDateStr, endDateStr) as LeadAgentStat[];
+
+  return {
+    totalLeads: totalLeadsResult.count,
+    totalWon: totalWonResult.count,
+    agentStats
+  };
 }

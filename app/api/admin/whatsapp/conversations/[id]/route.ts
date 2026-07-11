@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { getDb } from '@/lib/db';
+import { getWhatsappConversationById, updateWhatsappConversation } from '@/lib/repositories/whatsapp';
 import { AppError, createErrorResponse } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
@@ -31,34 +31,13 @@ export async function PATCH(request: NextRequest, { params }: Context) {
     const body = await request.json();
     const { status, assignedTo } = body;
 
-    const db = getDb();
-
     // Check if conversation exists
-    const conv = db.prepare('SELECT id FROM whatsapp_conversations WHERE id = ?').get(params.id);
+    const conv = getWhatsappConversationById(params.id);
     if (!conv) {
       throw new AppError('Conversation not found', 404, 'NOT_FOUND');
     }
 
-    const updates: string[] = [];
-    const values: any[] = [];
-
-    if (status !== undefined) {
-      updates.push('status = ?');
-      values.push(status);
-    }
-
-    if (assignedTo !== undefined) {
-      updates.push('assigned_to = ?');
-      values.push(assignedTo);
-    }
-
-    if (updates.length > 0) {
-      db.prepare(`
-        UPDATE whatsapp_conversations
-        SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = ?
-      `).run(...values, params.id);
-    }
+    updateWhatsappConversation(params.id, { status, assignedTo });
 
     return NextResponse.json({ success: true });
   } catch (error) {

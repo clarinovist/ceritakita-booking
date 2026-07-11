@@ -6,7 +6,7 @@ import {
   getLeadsPaginated,
   createLead,
   getLeadStats
-} from '@/lib/leads';
+} from '@/lib/repositories/leads';
 import type { LeadFilters } from '@/lib/types';
 import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
 import { leadCreateSchema, leadFiltersSchema } from '@/lib/validation/leads';

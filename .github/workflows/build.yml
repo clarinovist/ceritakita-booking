@@ -69,17 +69,70 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
+          # Fail the job if remote script exits non-zero (e.g. health check)
+          command_timeout: 10m
           debug: true
           script: |
+            set -euo pipefail
             cd ${{ secrets.DEPLOY_PATH }}
+
             echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
             git fetch --all
             git reset --hard origin/main
-            mkdir -p data uploads
+
+            mkdir -p data uploads data/backups
             chown -R 1001:1001 data uploads
-            chmod 775 data uploads
+            chmod 775 data uploads data/backups
             find data uploads -type d -exec chmod 775 {} \;
             find data uploads -type f -exec chmod 664 {} \;
+
+            # --- Pre-deploy SQLite backup (host volume) ---
+            if [ -f data/bookings.db ]; then
+              TS="$(date +%Y%m%d%H%M%S)"
+              BACKUP_BASE="data/backups/bookings.${TS}"
+              cp -a data/bookings.db "${BACKUP_BASE}.db"
+              # Best-effort WAL companions for a more consistent snapshot
+              if [ -f data/bookings.db-wal ]; then
+                cp -a data/bookings.db-wal "${BACKUP_BASE}.db-wal" || true
+              fi
+              if [ -f data/bookings.db-shm ]; then
+                cp -a data/bookings.db-shm "${BACKUP_BASE}.db-shm" || true
+              fi
+              echo "✅ SQLite backup: ${BACKUP_BASE}.db"
+              # Retain last 10 .db backups (and drop matching companions)
+              ls -1t data/backups/bookings.*.db 2>/dev/null | tail -n +11 | while read -r old; do
+                rm -f "$old" "${old%.db}.db-wal" "${old%.db}.db-shm" || true
+              done
+            else
+              echo "ℹ️  No data/bookings.db yet — skip backup"
+            fi
+
             docker compose pull
-            docker compose up -d
+            docker compose up -d --remove-orphans
+
+            # --- Wait for app health (host port mapped 3001 → 3000) ---
+            HEALTH_URL="http://127.0.0.1:3001/api/health"
+            echo "Waiting for health at ${HEALTH_URL} ..."
+            OK=0
+            for i in $(seq 1 36); do
+              if RESP="$(curl -fsS --max-time 5 "${HEALTH_URL}" 2>/dev/null)" \
+                && echo "$RESP" | grep -q '"status":"healthy"'; then
+                echo "✅ Health check passed (attempt ${i}/36)"
+                echo "$RESP"
+                OK=1
+                break
+              fi
+              echo "… attempt ${i}/36 not healthy yet"
+              sleep 5
+            done
+
+            if [ "$OK" -ne 1 ]; then
+              echo "❌ Health check failed after deploy"
+              docker compose ps || true
+              docker compose logs --tail=100 app || true
+              exit 1
+            fi
+
+            docker compose ps
             docker image prune -f

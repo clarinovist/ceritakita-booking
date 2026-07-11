@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { uploadToB2 } from '@/lib/b2-s3-client';
 import { randomUUID } from 'crypto';
-import { getDb } from '@/lib/db';
+import {
+  getPortfolioImages,
+  addPortfolioImageWithAutoOrder,
+  getPortfolioImage,
+  deletePortfolioImage,
+  updatePortfolioImageActiveStatus,
+} from '@/lib/repositories/portfolio';
 import { AppError, logger, createErrorResponse, createValidationError } from '@/lib/logger';
 import {
   portfolioQuerySchema,
@@ -26,12 +32,7 @@ export async function GET(req: NextRequest) {
 
     serviceId = validationResult.data.serviceId;
 
-    const db = getDb();
-    const images = db.prepare(`
-      SELECT * FROM portfolio_images 
-      WHERE service_id = ? 
-      ORDER BY display_order ASC
-    `).all(serviceId);
+    const images = getPortfolioImages(serviceId);
 
     return NextResponse.json(images);
   } catch (error) {
@@ -72,12 +73,8 @@ export async function POST(req: NextRequest) {
     const key = `portfolio/${serviceId}/${randomUUID()}-${file!.name}`;
     const imageUrl = await uploadToB2(buffer, key, file!.type);
 
-    const db = getDb();
     const newId = randomUUID();
-    db.prepare(`
-      INSERT INTO portfolio_images (id, service_id, image_url, display_order, is_active)
-      VALUES (?, ?, ?, COALESCE((SELECT MAX(display_order) + 1 FROM portfolio_images WHERE service_id = ?), 0), 1)
-    `).run(newId, serviceId, imageUrl, serviceId);
+    addPortfolioImageWithAutoOrder(newId, serviceId, imageUrl);
 
     return NextResponse.json({
       id: newId,
@@ -105,14 +102,13 @@ export async function DELETE(req: NextRequest) {
     }
 
     id = validationResult.data.id;
-    const db = getDb();
-    const existing = db.prepare('SELECT image_url FROM portfolio_images WHERE id = ?').get(id) as { image_url: string } | undefined;
+    const existing = getPortfolioImage(id);
 
     if (!existing) {
       throw new AppError('Portfolio image not found', 404, 'NOT_FOUND');
     }
 
-    db.prepare('DELETE FROM portfolio_images WHERE id = ?').run(id);
+    deletePortfolioImage(id);
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -136,18 +132,13 @@ export async function PATCH(req: NextRequest) {
     }
 
     id = validationResult.data.id;
-    const db = getDb();
-    const existing = db.prepare('SELECT id FROM portfolio_images WHERE id = ?').get(id) as { id: string } | undefined;
+    const existing = getPortfolioImage(id);
 
     if (!existing) {
       throw new AppError('Portfolio image not found', 404, 'NOT_FOUND');
     }
 
-    db.prepare(`
-      UPDATE portfolio_images 
-      SET is_active = ? 
-      WHERE id = ?
-    `).run(validationResult.data.is_active ? 1 : 0, id);
+    updatePortfolioImageActiveStatus(id, !!validationResult.data.is_active);
 
     return NextResponse.json({ success: true });
   } catch (error) {

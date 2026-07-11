@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { bulkUpdateLeadStatus, bulkDeleteLeads } from '@/lib/leads';
+import { bulkUpdateLeadStatus, bulkDeleteLeads } from '@/lib/repositories/leads';
 import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
 import { leadBulkActionSchema } from '@/lib/validation/leads';
 

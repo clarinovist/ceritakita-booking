@@ -3,8 +3,7 @@
 import React from 'react';
 import Image from 'next/image';
 import { formatDateTime } from '@/utils/dateFormatter';
-import type { Booking, Addon, BookingUpdate } from '@/lib/types';
-import type { Photographer } from '@/lib/photographers';
+import type { Booking, Addon, BookingUpdate, Photographer } from '@/lib/types';
 
 interface BookingDetailModalProps {
   booking: Booking | null;

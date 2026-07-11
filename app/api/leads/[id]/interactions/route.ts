@@ -4,8 +4,8 @@ import { authOptions } from '@/lib/auth-config';
 import {
   createLeadInteraction,
   getLeadInteractions
-} from '@/lib/lead-interactions';
-import { getLeadById } from '@/lib/leads';
+} from '@/lib/repositories/lead-interactions';
+import { getLeadById } from '@/lib/repositories/leads';
 import { sendContactEvent } from '@/lib/meta-capi';
 import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
 import { leadIdSchema, leadInteractionSchema } from '@/lib/validation/leads';

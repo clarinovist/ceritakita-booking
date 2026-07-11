@@ -5,7 +5,7 @@ import {
   createAddon,
   updateAddon,
   deleteAddon
-} from '@/lib/addons';
+} from '@/lib/repositories/addons';
 import { type Addon } from '@/lib/types';
 import { requireAuth } from '@/lib/auth';
 import { logger, createErrorResponse } from '@/lib/logger';

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
-import { getExpenses } from '@/lib/storage-expenses';
-import { readData as readBookings } from '@/lib/storage-sqlite';
+import { getExpenses } from '@/lib/repositories/expenses';
+import { readData as readBookings } from '@/lib/repositories/bookings';
 import { getFreelancerJobs } from '@/lib/services/freelancer-service';
 import { createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';

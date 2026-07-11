@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { updateLeadStatus, getLeadById } from '@/lib/leads';
+import { updateLeadStatus, getLeadById } from '@/lib/repositories/leads';
 import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
 import { leadIdSchema, leadStatusUpdateSchema } from '@/lib/validation/leads';
 

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAgentAuth } from '@/lib/api-v1-auth';
-import { getDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import {
+  getRawBookingDetail,
+  getRawPaymentsForBooking,
+  getRawAddonsForBooking,
+  getRawReschedulesForBooking
+} from '@/lib/repositories/bookings';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,38 +23,22 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const db = getDb();
 
     // Get booking
-    const booking = db.prepare(`
-      SELECT
-        b.*, p.name as photographer_name
-      FROM bookings b
-      LEFT JOIN photographers p ON b.photographer_id = p.id
-      WHERE b.id = ?
-    `).get(id) as Record<string, unknown> | undefined;
+    const booking = getRawBookingDetail(id);
 
     if (!booking) {
       return NextResponse.json({ error: 'Booking not found' }, { status: 404 });
     }
 
     // Get payments
-    const payments = db.prepare(
-      'SELECT id, booking_id, date, amount, note, proof_filename, proof_url, storage_backend, created_at FROM payments WHERE booking_id = ? ORDER BY date ASC'
-    ).all(id);
+    const payments = getRawPaymentsForBooking(id);
 
     // Get addons
-    const addons = db.prepare(`
-      SELECT ba.addon_id, ba.quantity, ba.price_at_booking, a.name
-      FROM booking_addons ba
-      JOIN addons a ON ba.addon_id = a.id
-      WHERE ba.booking_id = ?
-    `).all(id);
+    const addons = getRawAddonsForBooking(id);
 
     // Get reschedule history
-    const reschedules = db.prepare(
-      'SELECT old_date, new_date, rescheduled_at, reason FROM reschedule_history WHERE booking_id = ? ORDER BY rescheduled_at DESC'
-    ).all(id);
+    const reschedules = getRawReschedulesForBooking(id);
 
     logger.info('Agent API: booking detail', { bookingId: id });
 

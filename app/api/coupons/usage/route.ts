@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllCouponUsage, getCouponUsageHistory } from '@/lib/coupons';
+import { getAllCouponUsage, getCouponUsageHistory } from '@/lib/repositories/coupons';
 import { requireAuth } from '@/lib/auth';
 import { logger, createErrorResponse } from '@/lib/logger';
 

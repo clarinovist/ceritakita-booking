@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateCoupon } from '@/lib/coupons';
+import { validateCoupon } from '@/lib/repositories/coupons';
 import { logger, createErrorResponse } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {

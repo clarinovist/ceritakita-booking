@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-config';
-import { getLeadById, convertLeadToBooking } from '@/lib/leads';
-import { getDb } from '@/lib/db';
+import { getLeadById, convertLeadToBooking } from '@/lib/repositories/leads';
+import { createBasicBookingFromLead, getRawBookingRowById } from '@/lib/repositories/bookings';
 import { randomUUID } from 'crypto';
 
 interface Context {
@@ -48,21 +48,8 @@ export async function POST(request: NextRequest, { params }: Context) {
       );
     }
 
-    // Create a basic booking from lead data
-    const db = getDb();
     const bookingId = randomUUID();
     const now = new Date().toISOString();
-
-    // If no service_id provided, we need to handle this case
-    // For now, we'll create a placeholder booking that needs service selection
-    const stmt = db.prepare(`
-      INSERT INTO bookings (
-        id, created_at, status,
-        customer_name, customer_whatsapp, customer_category,
-        booking_date, booking_notes,
-        total_price
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
 
     // Set booking date to next follow-up if available, otherwise 7 days from now
     let bookingDate = lead.next_follow_up;
@@ -72,23 +59,17 @@ export async function POST(request: NextRequest, { params }: Context) {
       bookingDate = nextWeek.toISOString().split('T')[0] + 'T10:00';
     }
 
-    stmt.run(
-      bookingId,
-      now,
-      'Active',
-      lead.name,
-      lead.whatsapp,
-      'General', // Default category
+    createBasicBookingFromLead({
+      id: bookingId,
+      createdAt: now,
+      customerName: lead.name,
+      customerWhatsapp: lead.whatsapp,
       bookingDate,
-      `Converted from lead: ${lead.id}${lead.notes ? '\n' + lead.notes : ''}`,
-      0 // Default price
-    );
+      notes: `Converted from lead: ${lead.id}${lead.notes ? '\n' + lead.notes : ''}`
+    });
 
     // Update lead to mark as converted
     await convertLeadToBooking(id, bookingId);
-
-    // Fetch the created booking
-    const bookingStmt = db.prepare('SELECT * FROM bookings WHERE id = ?');
 
     interface BookingRow {
       id: string;
@@ -110,7 +91,7 @@ export async function POST(request: NextRequest, { params }: Context) {
       photographer_id?: string;
     }
 
-    const bookingRow = bookingStmt.get(bookingId) as BookingRow;
+    const bookingRow = getRawBookingRowById(bookingId) as BookingRow;
 
     // Transform to expected format
     const booking = {

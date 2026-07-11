@@ -15,7 +15,7 @@ Module.prototype.require = function(id) {
 };
 
 async function benchmark() {
-  const { getBookingsByStatus } = await import('../lib/storage-sqlite');
+  const { getBookingsByStatus } = await import('../lib/repositories/bookings');
   const { getDb } = await import('../lib/db');
 
   const db = getDb();

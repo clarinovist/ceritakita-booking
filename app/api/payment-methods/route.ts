@@ -7,7 +7,7 @@ import {
   updatePaymentMethod,
   deletePaymentMethod,
   seedDefaultPaymentMethods
-} from '@/lib/payment-methods';
+} from '@/lib/repositories/payment-methods';
 import { logger, createErrorResponse } from '@/lib/logger';
 import { rateLimiters } from '@/lib/rate-limit';
 

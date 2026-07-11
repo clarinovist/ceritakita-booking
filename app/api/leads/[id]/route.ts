@@ -5,7 +5,7 @@ import {
   getLeadById,
   updateLead,
   deleteLead
-} from '@/lib/leads';
+} from '@/lib/repositories/leads';
 import { AppError, createErrorResponse, createValidationError } from '@/lib/logger';
 import { leadIdSchema, leadUpdateSchema } from '@/lib/validation/leads';
 

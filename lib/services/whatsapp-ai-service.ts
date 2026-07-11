@@ -482,3 +482,82 @@ Kakak rencana foto untuk berapa orang dan kapan? Biar kami bantu cek ketersediaa
     return generateDeterministicFallback(lastMsgText);
   }
 }
+
+/**
+ * Generates an AI draft reply and applies pricing & safety guardrails
+ */
+export async function generateAndEvaluateDraft(
+  customerContext: any
+): Promise<{
+  completion: WhatsAppAIInsight;
+  canAutoSend: boolean;
+  guardrailNotes: string;
+  latestMessageId: string | null;
+}> {
+  const latestMessage = customerContext.messageHistory.slice(-1)[0] || null;
+  const latestMessageId = latestMessage ? latestMessage.id : null;
+
+  // 1. Call AI Completion
+  let completion = await getAICompletion(customerContext, 'draft');
+
+  // 2. Programmatic anti-hallucination guardrail for pricing replies
+  const hasCurrencyPattern = /\brp\s?[\d.]+/i.test(completion.draft_reply || '');
+  const hasPackageTierPattern = /(paket\s+(basic|medium|premium|silver|gold|platinum))/i.test(completion.draft_reply || '');
+  const hasAuthoritativePricingContext = (customerContext.bookings || []).some((b: any) => Number(b.totalPrice || 0) > 0);
+
+  if (
+    !hasAuthoritativePricingContext &&
+    (hasCurrencyPattern || hasPackageTierPattern)
+  ) {
+    completion = {
+      ...completion,
+      sentiment: 'neutral',
+      urgency: 'normal',
+      risk_level: 'medium',
+      needs_human: true,
+      confidence: Math.min(completion.confidence ?? 0.7, 0.7),
+      summary: 'Permintaan harga terdeteksi. Draft AI mengandung angka harga tanpa sumber pricing terverifikasi.',
+      suggested_next_action: 'Tim CS perlu kirim pricelist resmi dari sumber internal sebelum menyebut nominal.',
+      draft_reply: 'Halo Kak, terima kasih sudah menghubungi CeritaKita 🙏 Untuk info paket dan harga terbaru, kami bantu cekkan pricelist resmi sesuai kebutuhan Kakak ya. Boleh info dulu sesi yang dicari (Prewedding/Wedding/Wisuda/Family) serta rencana tanggalnya?',
+      guardrail_notes: `${completion.guardrail_notes || ''} [Programmatic Guardrail: Potential fabricated pricing removed.]`.trim()
+    };
+  }
+
+  // 3. Hard guardrails & safety evaluation before saving draft
+  const cfg = getAIRuntimeConfig();
+  const cfgAllowedIntents = (cfg.allowedAutoIntents || 'schedule_check,booking_request,testimonial,unknown')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  let canAutoSend =
+    cfg.autoSendEnabled &&
+    !completion.needs_human &&
+    completion.risk_level === 'low' &&
+    completion.confidence >= cfg.confidenceAutoSendThreshold &&
+    cfgAllowedIntents.includes(completion.intent);
+
+  let guardrailNotes = completion.guardrail_notes || 'Draft generated successfully.';
+
+  // Extra programmatic safety checks on draft text
+  const textToCheck = (completion.draft_reply || '').toLowerCase();
+  const blockedKeywords = ['transfer', 'bukti bayar', 'invoice', 'refund', 'cancel', 'batal', 'reschedule', 'ubah jadwal', 'komplain', 'salah', 'kecewa', 'marah'];
+  const hasBlockedKeyword = blockedKeywords.some(kw => textToCheck.includes(kw));
+
+  if (hasBlockedKeyword) {
+    canAutoSend = false;
+    guardrailNotes += ' [Programmatic Guardrail: Sensitive keywords detected in draft text. CS review required.]';
+  }
+
+  if (completion.needs_human) {
+    canAutoSend = false;
+    guardrailNotes += ' [Needs Human Flagged by AI. CS review required.]';
+  }
+
+  return {
+    completion,
+    canAutoSend,
+    guardrailNotes,
+    latestMessageId
+  };
+}
