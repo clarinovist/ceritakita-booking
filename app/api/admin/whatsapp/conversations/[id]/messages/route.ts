@@ -82,8 +82,8 @@ export async function POST(request: NextRequest, { params }: Context) {
       throw new AppError('Conversation not found', 404, 'NOT_FOUND');
     }
 
-    // Queue message in outbox
-    const outboxId = queueOutbox(
+    // Queue message in outbox + create local outgoing bubble immediately
+    const { outboxId, messageId } = queueOutbox(
       params.id,
       conv.contact_id,
       mode === 'session_text' ? text.trim() : '[template]',
@@ -97,12 +97,23 @@ export async function POST(request: NextRequest, { params }: Context) {
         : undefined
     );
 
-    // Immediately trigger outbox processing asynchronously (do not await, to return quick response)
-    processOutboxQueue().catch((err) => {
+    // Await dispatch so provider status is reflected before UI reloads
+    try {
+      await processOutboxQueue();
+    } catch (err) {
       console.error('Outbox process error after manual send:', err);
-    });
+    }
 
-    return NextResponse.json({ success: true, outboxId });
+    const messages = getMessages(params.id);
+    const created = messages.find((m) => m.id === messageId) || null;
+
+    return NextResponse.json({
+      success: true,
+      outboxId,
+      messageId,
+      message: created,
+      messages
+    });
   } catch (error) {
     const { error: errorResponse, statusCode } = createErrorResponse(error as Error);
     return NextResponse.json(errorResponse, { status: statusCode });

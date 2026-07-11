@@ -889,7 +889,7 @@ function initializeSchema() {
       id TEXT PRIMARY KEY,
       conversation_id TEXT NOT NULL,
       contact_id TEXT NOT NULL,
-      channel TEXT NOT NULL DEFAULT 'wati',
+      channel TEXT NOT NULL DEFAULT 'watzap',
       send_type TEXT NOT NULL DEFAULT 'session_text',
       payload TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'sending', 'sent', 'failed', 'cancelled')),

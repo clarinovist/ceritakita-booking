@@ -447,6 +447,23 @@ export function WhatsAppWorkspace() {
     const textToSend = replyText.trim();
     setReplyText(''); // Clear input instantly for better UX
 
+    // Optimistic bubble so CS always sees their own reply immediately
+    const tempId = `temp-out-${Date.now()}`;
+    const optimistic: Message = {
+      id: tempId,
+      conversation_id: selectedConversation.id,
+      contact_id: selectedConversation.contact_id,
+      direction: 'outgoing',
+      sender_type: 'cs',
+      message_type: 'text',
+      text: textToSend,
+      media_url: null,
+      media_mime_type: null,
+      status: 'sent',
+      wati_timestamp: new Date().toISOString()
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
     try {
       const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/messages`, {
         method: 'POST',
@@ -455,15 +472,28 @@ export function WhatsAppWorkspace() {
       });
 
       if (res.ok) {
-        // Reload messages to show sent message
-        await fetchMessages(selectedConversation.id);
+        const data = await res.json().catch(() => null);
+        // Prefer authoritative list from API (includes persisted outgoing bubble)
+        if (Array.isArray(data?.messages)) {
+          setMessages(data.messages);
+        } else if (data?.message) {
+          setMessages((prev) => {
+            const withoutTemp = prev.filter((m) => m.id !== tempId);
+            if (withoutTemp.some((m) => m.id === data.message.id)) return withoutTemp;
+            return [...withoutTemp, data.message as Message];
+          });
+        } else {
+          await fetchMessages(selectedConversation.id);
+        }
         fetchConversations(false);
       } else {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
         showToast('Gagal mengirim pesan. Silakan coba lagi.', 'error');
         setReplyText(textToSend); // Restore text
       }
     } catch (err) {
       console.error('Error sending message:', err);
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       showToast('Gagal mengirim pesan.', 'error');
       setReplyText(textToSend);
     } finally {

@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('hub.verify_token');
   const challenge = req.nextUrl.searchParams.get('hub.challenge');
 
-  const expectedToken = process.env.WATZAP_VERIFY_TOKEN || process.env.WATI_WEBHOOK_SECRET || '';
+  const expectedToken = process.env.WATZAP_VERIFY_TOKEN || '';
 
   if (mode === 'subscribe' && token === expectedToken && challenge) {
     console.log('[watzap] Webhook verification challenge accepted');

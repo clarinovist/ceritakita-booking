@@ -38,19 +38,23 @@ export async function POST(request: NextRequest, { params }: Context) {
     const { mode, note } = body;
     const followUpMode = mode || 'copied';
 
-    if (!['copied', 'sent_wati', 'manual'].includes(followUpMode)) {
+    // Normalize legacy mode name from older clients
+    const normalizedMode =
+      followUpMode === 'sent_wati' ? 'sent_watzap' : followUpMode;
+
+    if (!['copied', 'sent_watzap', 'manual'].includes(normalizedMode)) {
       throw new AppError('Invalid follow-up mode', 400, 'BAD_REQUEST');
     }
 
     // 2. Perform mark sent
-    markFollowUpSent(params.id, followUpMode, note || '');
+    markFollowUpSent(params.id, normalizedMode as 'copied' | 'sent_watzap' | 'manual', note || '');
 
     // 3. Audit Log
     const adminIdentifier = user.username || user.email || user.name || 'unknown';
-    logger.info(`[AUDIT] WhatsApp follow-up marked sent by admin: ${adminIdentifier}. Conv: ${params.id}, Mode: ${followUpMode}`, {
+    logger.info(`[AUDIT] WhatsApp follow-up marked sent by admin: ${adminIdentifier}. Conv: ${params.id}, Mode: ${normalizedMode}`, {
       action: 'MARK_FOLLOW_UP_SENT',
       conversationId: params.id,
-      mode: followUpMode,
+      mode: normalizedMode,
       admin: adminIdentifier
     });
 

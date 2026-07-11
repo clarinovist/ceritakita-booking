@@ -15,7 +15,7 @@ import {
 import { extractWatzapInboundEvents } from '@/lib/watzap';
 
 export interface WebhookOptions {
-  /** Source label for logging (e.g. 'wati', 'watzap') */
+  /** Source label for logging (e.g. 'watzap') */
   source: string;
   /**
    * Optional auth verification.
@@ -27,8 +27,7 @@ export interface WebhookOptions {
 
 /**
  * Shared WhatsApp webhook handler.
- * Ingests incoming messages or status updates from any provider
- * (WATI, Watzap, or standard Meta WABA webhook).
+ * Ingests incoming messages or status updates from Watzap / Meta WABA webhooks.
  */
 export async function handleWhatsAppWebhook(req: NextRequest, options: WebhookOptions) {
   const { source, verifyAuth } = options;
@@ -169,16 +168,4 @@ export async function handleWhatsAppWebhook(req: NextRequest, options: WebhookOp
       { status: 500 }
     );
   }
-}
-
-/**
- * Auth verifier for WATI-style webhooks (uses x-wati-webhook-secret header or ?secret= query param).
- */
-export function watiAuthVerifier(req: NextRequest): { allowed: boolean; reason?: string } {
-  const secretHeader = req.headers.get('x-wati-webhook-secret') || req.nextUrl.searchParams.get('secret');
-  const expectedSecret = process.env.WATI_WEBHOOK_SECRET;
-  if (expectedSecret && secretHeader !== expectedSecret) {
-    return { allowed: false, reason: 'secret mismatch' };
-  }
-  return { allowed: true };
 }

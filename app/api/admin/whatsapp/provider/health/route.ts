@@ -30,13 +30,13 @@ export async function GET(_request: NextRequest) {
     }
     ensureAllowed(session.user as any);
 
-    const provider = (process.env.WHATSAPP_PROVIDER || (process.env.WATZAP_API_KEY ? 'watzap' : 'wati')).toLowerCase();
-
-    const result = isWatzapConfigured() ? await watzapHealthCheck() : null;
+    const provider = 'watzap';
+    const watzapConfigured = isWatzapConfigured();
+    const result = watzapConfigured ? await watzapHealthCheck() : null;
 
     return NextResponse.json({
       provider,
-      watzapConfigured: isWatzapConfigured(),
+      watzapConfigured,
       watzap: result
     });
   } catch (error) {

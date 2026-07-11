@@ -15,9 +15,9 @@ Module.prototype.require = function(id) {
 import { NextRequest } from 'next/server';
 
 async function testIngestion() {
-  console.log('--- Testing WATI Webhook Ingestion API Route ---');
+  console.log('--- Testing Watzap Webhook Ingestion API Route ---');
   try {
-    const { POST } = await import('../app/api/wati/webhook/route');
+    const { POST } = await import('../app/api/watzap/webhook/route');
     const { getConversations, getMessages } = await import('../lib/repositories/whatsapp');
 
     const { getDb } = await import('../lib/db');
@@ -40,7 +40,7 @@ async function testIngestion() {
       // conversation doesn't exist yet, which is fine
     }
 
-    // 1. Mock a standard incoming message payload from WATI (unique ID)
+    // Mock a standard incoming message payload (provider-agnostic / Watzap-compatible)
     const testId = 'wamid.' + Date.now();
     const mockPayload = {
       id: testId,
@@ -50,13 +50,12 @@ async function testIngestion() {
       text: 'Halo CeritaKita Studio! Saya tertarik dengan paket wisuda untuk bulan depan.',
       timestamp: Math.floor(Date.now() / 1000),
       owner: false,
-      contactId: 'wati-contact-nugroho-1',
-      conversationId: 'wati-conv-nugroho-1'
+      contactId: 'watzap-contact-nugroho-1',
+      conversationId: 'watzap-conv-nugroho-1'
     };
 
     console.log('Ingesting mock payload...');
-    // Create a mock NextRequest
-    const req = new NextRequest('http://localhost:3000/api/wati/webhook', {
+    const req = new NextRequest('http://localhost:3000/api/watzap/webhook', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -64,7 +63,6 @@ async function testIngestion() {
       body: JSON.stringify(mockPayload)
     });
 
-    // Call POST handler directly
     const response = await POST(req);
     console.log('Response Status:', response.status);
     const body = await response.json();
@@ -73,7 +71,6 @@ async function testIngestion() {
     if (response.status === 200 && body.success) {
       console.log('✅ Webhook route returned success status');
 
-      // Verify database state
       const convs = getConversations({ search: '628127780285' });
       console.log('Found Conversations:', convs.total);
       if (convs.total > 0 && convs.conversations[0]) {

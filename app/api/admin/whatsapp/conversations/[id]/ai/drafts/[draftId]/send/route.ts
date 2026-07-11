@@ -63,8 +63,8 @@ export async function POST(request: NextRequest, { params }: Context) {
     const isEdited = finalDraftText.trim() !== draft.draft_text.trim();
     const finalStatus = 'sent';
 
-    // 2. Queue in outbox
-    const outboxId = queueOutbox(
+    // 2. Queue in outbox + create local outgoing bubble
+    const { outboxId, messageId } = queueOutbox(
       conversationId,
       conv.contact_id,
       finalDraftText.trim(),
@@ -83,18 +83,21 @@ export async function POST(request: NextRequest, { params }: Context) {
       conversationId,
       eventType: isEdited ? 'edit' : 'approve',
       inputSnapshot: JSON.stringify({ draftId, originalText: draft.draft_text }),
-      outputSnapshot: JSON.stringify({ outboxId, finalStatus, finalDraftText }),
+      outputSnapshot: JSON.stringify({ outboxId, messageId, finalStatus, finalDraftText }),
       actor: user.username || 'admin'
     });
 
-    // 5. Trigger outbox queue processor asynchronously
-    processOutboxQueue().catch((err) => {
+    // 5. Dispatch outbox so message is actually sent
+    try {
+      await processOutboxQueue();
+    } catch (err) {
       console.error('[AI Draft Send] Outbox process error:', err);
-    });
+    }
 
     return NextResponse.json({
       success: true,
-      outboxId
+      outboxId,
+      messageId
     });
 
   } catch (error) {

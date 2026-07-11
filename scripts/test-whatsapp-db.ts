@@ -34,12 +34,12 @@ async function testDatabase() {
 
     // 2. Test upsertContact
     console.log('\nTesting Contact Upsert...');
-    const contactId = upsertContact('6281234567890', 'Test Customer', 'wati-cont-123');
+    const contactId = upsertContact('6281234567890', 'Test Customer', 'watzap-cont-123');
     console.log('✅ Contact upserted. ID:', contactId);
 
     // 3. Test upsertConversation
     console.log('\nTesting Conversation Upsert...');
-    const conversationId = upsertConversation(contactId, 'wati-conv-123', 'open');
+    const conversationId = upsertConversation(contactId, 'watzap-conv-123', 'open');
     console.log('✅ Conversation upserted. ID:', conversationId);
 
     // 4. Test insertMessageIdempotent (incoming)
@@ -69,8 +69,8 @@ async function testDatabase() {
 
     // 5. Test queueOutbox
     console.log('\nTesting Outbox queue...');
-    const outboxId = queueOutbox(conversationId, contactId, 'Halo! Silakan lihat paket kami.', 'session_text');
-    console.log('✅ Outbox message queued. ID:', outboxId);
+    const queued = queueOutbox(conversationId, contactId, 'Halo! Silakan lihat paket kami.', 'session_text');
+    console.log('✅ Outbox message queued. ID:', queued.outboxId, 'messageId:', queued.messageId);
 
     // 5.5 Test CRM features
     console.log('\nTesting CRM updateConversationCrm...');
