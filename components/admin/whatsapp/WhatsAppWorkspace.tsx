@@ -40,7 +40,35 @@ interface Message {
   media_url: string | null;
   media_mime_type: string | null;
   status: 'sent' | 'delivered' | 'read' | 'failed' | null;
+  status_error?: string | null;
   wati_timestamp: string;
+}
+
+interface SessionWindow {
+  isOpen: boolean;
+  lastInboundAt: string | null;
+  expiresAt: string | null;
+  hoursRemaining: number | null;
+  windowHours: number;
+  reason: 'open' | 'expired' | 'no_inbound';
+}
+
+interface WaTemplate {
+  id: string | null;
+  name: string | null;
+  language: string | null;
+  category: string | null;
+  status: string | null;
+}
+
+function parseMessagesPayload(data: any): { messages: Message[]; session: SessionWindow | null } {
+  if (Array.isArray(data)) {
+    return { messages: data, session: null };
+  }
+  return {
+    messages: Array.isArray(data?.messages) ? data.messages : [],
+    session: data?.session || null
+  };
 }
 
 interface Booking {
@@ -123,6 +151,12 @@ export function WhatsAppWorkspace() {
   const [isSending, setIsSending] = useState(false);
   const [isLoadingConvs, setIsLoadingConvs] = useState(false);
   const [isLoadingMsgs, setIsLoadingMsgs] = useState(false);
+  const [sessionWindow, setSessionWindow] = useState<SessionWindow | null>(null);
+  const [sendMode, setSendMode] = useState<'session_text' | 'template'>('session_text');
+  const [templates, setTemplates] = useState<WaTemplate[]>([]);
+  const [selectedTemplateName, setSelectedTemplateName] = useState('');
+  const [selectedTemplateLang, setSelectedTemplateLang] = useState('id');
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
 
   // AI Brain & Draft suggestion states
   const [aiInsight, setAiInsight] = useState<any | null>(null);
@@ -273,13 +307,22 @@ export function WhatsAppWorkspace() {
   };
 
   // Fetch Messages for selected conversation
-  const fetchMessages = useCallback(async (convId: string) => {
+  const fetchMessages = useCallback(async (convId: string, opts?: { syncStatus?: boolean }) => {
     setIsLoadingMsgs(true);
     try {
-      const res = await fetch(`/api/admin/whatsapp/conversations/${convId}/messages`);
+      const qs = opts?.syncStatus ? '?sync_status=1' : '';
+      const res = await fetch(`/api/admin/whatsapp/conversations/${convId}/messages${qs}`);
       if (res.ok) {
         const data = await res.json();
-        setMessages(data || []);
+        const parsed = parseMessagesPayload(data);
+        setMessages(parsed.messages);
+        if (parsed.session) {
+          setSessionWindow(parsed.session);
+          // Auto-switch composer when session is closed
+          if (!parsed.session.isOpen) {
+            setSendMode('template');
+          }
+        }
       }
     } catch (err) {
       console.error('Failed to fetch messages:', err);
@@ -287,6 +330,27 @@ export function WhatsAppWorkspace() {
       setIsLoadingMsgs(false);
     }
   }, []);
+
+  const fetchTemplates = useCallback(async (syncFirst = false) => {
+    setIsLoadingTemplates(true);
+    try {
+      const qs = syncFirst ? '?sync_first=true' : '';
+      const res = await fetch(`/api/admin/whatsapp/templates${qs}`);
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data?.templates) ? data.templates : [];
+        setTemplates(list);
+        if (list.length > 0 && !selectedTemplateName) {
+          setSelectedTemplateName(list[0].name || '');
+          setSelectedTemplateLang(list[0].language || 'id');
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch templates:', err);
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  }, [selectedTemplateName]);
 
   // Fetch AI Insight (fast GET)
   const fetchAIInsight = useCallback(async (convId: string) => {
@@ -397,13 +461,16 @@ export function WhatsAppWorkspace() {
     const interval = setInterval(() => {
       fetchConversations(false);
       if (selectedConversation) {
-        // Poll messages silently
-        fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/messages`)
+        // Poll messages silently (with occasional status sync)
+        fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/messages?sync_status=1`)
           .then(res => {
             if (res.ok) return res.json();
           })
           .then(data => {
-            if (data) setMessages(data);
+            if (!data) return;
+            const parsed = parseMessagesPayload(data);
+            setMessages(parsed.messages);
+            if (parsed.session) setSessionWindow(parsed.session);
           })
           .catch(err => console.error('Polled messages error:', err));
       }
@@ -416,9 +483,12 @@ export function WhatsAppWorkspace() {
   useEffect(() => {
     setAiDraft(null);
     setAiInsight(null);
+    setSessionWindow(null);
+    setSendMode('session_text');
     if (selectedConversation) {
-      fetchMessages(selectedConversation.id);
+      fetchMessages(selectedConversation.id, { syncStatus: true });
       fetchAIInsight(selectedConversation.id);
+      fetchTemplates(false);
 
       // Filter bookings belonging to this customer
       const phoneDigits = selectedConversation.phone_number.replace(/\D/g, '');
@@ -431,23 +501,38 @@ export function WhatsAppWorkspace() {
       setMessages([]);
       setCustomerBookings([]);
     }
-  }, [selectedConversation, allBookings, fetchMessages, fetchAIInsight]);
+  }, [selectedConversation, allBookings, fetchMessages, fetchAIInsight, fetchTemplates]);
 
   // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Send message handler
+  // Send message handler (session text or approved template)
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedConversation || !replyText.trim() || isSending) return;
+    if (!selectedConversation || isSending) return;
+
+    const isTemplate = sendMode === 'template';
+    if (!isTemplate && !replyText.trim()) return;
+    if (isTemplate && !selectedTemplateName.trim()) {
+      showToast('Pilih atau isi nama template dulu.', 'error');
+      return;
+    }
+
+    // Soft guard: free-form blocked when session closed
+    if (!isTemplate && sessionWindow && !sessionWindow.isOpen) {
+      showToast('Session 24 jam sudah tutup. Gunakan mode Template.', 'error');
+      setSendMode('template');
+      return;
+    }
 
     setIsSending(true);
     const textToSend = replyText.trim();
-    setReplyText(''); // Clear input instantly for better UX
+    const templateName = selectedTemplateName.trim();
+    const optimisticText = isTemplate ? `[template] ${templateName}` : textToSend;
+    if (!isTemplate) setReplyText('');
 
-    // Optimistic bubble so CS always sees their own reply immediately
     const tempId = `temp-out-${Date.now()}`;
     const optimistic: Message = {
       id: tempId,
@@ -455,47 +540,67 @@ export function WhatsAppWorkspace() {
       contact_id: selectedConversation.contact_id,
       direction: 'outgoing',
       sender_type: 'cs',
-      message_type: 'text',
-      text: textToSend,
+      message_type: isTemplate ? 'template' : 'text',
+      text: optimisticText,
       media_url: null,
       media_mime_type: null,
       status: 'sent',
+      status_error: null,
       wati_timestamp: new Date().toISOString()
     };
     setMessages((prev) => [...prev, optimistic]);
 
     try {
+      const payload = isTemplate
+        ? {
+            sendType: 'template',
+            templateName,
+            templateLanguage: selectedTemplateLang || 'id',
+            text: optimisticText
+          }
+        : {
+            sendType: 'session_text',
+            text: textToSend
+          };
+
       const res = await fetch(`/api/admin/whatsapp/conversations/${selectedConversation.id}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToSend })
+        body: JSON.stringify(payload)
       });
 
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        // Prefer authoritative list from API (includes persisted outgoing bubble)
+      const data = await res.json().catch(() => null);
+
+      if (res.ok || res.status === 422) {
         if (Array.isArray(data?.messages)) {
           setMessages(data.messages);
-        } else if (data?.message) {
-          setMessages((prev) => {
-            const withoutTemp = prev.filter((m) => m.id !== tempId);
-            if (withoutTemp.some((m) => m.id === data.message.id)) return withoutTemp;
-            return [...withoutTemp, data.message as Message];
-          });
         } else {
-          await fetchMessages(selectedConversation.id);
+          await fetchMessages(selectedConversation.id, { syncStatus: true });
+        }
+        if (data?.session) setSessionWindow(data.session);
+
+        if (!res.ok || data?.success === false) {
+          const errMsg = data?.error || data?.message || 'Pesan gagal terkirim (cek session/template).';
+          showToast(typeof errMsg === 'string' ? errMsg : 'Pesan gagal terkirim.', 'error');
+          if (!isTemplate) setReplyText(textToSend);
+        } else {
+          showToast(isTemplate ? 'Template terkirim.' : 'Pesan terkirim.');
         }
         fetchConversations(false);
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
-        showToast('Gagal mengirim pesan. Silakan coba lagi.', 'error');
-        setReplyText(textToSend); // Restore text
+        const errMsg = data?.message || data?.error?.message || data?.error || 'Gagal mengirim pesan.';
+        showToast(typeof errMsg === 'string' ? errMsg : 'Gagal mengirim pesan.', 'error');
+        if (!isTemplate) setReplyText(textToSend);
+        if (data?.code === 'SESSION_CLOSED' || data?.error?.code === 'SESSION_CLOSED') {
+          setSendMode('template');
+        }
       }
     } catch (err) {
       console.error('Error sending message:', err);
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       showToast('Gagal mengirim pesan.', 'error');
-      setReplyText(textToSend);
+      if (!isTemplate) setReplyText(textToSend);
     } finally {
       setIsSending(false);
     }
@@ -807,6 +912,7 @@ export function WhatsAppWorkspace() {
               ) : (
                 messages.map((msg) => {
                   const isCustomer = msg.direction === 'incoming';
+                  const isFailed = !isCustomer && msg.status === 'failed';
                   return (
                     <div
                       key={msg.id}
@@ -815,6 +921,8 @@ export function WhatsAppWorkspace() {
                       <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 shadow-sm relative ${
                         isCustomer
                           ? 'bg-white text-slate-800 rounded-tl-none border border-slate-100'
+                          : isFailed
+                          ? 'bg-rose-50 text-rose-900 rounded-tr-none border border-rose-200'
                           : 'bg-blue-600 text-white rounded-tr-none'
                       }`}>
 
@@ -823,16 +931,24 @@ export function WhatsAppWorkspace() {
                           {msg.text}
                         </p>
 
+                        {isFailed && msg.status_error && (
+                          <p className="mt-1.5 text-[10px] leading-snug text-rose-700/90 font-medium border-t border-rose-200/70 pt-1.5">
+                            Gagal: {msg.status_error}
+                          </p>
+                        )}
+
                         {/* Timestamp & Status Icon */}
                         <div className={`flex items-center justify-end gap-1 mt-1 text-[9px] ${
-                          isCustomer ? 'text-slate-400' : 'text-blue-200'
+                          isCustomer ? 'text-slate-400' : isFailed ? 'text-rose-500' : 'text-blue-200'
                         }`}>
                           <span>{formatMsgTime(msg.wati_timestamp)}</span>
                           {!isCustomer && (
                             msg.status === 'read' ? (
                               <CheckCheck className="w-3 h-3 text-blue-300" />
                             ) : msg.status === 'failed' ? (
-                              <ShieldAlert className="w-3 h-3 text-red-300" />
+                              <ShieldAlert className="w-3 h-3 text-rose-500" />
+                            ) : msg.status === 'delivered' ? (
+                              <CheckCheck className="w-3 h-3 text-blue-200" />
                             ) : (
                               <Check className="w-3 h-3 text-blue-200" />
                             )
@@ -847,14 +963,67 @@ export function WhatsAppWorkspace() {
             </div>
 
             {/* Message Input Box */}
-            <div className="p-4 bg-white border-t border-slate-100">
-              {/* AI Draft Assist Panel */}
-              <div className="mb-3.5">
+            <div className="p-4 bg-white border-t border-slate-100 space-y-3">
+              {/* Session window banner */}
+              {sessionWindow && (
+                <div className={`rounded-xl px-3 py-2 text-xs border ${
+                  sessionWindow.isOpen
+                    ? 'bg-emerald-50 border-emerald-100 text-emerald-800'
+                    : 'bg-amber-50 border-amber-200 text-amber-900'
+                }`}>
+                  {sessionWindow.isOpen ? (
+                    <span>
+                      Session terbuka · sisa ~<strong>{sessionWindow.hoursRemaining ?? '?'}</strong> jam
+                      {sessionWindow.expiresAt ? ` (hingga ${format(new Date(sessionWindow.expiresAt), 'dd MMM HH:mm', { locale: id })})` : ''}.
+                      Boleh kirim teks biasa.
+                    </span>
+                  ) : (
+                    <span>
+                      Session 24 jam <strong>sudah tutup</strong>
+                      {sessionWindow.reason === 'no_inbound' ? ' (belum ada chat masuk customer).' : '.'}
+                      {' '}Teks biasa akan ditolak Meta — gunakan <strong>Template Message</strong>.
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Send mode toggle */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSendMode('session_text')}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition ${
+                    sendMode === 'session_text'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  Teks biasa
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSendMode('template');
+                    if (templates.length === 0) fetchTemplates(true);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border transition ${
+                    sendMode === 'template'
+                      ? 'bg-violet-600 text-white border-violet-600'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  Template (luar 24 jam)
+                </button>
+              </div>
+
+              {/* AI Draft Assist Panel — only for free-form session mode */}
+              {sendMode === 'session_text' && (
+              <div>
                 {!aiDraft ? (
                   <button
                     type="button"
                     onClick={handleGenerateDraft}
-                    disabled={isGeneratingDraft}
+                    disabled={isGeneratingDraft || (sessionWindow ? !sessionWindow.isOpen : false)}
                     className="w-full py-2 bg-indigo-50 hover:bg-indigo-100/80 text-indigo-700 border border-indigo-100 text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 transition active:scale-95 disabled:opacity-55 disabled:cursor-not-allowed"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isGeneratingDraft ? 'animate-spin' : ''}`} />
@@ -919,28 +1088,89 @@ export function WhatsAppWorkspace() {
                   </div>
                 )}
               </div>
+              )}
 
-              <form onSubmit={handleSendMessage} className="flex gap-3">
-                <textarea
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Tulis balasan pesan WhatsApp..."
-                  rows={2}
-                  className="flex-1 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-slate-50 focus:bg-white transition"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage(e);
+              <form onSubmit={handleSendMessage} className="space-y-2">
+                {sendMode === 'template' ? (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <select
+                        value={selectedTemplateName}
+                        onChange={(e) => {
+                          const name = e.target.value;
+                          setSelectedTemplateName(name);
+                          const match = templates.find((t) => t.name === name);
+                          if (match?.language) setSelectedTemplateLang(match.language);
+                        }}
+                        className="flex-1 border border-slate-200 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                      >
+                        <option value="">
+                          {isLoadingTemplates ? 'Memuat template...' : templates.length ? 'Pilih template...' : 'Tidak ada template APPROVED'}
+                        </option>
+                        {templates.map((t) => (
+                          <option key={`${t.name}-${t.language}`} value={t.name || ''}>
+                            {t.name} {t.language ? `(${t.language})` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => fetchTemplates(true)}
+                        disabled={isLoadingTemplates}
+                        className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50"
+                        title="Sync template dari Watzap/Meta"
+                      >
+                        <RefreshCw className={`w-4 h-4 ${isLoadingTemplates ? 'animate-spin' : ''}`} />
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={selectedTemplateName}
+                      onChange={(e) => setSelectedTemplateName(e.target.value)}
+                      placeholder="Atau ketik nama template manual (harus APPROVED di Meta)"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    />
+                    <input
+                      type="text"
+                      value={selectedTemplateLang}
+                      onChange={(e) => setSelectedTemplateLang(e.target.value)}
+                      placeholder="Bahasa template (default: id)"
+                      className="w-full border border-slate-200 rounded-xl p-2.5 text-sm bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500"
+                    />
+                    {templates.length === 0 && !isLoadingTemplates && (
+                      <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2.5 py-2">
+                        Belum ada template APPROVED dari Watzap. Buat/approve template di Meta Business Manager, lalu klik sync.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Tulis balasan pesan WhatsApp..."
+                    rows={2}
+                    className="w-full border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none bg-slate-50 focus:bg-white transition"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage(e);
+                      }
+                    }}
+                  />
+                )}
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={
+                      isSending
+                      || (sendMode === 'session_text' ? !replyText.trim() : !selectedTemplateName.trim())
                     }
-                  }}
-                />
-                <button
-                  type="submit"
-                  disabled={isSending || !replyText.trim()}
-                  className="px-5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl flex items-center justify-center transition active:scale-95 shadow-md shadow-blue-500/20 shrink-0"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
+                    className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl flex items-center justify-center gap-2 transition active:scale-95 shadow-md shadow-blue-500/20 text-sm font-bold"
+                  >
+                    <Send className="w-4 h-4" />
+                    {isSending ? 'Mengirim...' : sendMode === 'template' ? 'Kirim Template' : 'Kirim'}
+                  </button>
+                </div>
               </form>
             </div>
           </>

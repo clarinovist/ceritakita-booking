@@ -114,6 +114,60 @@ export function parseWatzapTemplateItems(resp: any): WatzapTemplateItem[] {
   return Array.isArray(items) ? items : [];
 }
 
+export interface WatzapMessageLogItem {
+  log_id?: string;
+  message_id?: string | null;
+  wamid?: string | null;
+  api_name?: string | null;
+  recipient?: string | null;
+  status?: string | null;
+  error?: string | null;
+  http_code?: number | null;
+  api_response_status?: string | number | null;
+  payload?: Record<string, any> | null;
+  created_at?: string | null;
+  [key: string]: any;
+}
+
+/**
+ * List outbound message logs from Watzap (status / error audit).
+ * Useful to detect Meta rejections like "Re-engagement message".
+ */
+export async function watzapListMessages(options?: {
+  limit?: number;
+  offset?: number;
+  status?: string;
+  phoneNo?: string;
+  recipient?: string;
+}) {
+  const payload: Record<string, any> = {
+    action: 'list',
+    limit: options?.limit ?? 20,
+    offset: options?.offset ?? 0
+  };
+  if (options?.status) payload.status = options.status;
+  if (options?.phoneNo) payload.phone_no = options.phoneNo;
+  if (options?.recipient) payload.recipient = options.recipient;
+
+  return watzapPost<{ data?: { items?: WatzapMessageLogItem[] } }>('/messages', payload);
+}
+
+export function parseWatzapMessageItems(resp: any): WatzapMessageLogItem[] {
+  const items = resp?.data?.items;
+  return Array.isArray(items) ? items : [];
+}
+
+/** Normalize Watzap/Meta delivery status string to our message status enum */
+export function mapWatzapDeliveryStatus(raw: string | null | undefined): 'sent' | 'delivered' | 'read' | 'failed' | null {
+  if (!raw) return null;
+  const s = String(raw).toLowerCase();
+  if (s.includes('fail') || s.includes('error') || s.includes('reject')) return 'failed';
+  if (s.includes('read')) return 'read';
+  if (s.includes('deliver')) return 'delivered';
+  if (s.includes('sent') || s.includes('success') || s.includes('accepted')) return 'sent';
+  return null;
+}
+
 export function extractWatzapInboundEvents(payload: any): Array<{
   providerMessageId: string | null;
   phone: string | null;

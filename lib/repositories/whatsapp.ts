@@ -2,8 +2,16 @@ import { getDb } from '@/lib/db';
 import { randomUUID } from 'crypto';
 import { normalizePhoneNumber } from '@/lib/whatsapp-template';
 import { logger } from '@/lib/logger';
+import {
+  mapWatzapDeliveryStatus,
+  parseWatzapMessageItems,
+  watzapListMessages
+} from '@/lib/watzap';
 
 type SendResult = { success: boolean; providerMessageId: string | null; error?: string };
+
+/** WhatsApp Cloud API customer care window (hours) for free-form session messages */
+export const WA_SESSION_WINDOW_HOURS = 24;
 
 export interface WhatsAppContact {
   id: string;
@@ -58,9 +66,19 @@ export interface WhatsAppMessage {
   media_mime_type: string | null;
   reply_to_message_id: string | null;
   status: 'sent' | 'delivered' | 'read' | 'failed' | null;
+  status_error?: string | null;
   wati_timestamp: string;
   created_at: string;
   raw_event_id: string | null;
+}
+
+export interface SessionWindowInfo {
+  isOpen: boolean;
+  lastInboundAt: string | null;
+  expiresAt: string | null;
+  hoursRemaining: number | null;
+  windowHours: number;
+  reason: 'open' | 'expired' | 'no_inbound';
 }
 
 export interface OutboxMessage {
@@ -506,9 +524,9 @@ export function updateMessageStatusByProviderMessageId(
   if (existing.status !== status) {
     db.prepare(`
       UPDATE whatsapp_messages
-      SET status = ?
+      SET status = ?, status_error = CASE WHEN ? = 'failed' THEN status_error ELSE NULL END
       WHERE id = ?
-    `).run(status, existing.id);
+    `).run(status, status, existing.id);
   }
 
   return true;
@@ -524,6 +542,149 @@ export function getMessages(conversationId: string): WhatsAppMessage[] {
     WHERE conversation_id = ?
     ORDER BY wati_timestamp ASC
   `).all(conversationId) as WhatsAppMessage[];
+}
+
+/**
+ * Compute Meta 24h customer-care session window for free-form replies.
+ * Window opens from last inbound customer message.
+ */
+export function getSessionWindow(conversationId: string): SessionWindowInfo {
+  const db = getDb();
+  const row = db.prepare(`
+    SELECT last_inbound_at FROM whatsapp_conversations WHERE id = ?
+  `).get(conversationId) as { last_inbound_at: string | null } | undefined;
+
+  const lastInboundAt = row?.last_inbound_at || null;
+  if (!lastInboundAt) {
+    return {
+      isOpen: false,
+      lastInboundAt: null,
+      expiresAt: null,
+      hoursRemaining: null,
+      windowHours: WA_SESSION_WINDOW_HOURS,
+      reason: 'no_inbound'
+    };
+  }
+
+  const lastMs = new Date(lastInboundAt).getTime();
+  if (!Number.isFinite(lastMs)) {
+    return {
+      isOpen: false,
+      lastInboundAt,
+      expiresAt: null,
+      hoursRemaining: null,
+      windowHours: WA_SESSION_WINDOW_HOURS,
+      reason: 'no_inbound'
+    };
+  }
+
+  const expiresMs = lastMs + WA_SESSION_WINDOW_HOURS * 60 * 60 * 1000;
+  const remainingMs = expiresMs - Date.now();
+  const isOpen = remainingMs > 0;
+
+  return {
+    isOpen,
+    lastInboundAt,
+    expiresAt: new Date(expiresMs).toISOString(),
+    hoursRemaining: isOpen ? Math.round((remainingMs / (60 * 60 * 1000)) * 10) / 10 : 0,
+    windowHours: WA_SESSION_WINDOW_HOURS,
+    reason: isOpen ? 'open' : 'expired'
+  };
+}
+
+export function updateMessageDeliveryByProviderId(
+  providerMessageId: string,
+  status: 'sent' | 'delivered' | 'read' | 'failed',
+  statusError?: string | null
+): boolean {
+  const db = getDb();
+  const existing = db.prepare(`
+    SELECT id FROM whatsapp_messages WHERE wati_message_id = ? LIMIT 1
+  `).get(providerMessageId) as { id: string } | undefined;
+  if (!existing) return false;
+
+  db.prepare(`
+    UPDATE whatsapp_messages
+    SET status = ?, status_error = ?
+    WHERE id = ?
+  `).run(status, statusError ?? null, existing.id);
+  return true;
+}
+
+export function updateMessageDeliveryById(
+  messageId: string,
+  status: 'sent' | 'delivered' | 'read' | 'failed',
+  statusError?: string | null
+): void {
+  const db = getDb();
+  db.prepare(`
+    UPDATE whatsapp_messages
+    SET status = ?, status_error = ?
+    WHERE id = ?
+  `).run(status, statusError ?? null, messageId);
+}
+
+/**
+ * Pull recent outbound logs from Watzap and reconcile local message statuses.
+ */
+export async function syncOutgoingStatusesForPhone(
+  phoneNumber: string,
+  options?: { limit?: number }
+): Promise<number> {
+  const normalized = normalizePhoneNumber(phoneNumber) || phoneNumber;
+  const resp = await watzapListMessages({
+    limit: options?.limit ?? 30,
+    phoneNo: normalized,
+    recipient: normalized
+  });
+  if (!resp.ok) {
+    logger.warn('Failed to list Watzap messages for status sync', { error: resp.error, phone: normalized });
+    return 0;
+  }
+
+  const items = parseWatzapMessageItems(resp.data);
+  let updated = 0;
+  for (const item of items) {
+    const providerId = item.wamid || item.message_id || null;
+    if (!providerId) continue;
+    const mapped = mapWatzapDeliveryStatus(item.status);
+    if (!mapped) continue;
+    const errText = item.error ? String(item.error) : null;
+    if (updateMessageDeliveryByProviderId(providerId, mapped, errText)) {
+      updated += 1;
+    }
+  }
+  return updated;
+}
+
+function isPermanentSendError(errMsg: string): boolean {
+  return /re-engagement|session|24\s*hour|outside the|template|not connected|invalid api|expired|1003|1004|1005|1007|1009/i.test(
+    errMsg
+  );
+}
+
+function extractWatzapSendFailure(data: any, raw: string, httpStatus: number): string | null {
+  const candidates = [
+    data?.error,
+    data?.message,
+    data?.data?.error,
+    data?.data?.message,
+    typeof data?.status === 'string' && data.status !== '200' ? data.status : null
+  ]
+    .filter(Boolean)
+    .map(String);
+
+  const joined = candidates.join(' | ');
+  if (/re-engagement/i.test(joined) || /re-engagement/i.test(raw)) {
+    return 'Re-engagement message: session 24 jam sudah lewat. Gunakan template message.';
+  }
+  if (data?.status && data.status !== '200' && data.status !== 200 && data?.ack !== 'successfully' && data?.ack !== 'success') {
+    return joined || `Watzap send failed HTTP ${httpStatus}`;
+  }
+  if (!httpStatus || httpStatus >= 400) {
+    return joined || `Watzap send failed HTTP ${httpStatus}`;
+  }
+  return null;
 }
 
 /**
@@ -637,12 +798,13 @@ async function sendViaWatzapTemplate(phoneNumber: string, templateName: string, 
     // keep raw for error
   }
 
-  const success = res.ok && (data?.status === '200' || data?.status === 200 || data?.ack === 'successfully');
+  const hardFail = extractWatzapSendFailure(data, raw, res.status);
+  const success = !hardFail && res.ok && (data?.status === '200' || data?.status === 200 || data?.ack === 'successfully' || data?.ack === 'success');
   if (!success) {
     return {
       success: false,
-      providerMessageId: null,
-      error: `WATZAP template send failed: HTTP ${res.status} ${raw}`
+      providerMessageId: data?.wamid || data?.data?.wamid || null,
+      error: hardFail || `WATZAP template send failed: HTTP ${res.status} ${raw}`
     };
   }
 
@@ -694,12 +856,16 @@ async function sendViaWatzap(phoneNumber: string, payload: Record<string, any>, 
     // keep raw for error
   }
 
-  const success = res.ok && (data?.status === '200' || data?.status === 200 || data?.status === true || data?.ack === 'successfully');
+  const hardFail = extractWatzapSendFailure(data, raw, res.status);
+  const success = !hardFail && res.ok && (
+    data?.status === '200' || data?.status === 200 || data?.status === true
+    || data?.ack === 'successfully' || data?.ack === 'success'
+  );
   if (!success) {
     return {
       success: false,
-      providerMessageId: null,
-      error: `WATZAP send failed: HTTP ${res.status} ${raw}`
+      providerMessageId: data?.wamid || data?.data?.wamid || null,
+      error: hardFail || `WATZAP send failed: HTTP ${res.status} ${raw}`
     };
   }
 
@@ -750,7 +916,7 @@ export async function processOutboxQueue(): Promise<void> {
       db.transaction(() => {
         db.prepare(`
           UPDATE message_outbox
-          SET status = 'sent', sent_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+          SET status = 'sent', sent_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP, last_error = NULL
           WHERE id = ?
         `).run(item.id);
 
@@ -770,14 +936,14 @@ export async function processOutboxQueue(): Promise<void> {
           } else {
             db.prepare(`
               UPDATE whatsapp_messages
-              SET wati_message_id = ?, status = 'sent'
+              SET wati_message_id = ?, status = 'sent', status_error = NULL
               WHERE id = ?
             `).run(result.providerMessageId, existingLocal.id);
           }
         } else if (existingLocal) {
           db.prepare(`
             UPDATE whatsapp_messages
-            SET status = 'sent'
+            SET status = 'sent', status_error = NULL
             WHERE id = ?
           `).run(existingLocal.id);
         } else {
@@ -795,19 +961,28 @@ export async function processOutboxQueue(): Promise<void> {
         }
       })();
 
+      // Reconcile async Meta delivery failures (e.g. re-engagement) from Watzap logs
+      try {
+        await new Promise((r) => setTimeout(r, 800));
+        await syncOutgoingStatusesForPhone(item.phone_number, { limit: 20 });
+      } catch (syncErr) {
+        logger.warn('Post-send status sync failed', { outboxId: item.id, error: String(syncErr) });
+      }
+
       logger.info('Outbox message sent', { outboxId: item.id, provider, providerMessageId: result.providerMessageId });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       logger.error(`Outbox processing failed for ${item.id}`, { error: errMsg, provider });
 
-      const newStatus = item.attempt_count >= 3 ? 'failed' : 'pending';
+      const permanent = isPermanentSendError(errMsg);
+      const newStatus = permanent || item.attempt_count >= 3 ? 'failed' : 'pending';
       db.prepare(`
         UPDATE message_outbox
         SET status = ?, last_error = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
       `).run(newStatus, errMsg, item.id);
 
-      // Mark local bubble as failed when permanently failing
+      // Surface failure on the local bubble immediately for permanent errors (and final fail)
       if (newStatus === 'failed') {
         try {
           const payloadObj = JSON.parse(item.payload || '{}');
@@ -817,9 +992,9 @@ export async function processOutboxQueue(): Promise<void> {
               : `local-outbox-${item.id}`;
           db.prepare(`
             UPDATE whatsapp_messages
-            SET status = 'failed'
+            SET status = 'failed', status_error = ?
             WHERE wati_message_id = ?
-          `).run(payloadLocalId);
+          `).run(errMsg.slice(0, 500), payloadLocalId);
         } catch {
           // ignore secondary update errors
         }

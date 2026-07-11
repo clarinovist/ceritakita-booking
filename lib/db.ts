@@ -875,6 +875,7 @@ function initializeSchema() {
       media_mime_type TEXT,
       reply_to_message_id TEXT,
       status TEXT CHECK(status IN ('sent', 'delivered', 'read', 'failed')),
+      status_error TEXT,
       wati_timestamp TEXT NOT NULL,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       raw_event_id TEXT,
@@ -883,6 +884,14 @@ function initializeSchema() {
       FOREIGN KEY (raw_event_id) REFERENCES wati_raw_events(id) ON DELETE SET NULL
     )
   `);
+
+  // Existing DBs created before status_error existed
+  try {
+    db.exec(`ALTER TABLE whatsapp_messages ADD COLUMN status_error TEXT`);
+    console.log('✅ Database migration: Added status_error column to whatsapp_messages table');
+  } catch {
+    // Column already exists
+  }
 
   db.exec(`
     CREATE TABLE IF NOT EXISTS message_outbox (
