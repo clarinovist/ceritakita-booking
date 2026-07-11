@@ -498,7 +498,15 @@ export function WhatsAppWorkspace() {
       }
     }, 10000);
 
-    return () => clearInterval(interval);
+    // Refresh metrics every 60s (lighter weight)
+    const metricsInterval = setInterval(() => {
+      fetchMetrics();
+    }, 60000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(metricsInterval);
+    };
   }, [searchTerm, statusFilter, fetchConversations, fetchAllBookings, fetchMetrics, selectedConversation]);
 
   // Handle conversation selection change
@@ -809,7 +817,7 @@ export function WhatsAppWorkspace() {
                 Respon: {waMetrics.responseTime.medianMinutes}m median
               </span>
               <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-100">
-                FU→Booking: {waMetrics.conversion.conversionRatePercent}%
+                Chat→Booking: {waMetrics.conversion.conversionRatePercent}%
               </span>
             </div>
           )}
