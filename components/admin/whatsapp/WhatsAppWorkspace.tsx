@@ -83,6 +83,7 @@ interface Booking {
   booking: {
     date: string;
     notes: string;
+    drive_link?: string;
   };
   finance: {
     total_price: number;
@@ -163,6 +164,13 @@ export function WhatsAppWorkspace() {
   const [isGeneratingInsight, setIsGeneratingInsight] = useState(false);
   const [aiDraft, setAiDraft] = useState<any | null>(null);
   const [isGeneratingDraft, setIsGeneratingDraft] = useState(false);
+
+  // AI/CS Metrics
+  const [waMetrics, setWaMetrics] = useState<{
+    drafts: { total: number; sent: number; edited: number; rejected: number; sentWithoutEditPercent: number };
+    responseTime: { avgMinutes: number; medianMinutes: number; sampleSize: number };
+    conversion: { chatWithBooking: number; totalActiveChats: number; conversionRatePercent: number };
+  } | null>(null);
 
   // Toast, Modal, and Confirmation States
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -453,10 +461,24 @@ export function WhatsAppWorkspace() {
     }
   }, []);
 
+  // Fetch AI/CS Metrics
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/whatsapp/metrics');
+      if (res.ok) {
+        const data = await res.json();
+        setWaMetrics(data);
+      }
+    } catch {
+      // Non-blocking — metrics are informational
+    }
+  }, []);
+
   // Poll for new messages/conversations every 10 seconds
   useEffect(() => {
     fetchConversations(true);
     fetchAllBookings();
+    fetchMetrics();
 
     const interval = setInterval(() => {
       fetchConversations(false);
@@ -477,7 +499,7 @@ export function WhatsAppWorkspace() {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [searchTerm, statusFilter, fetchConversations, fetchAllBookings, selectedConversation]);
+  }, [searchTerm, statusFilter, fetchConversations, fetchAllBookings, fetchMetrics, selectedConversation]);
 
   // Handle conversation selection change
   useEffect(() => {
@@ -776,9 +798,22 @@ export function WhatsAppWorkspace() {
               );
             })}
           </div>
-        </div>
 
-        {/* Conversations Scroll View */}
+          {/* AI/CS Metrics Summary */}
+          {waMetrics && (
+            <div className="flex items-center gap-2 text-[9px] font-bold text-slate-500 pt-1">
+              <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded border border-emerald-100">
+                AI Draft: {waMetrics.drafts.sent} terkirim
+              </span>
+              <span className="px-1.5 py-0.5 bg-blue-50 text-blue-700 rounded border border-blue-100">
+                Respon: {waMetrics.responseTime.medianMinutes}m median
+              </span>
+              <span className="px-1.5 py-0.5 bg-amber-50 text-amber-700 rounded border border-amber-100">
+                FU→Booking: {waMetrics.conversion.conversionRatePercent}%
+              </span>
+            </div>
+          )}
+        </div>
         <div className="flex-1 overflow-y-auto divide-y divide-slate-100/60 custom-scrollbar">
           {isLoadingConvs ? (
             <div className="p-8 text-center text-slate-400 text-sm flex flex-col items-center gap-2">
@@ -1488,6 +1523,27 @@ export function WhatsAppWorkspace() {
                         {matchedLinkedBooking.booking.date.split('T')[1]?.substring(0, 5) || ''}
                       </div>
                     </div>
+
+                    {/* Drive Link */}
+                    {matchedLinkedBooking.booking.drive_link && (
+                      <a
+                        href={matchedLinkedBooking.booking.drive_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50/50 border border-blue-100 rounded-xl px-3 py-2 transition hover:bg-blue-100/50"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        Drive Link Foto
+                      </a>
+                    )}
+
+                    {/* Next Follow-up */}
+                    {selectedConversation.next_fu_at && (
+                      <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span className="font-medium">FU: {format(new Date(selectedConversation.next_fu_at), 'd MMM yyyy HH:mm', { locale: id })}</span>
+                      </div>
+                    )}
 
                     {/* Financial Summary Breakdown */}
                     <div className="bg-white/80 backdrop-blur-sm rounded-xl p-3 border border-blue-50/50 text-xs space-y-2">
