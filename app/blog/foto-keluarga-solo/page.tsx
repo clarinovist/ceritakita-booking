@@ -71,6 +71,7 @@ export default function FotoKeluargaSoloPage() {
 
           <h2 className="font-display text-2xl text-gold-400 mt-12">Artikel Terkait</h2>
           <ul className="list-disc list-inside space-y-2 text-cream-300">
+            <li><Link href="/blog/foto-keluarga-adat-jawa" className="text-gold-400 hover:underline">Foto Keluarga Adat Jawa: Panduan Lengkap</Link></li>
             <li><Link href="/blog/studio-foto-solo" className="text-gold-400 hover:underline">Studio Foto Murah Solo</Link></li>
             <li><Link href="/blog/wisuda-solo" className="text-gold-400 hover:underline">Foto Wisuda Solo</Link></li>
             <li><Link href="/blog/birthday-photo-solo" className="text-gold-400 hover:underline">Foto Birthday Solo</Link></li>

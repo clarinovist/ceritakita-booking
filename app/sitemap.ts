@@ -20,7 +20,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/blog/self-photo-solo-raya", "/blog/tips-foto-studio-pertama-kali",
     "/blog/persiapan-foto-prewedding", "/blog/harga-foto-wisuda-2026",
     "/blog/ide-pose-self-photo", "/blog/perbedaan-self-photo-dan-foto-studio",
-    "/blog/foto-studio-untuk-cv-kerja"];
+    "/blog/foto-studio-untuk-cv-kerja", "/blog/foto-keluarga-adat-jawa"];
 
   return urls.map((path) => ({
     url: `${siteUrl}${path}`,

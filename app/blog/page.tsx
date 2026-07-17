@@ -40,6 +40,8 @@ const articles = [
   { slug: "ide-pose-self-photo", title: "20 Ide Pose Self Photo Studio yang Instagramable", excerpt: "Inspirasi pose self photo yang estetik dan Instagramable. Cocok untuk pemula!", date: "18 Agustus 2026", readTime: "4 menit" },
   { slug: "perbedaan-self-photo-dan-foto-studio", title: "Self Photo vs Foto Studio: Mana yang Lebih Cocok?", excerpt: "Bingung pilih self photo atau foto studio biasa? Ini perbedaannya.", date: "18 Agustus 2026", readTime: "4 menit" },
   { slug: "foto-studio-untuk-cv-kerja", title: "Foto Profesional untuk CV Kerja: Tips & Harga 2026", excerpt: "Butuh foto profesional untuk CV? Mulai Rp40K di CeritaKita Studio.", date: "18 Agustus 2026", readTime: "3 menit" },
+  // Batch 8
+  { slug: "foto-keluarga-adat-jawa", title: "Foto Keluarga Adat Jawa: Panduan Lengkap Harga, Tips, dan Rekomendasi Terbaik", excerpt: "Foto keluarga adat Jawa yang worth it dan affordable? Simak tips, harga, dan rekomendasi studio Solo.", date: "17 Juli 2026", readTime: "5 menit" },
 ];
 
 export default function BlogPage() {
