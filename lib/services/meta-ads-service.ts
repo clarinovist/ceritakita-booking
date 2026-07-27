@@ -2,7 +2,6 @@ import 'server-only';
 import { getMetaConfig, requireMetaConfig, listCampaigns, listAdSets, listAds, getInsights, DEFAULT_INSIGHT_FIELDS } from '@/lib/meta/client';
 import * as metaRepo from '@/lib/repositories/meta-ads';
 import { logger } from '@/lib/logger';
-import { getDb } from '@/lib/db';
 
 export interface SyncResult {
   syncId: number;
