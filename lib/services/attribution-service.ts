@@ -151,7 +151,7 @@ export function linkLeadsToCampaigns(): { byUtm: number; byParam: number; byPack
            OR LOWER(leads.utm_campaign) LIKE '%' || LOWER(c.name) || '%'
         LIMIT 1
       )
-      WHERE meta_campaign_id IS NULL AND utm_campaign IS NOT NULL AND TRIM(utm_campaign) != ''
+      WHERE (meta_campaign_id IS NULL OR meta_campaign_id = '') AND utm_campaign IS NOT NULL AND TRIM(utm_campaign) != ''
     `).run();
     byUtm = resUtm.changes;
 
@@ -166,7 +166,7 @@ export function linkLeadsToCampaigns(): { byUtm: number; byParam: number; byPack
         SET meta_campaign_id = (
           SELECT ad.campaign_id FROM meta_ads ad WHERE ad.id = leads.meta_ad_id LIMIT 1
         )
-        WHERE meta_campaign_id IS NULL AND meta_ad_id IS NOT NULL
+        WHERE (meta_campaign_id IS NULL OR meta_campaign_id = '') AND meta_ad_id IS NOT NULL AND meta_ad_id != ''
       `).run();
     } catch {}
 
@@ -176,38 +176,70 @@ export function linkLeadsToCampaigns(): { byUtm: number; byParam: number; byPack
         SET meta_campaign_id = (
           SELECT a.campaign_id FROM meta_adsets a WHERE a.id = leads.meta_adset_id LIMIT 1
         )
-        WHERE meta_campaign_id IS NULL AND meta_adset_id IS NOT NULL
+        WHERE (meta_campaign_id IS NULL OR meta_campaign_id = '') AND meta_adset_id IS NOT NULL AND meta_adset_id != ''
       `).run();
     } catch {}
 
-    // 3. Heuristic: if lead interest contains "Self Photo" or "Family" map to best campaign with similar name
-    // This is best-effort for old leads without utm
+    // 3. Heuristic: interest + date-based fallback for remaining leads without campaign
     try {
-      const leadsWithoutCamp = db.prepare(`SELECT id, interest FROM leads WHERE meta_campaign_id IS NULL AND source = 'Meta Ads'`).all() as { id: string; interest: string | null }[];
-      const campaigns = db.prepare(`SELECT id, name FROM meta_campaigns`).all() as { id: string; name: string }[];
+      const leadsWithoutCamp = db.prepare(`SELECT id, interest, created_at FROM leads WHERE (meta_campaign_id IS NULL OR meta_campaign_id = '') AND source = 'Meta Ads'`).all() as { id: string; interest: string | null; created_at: string }[];
+      const campaigns = db.prepare(`SELECT id, name, created_time FROM meta_campaigns ORDER BY created_time ASC`).all() as { id: string; name: string; created_time: string | null }[];
 
       const updateStmt = db.prepare(`UPDATE leads SET meta_campaign_id = ? WHERE id = ?`);
 
+      const monthKeywords: Record<number, string[]> = {
+        0: ['januari', 'jan', 'january'],
+        1: ['februari', 'feb'],
+        2: ['maret', 'mar', 'march'],
+        3: ['april', 'apr'],
+        4: ['mei', 'may'],
+        5: ['juni', 'jun', 'june'],
+        6: ['juli', 'jul', 'july'],
+        7: ['agustus', 'agu', 'august', 'aug'],
+        8: ['september', 'sep'],
+        9: ['oktober', 'oct', 'october'],
+        10: ['november', 'nov'],
+        11: ['desember', 'dec', 'december'],
+      };
+
       for (const lead of leadsWithoutCamp) {
         const interest = (lead.interest || '').toLowerCase();
+        const leadDate = new Date(lead.created_at);
+        const leadMonth = leadDate.getMonth();
         let matched: string | null = null;
 
-        if (interest.includes('self photo') || interest.includes('self')) {
-          const c = campaigns.find(x => x.name.toLowerCase().includes('self foto') || x.name.toLowerCase().includes('self'))?.id;
-          if (c) matched = c;
+        if (interest.includes('self photo') || interest.includes('self') || interest.includes('self foto')) {
+          matched = campaigns.find(x => x.name.toLowerCase().includes('self foto') || x.name.toLowerCase().includes('self'))?.id || null;
+          if (matched) {
+            if (leadMonth === 6) {
+              const juli = campaigns.find(x => x.name.toLowerCase().includes('juli'))?.id;
+              if (juli) matched = juli;
+            } else if (leadMonth === 7) {
+              const agust = campaigns.find(x => x.name.toLowerCase().includes('agustus') || x.name.toLowerCase().includes('august'))?.id;
+              if (agust) matched = agust;
+            }
+          }
         } else if (interest.includes('keluarga') || interest.includes('family')) {
-          const c = campaigns.find(x => x.name.toLowerCase().includes('keluarga') || x.name.toLowerCase().includes('family'))?.id;
-          if (c) matched = c;
-          else matched = campaigns.find(x => x.name.toLowerCase().includes('ctwa'))?.id || null;
+          matched = campaigns.find(x => x.name.toLowerCase().includes('keluarga') || x.name.toLowerCase().includes('family') || x.name.toLowerCase().includes('ctwa'))?.id || null;
         } else if (interest.includes('birthday')) {
           matched = campaigns.find(x => x.name.toLowerCase().includes('birthday'))?.id || null;
         }
 
-        // Fallback: if only one active campaign recently, assign to it? Skip to avoid wrong attribution
-        // Instead, check if lead created date falls within campaign active period with spend
         if (!matched) {
-          // Fallback disabled to keep accurate attribution - skip auto-assign
-          continue;
+          const keywords = monthKeywords[leadMonth] || [];
+          for (const camp of campaigns) {
+            const nameLower = camp.name.toLowerCase();
+            if (keywords.some(k => nameLower.includes(k))) {
+              matched = camp.id;
+              break;
+            }
+          }
+          if (!matched) {
+            // Last campaign created before lead
+            const candidates = campaigns.filter(c => c.created_time && new Date(c.created_time) <= leadDate).sort((a, b) => new Date(b.created_time || '').getTime() - new Date(a.created_time || '').getTime());
+            if (candidates.length > 0) matched = candidates[0]!.id;
+            else if (campaigns.length > 0) matched = campaigns[0]!.id;
+          }
         }
 
         if (matched) {
