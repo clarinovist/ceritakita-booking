@@ -25,7 +25,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           command_timeout: 15m
           script: |
-            set -euo pipefail
+            set +e
             cd ${{ secrets.DEPLOY_PATH }}
 
             echo "Waiting for container fully ready (sleep 15s)..."
@@ -36,24 +36,25 @@ jobs:
             curl -fsS --max-time 5 "${HEALTH_URL}" || echo "health not ready yet"
 
             echo "=== Meta health ==="
-            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/health" 2>&1 | head -c 3000 || echo "meta/health failed"
+            RESP_H=$(curl -s -w "\nHTTP:%{http_code}" --max-time 10 "http://127.0.0.1:3001/api/meta/health" 2>&1)
+            echo "$RESP_H" | tail -n 20 | head -c 3000
             echo ""
 
             echo "=== Trigger sync days=${{ inputs.days }} full=${{ inputs.full }} ==="
-            RESP=$(curl -fsS -X POST --max-time 300 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days }}&full=${{ inputs.full == 'true' && '1' || '0' }}" 2>&1)
-            echo "$RESP" | head -c 5000
+            RESP=$(curl -s -w "\nHTTP:%{http_code}" -X POST --max-time 300 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days }}&full=${{ inputs.full == 'true' && '1' || '0' }}" 2>&1)
+            echo "$RESP" | tail -n 50 | head -c 8000
             echo ""
 
             echo "=== Campaigns count ==="
-            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" 2>&1 | python3 -c "import sys, json; data=json.load(sys.stdin); print(f'count={len(data.get(\"data\", []))}'); [print(f\"- {c['id']} {c['name'][:40]} status={c['status']} spend={c.get('total_spend',0)}\") for c in data.get('data',[])[:10]]" || curl -fsS "http://127.0.0.1:3001/api/meta/campaigns" | head -c 1000
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" 2>&1 | python3 -c "import sys, json; data=json.load(sys.stdin); print(f'count={len(data.get(\"data\", []))}'); [print(f\"- {c['id']} {c['name'][:40]} status={c['status']} spend={c.get('total_spend',0)}\") for c in data.get('data',[])[:10]]" 2>&1 || curl -s "http://127.0.0.1:3001/api/meta/campaigns" 2>&1 | head -c 1000
 
             echo "=== Insights daily count ==="
-            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/insights-db?limit=5" 2>&1 | head -c 1000 || echo "no insights yet"
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/insights-db?limit=5" 2>&1 | head -c 1000 || echo "no insights yet"
 
             echo "=== Attribution ==="
-            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/attribution" 2>&1 | head -c 2000 || echo "attribution failed"
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/attribution" 2>&1 | head -c 2000 || echo "attribution failed"
 
             echo "=== Sync logs ==="
-            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/sync?limit=5" 2>&1 | head -c 2000
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/sync?limit=5" 2>&1 | head -c 2000
 
             echo "✅ Done"

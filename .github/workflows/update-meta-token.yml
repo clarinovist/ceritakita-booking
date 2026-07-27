@@ -25,7 +25,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || 22 }}
           command_timeout: 10m
           script: |
-            set -euo pipefail
+            set +e
             cd ${{ secrets.DEPLOY_PATH }}
 
             echo "Backing up .env.local..."
@@ -87,14 +87,16 @@ jobs:
             fi
 
             echo "Checking meta health endpoint..."
-            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/health" 2>/dev/null | head -c 2000 || echo "meta/health not reachable yet"
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/health" 2>&1 | tail -c 3000 || echo "meta/health not reachable yet"
+
+            echo "Waiting extra 10s for app full ready before sync..."
+            sleep 10
 
             echo "Triggering meta sync (days=${{ inputs.days }} full=${{ inputs.full }})..."
-            curl -fsS -X POST --max-time 120 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days || 7 }}&full=${{ inputs.full == 'true' && '1' || '0' }}" 2>/dev/null | head -c 3000 || echo "sync trigger failed (non-fatal, check later)"
+            curl -s -X POST --max-time 120 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days || 7 }}&full=${{ inputs.full == 'true' && '1' || '0' }}" 2>&1 | tail -c 5000 || echo "sync trigger failed (non-fatal, check later)"
 
             echo "DB checks..."
-            # Try count meta tables via sqlite inside container or via api
-            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" 2>/dev/null | head -c 1000 || echo "campaigns not yet"
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" 2>&1 | head -c 1000 || echo "campaigns not yet"
 
             docker compose ps
             echo "✅ Token update + restart completed"
