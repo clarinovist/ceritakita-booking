@@ -45,6 +45,10 @@ jobs:
             echo "$RESP" | tail -n 50 | head -c 8000
             echo ""
 
+            echo "=== Backfill attribution ==="
+            curl -s -X POST --max-time 60 "http://127.0.0.1:3001/api/meta/backfill-attribution" 2>&1 | head -c 3000 || echo "backfill-attribution failed"
+            echo ""
+
             echo "=== Campaigns count ==="
             curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" 2>&1 | python3 -c "import sys, json; data=json.load(sys.stdin); print(f'count={len(data.get(\"data\", []))}'); [print(f\"- {c['id']} {c['name'][:40]} status={c['status']} spend={c.get('total_spend',0)}\") for c in data.get('data',[])[:10]]" 2>&1 || curl -s "http://127.0.0.1:3001/api/meta/campaigns" 2>&1 | head -c 1000
 

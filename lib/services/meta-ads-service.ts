@@ -162,6 +162,15 @@ export async function syncAll(days = 30, full = false): Promise<SyncResult> {
       logger.warn('Failed sync legacy ads_performance_log', { error: (e as Error).message });
     }
 
+    // 6b. Auto backfill attribution links (non-blocking)
+    try {
+      const { backfillAttribution } = await import('./attribution-service');
+      const bf = backfillAttribution();
+      logger.info('Post-sync attribution backfill', bf);
+    } catch (e: any) {
+      logger.warn('Post-sync attribution backfill failed (non-critical)', { error: e.message });
+    }
+
     const total = campaignsCount + adsetsCount + adsCount + insightsCount;
     metaRepo.finishSyncLog(syncId, errors.length === 0 ? 'success' : 'success', total, errors.length ? errors.join('; ') : undefined);
     logger.info('Meta sync completed', { syncId, campaigns: campaignsCount, adsets: adsetsCount, ads: adsCount, insights: insightsCount, errors: errors.length });

@@ -95,6 +95,9 @@ jobs:
             echo "Triggering meta sync (days=${{ inputs.days }} full=${{ inputs.full }})..."
             curl -s -X POST --max-time 120 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days || 7 }}&full=${{ inputs.full == 'true' && '1' || '0' }}" 2>&1 | tail -c 5000 || echo "sync trigger failed (non-fatal, check later)"
 
+            echo "Triggering backfill-attribution..."
+            curl -s -X POST --max-time 60 "http://127.0.0.1:3001/api/meta/backfill-attribution" 2>&1 | tail -c 3000 || echo "backfill-attribution failed"
+
             echo "DB checks..."
             curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" 2>&1 | head -c 1000 || echo "campaigns not yet"
 

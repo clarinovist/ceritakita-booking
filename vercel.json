@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/meta/sync?days=2",
+      "path": "/api/meta/sync?days=2&full=0",
       "schedule": "0 */3 * * *"
     }
   ]

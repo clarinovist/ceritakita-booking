@@ -144,7 +144,26 @@ export class BookingService {
             throw new AppError('This time slot is already booked', 400, 'SLOT_UNAVAILABLE');
         }
 
-        // 3. Create booking ID
+        // 3. Auto-link to lead via phone if lead_id not provided
+        let autoLeadId = (data as any).lead_id || null;
+        if (!autoLeadId) {
+            try {
+                const { getDb } = await import('@/lib/db');
+                const db = getDb();
+                const normPhone = (customer.whatsapp || '').replace(/\D/g, '').slice(-11);
+                if (normPhone) {
+                    // find most recent lead with phone containing this normalized suffix
+                    const row = db.prepare(`
+                        SELECT id FROM leads 
+                        WHERE REPLACE(REPLACE(REPLACE(whatsapp, '+', ''), ' ', ''), '-', '') LIKE '%' || ? 
+                        ORDER BY created_at DESC LIMIT 1
+                    `).get(normPhone.slice(-10)) as { id: string } | undefined;
+                    if (row) autoLeadId = row.id;
+                }
+            } catch {}
+        }
+
+        // 3b. Create booking ID
         const bookingId = crypto.randomUUID();
 
         // 4. Process uploaded file if present
@@ -231,7 +250,7 @@ export class BookingService {
             },
             photographer_id,
             addons,
-            lead_id: lead_id || null,
+            lead_id: lead_id || autoLeadId || null,
         };
 
         // 6. Save to database
