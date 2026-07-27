@@ -60,6 +60,8 @@ export const leadFiltersSchema = z.object({
   limit: z.coerce.number().int().positive().max(100).optional(),
 });
 
+const optionalMetaId = () => z.string().trim().max(200).optional().transform((v) => v === '' ? undefined : v);
+
 export const leadCreateSchema = z.object({
   name: nonEmptyTrimmedString('Name', 100),
   whatsapp: z.string()
@@ -74,6 +76,18 @@ export const leadCreateSchema = z.object({
   notes: optionalTrimmedString(1000),
   assigned_to: optionalTrimmedString(100),
   next_follow_up: optionalDateString,
+  // attribution optional
+  meta_campaign_id: optionalMetaId(),
+  meta_adset_id: optionalMetaId(),
+  meta_ad_id: optionalMetaId(),
+  fbclid: optionalTrimmedString(500),
+  fbc: optionalTrimmedString(500),
+  fbp: optionalTrimmedString(500),
+  utm_campaign: optionalTrimmedString(500),
+  utm_content: optionalTrimmedString(500),
+  utm_term: optionalTrimmedString(500),
+  utm_medium: optionalTrimmedString(500),
+  utm_source: optionalTrimmedString(500),
 });
 
 export const leadUpdateSchema = leadCreateSchema

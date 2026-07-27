@@ -234,57 +234,68 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
 
-    // 8. Meta Ads + WA Click insights (non-blocking — failures result in null)
+    // 8. Meta Ads + WA Click insights (DB-first, Meta API fallback removed)
     let adsInsights: AdsInsights | null = null;
     try {
-        const metaToken = process.env.META_ACCESS_TOKEN_CK;
-        const campaignId = process.env.META_CAMPAIGN_ID || '120246392062980052';
+        const { getDb } = await import('@/lib/db');
+        const db = getDb();
+        const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
+        const todayStr = format(now, 'yyyy-MM-dd');
 
-        if (metaToken) {
-            const apiVersion = 'v18.0';
-            const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
-            const todayStr = format(now, 'yyyy-MM-dd');
-
-            // Fetch campaign insights for last 3 days (more stable data)
-            const insightsUrl = `https://graph.facebook.com/${apiVersion}/${campaignId}/insights?fields=spend,impressions,clicks,ctr,cpc,cpm,reach,actions&date_preset=last_3d&access_token=${metaToken}`;
-            const campaignRes = await fetch(insightsUrl);
-            const campaignData = await campaignRes.json();
-
-            if (campaignData.data?.[0]) {
-                const insight = campaignData.data[0];
-                const linkClicks = insight.actions?.find((a: any) => a.action_type === 'link_click')?.value || '0';
-
-                // Fetch WA click data (bot-filtered) for yesterday
-                const waClickSources = getWaClicksByDay(yesterday, todayStr);
-                const totalWaClicks = getWaClicksCount(yesterday, todayStr);
-
-                // Group WA clicks by source
-                const clicksBySource = new Map<string, number>();
-                for (const row of waClickSources) {
-                    const current = clicksBySource.get(row.source) || 0;
-                    clicksBySource.set(row.source, current + (row as any).clicks);
+        // Try DB insights last 3d
+        let spend = 0, impressions = 0, clicks = 0, reach = 0, ctr = 0, cpc = 0, cpm = 0;
+        try {
+            const row = db.prepare(`
+                SELECT COALESCE(SUM(spend),0) as spend, COALESCE(SUM(impressions),0) as impressions,
+                       COALESCE(SUM(inline_link_clicks),0) as linkClicks, COALESCE(SUM(inline_link_clicks),0) as clicks,
+                       COALESCE(SUM(reach),0) as reach, COALESCE(AVG(ctr),0) as ctr, COALESCE(AVG(cpc),0) as cpc, COALESCE(AVG(cpm),0) as cpm
+                FROM meta_insights_daily
+                WHERE date_record >= ? AND date_record <= ?
+            `).get(yesterday, todayStr) as any;
+            if (row && row.spend > 0) {
+                spend = row.spend; impressions = row.impressions; clicks = row.clicks; reach = row.reach;
+                ctr = row.ctr; cpc = row.cpc; cpm = row.cpm;
+            } else {
+                // fallback to legacy ads_performance_log if new table empty
+                const legacy = db.prepare(`
+                    SELECT COALESCE(SUM(spend),0) as spend, COALESCE(SUM(impressions),0) as impressions,
+                           COALESCE(SUM(clicks),0) as linkClicks, COALESCE(SUM(reach),0) as reach
+                    FROM ads_performance_log WHERE date_record >= ? AND date_record <= ?
+                `).get(yesterday, todayStr) as any;
+                if (legacy) {
+                    spend = legacy.spend; impressions = legacy.impressions; reach = legacy.reach;
                 }
-
-                adsInsights = {
-                    campaignName: 'CeritaKita - Solo Radius 30km',
-                    campaignStatus: 'ACTIVE',
-                    spend: parseFloat(insight.spend || '0'),
-                    impressions: parseInt(insight.impressions || '0'),
-                    clicks: parseInt(insight.clicks || '0'),
-                    linkClicks: parseInt(linkClicks),
-                    ctr: parseFloat(insight.ctr || '0'),
-                    cpc: parseFloat(insight.cpc || '0'),
-                    cpm: parseFloat(insight.cpm || '0'),
-                    reach: parseInt(insight.reach || '0'),
-                    waClicks: totalWaClicks,
-                    waClicksBySource: Array.from(clicksBySource.entries())
-                        .map(([source, clicks]) => ({ source, clicks }))
-                        .sort((a, b) => b.clicks - a.clicks),
-                };
             }
+        } catch {}
+
+        const waClickSources = getWaClicksByDay(yesterday, todayStr);
+        const totalWaClicks = getWaClicksCount(yesterday, todayStr);
+
+        const clicksBySource = new Map<string, number>();
+        for (const row of waClickSources) {
+            const current = clicksBySource.get(row.source) || 0;
+            clicksBySource.set(row.source, current + (row as any).clicks);
+        }
+
+        if (spend > 0 || totalWaClicks > 0) {
+            adsInsights = {
+                campaignName: 'Meta Ads (DB)',
+                campaignStatus: 'ACTIVE',
+                spend,
+                impressions,
+                clicks,
+                linkClicks: clicks,
+                ctr,
+                cpc,
+                cpm,
+                reach,
+                waClicks: totalWaClicks,
+                waClicksBySource: Array.from(clicksBySource.entries())
+                    .map(([source, clicks]) => ({ source, clicks }))
+                    .sort((a, b) => b.clicks - a.clicks),
+            } as any;
         }
     } catch (err) {
-        // Non-blocking — ads data is optional
         console.warn('Failed to fetch ads insights for daily report:', err);
     }
 

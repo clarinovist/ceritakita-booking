@@ -1,6 +1,8 @@
 import { type AdsData } from '@/lib/types';
 import { NextRequest, NextResponse } from 'next/server';
 import { saveAdsLog } from '@/lib/repositories/analytics';
+import { getInsights, DEFAULT_INSIGHT_FIELDS, requireMetaConfig } from '@/lib/meta/client';
+import { upsertInsightsBatch } from '@/lib/repositories/meta-ads';
 import { logger } from '@/lib/logger';
 
 // Force dynamic rendering to handle search params properly
@@ -13,23 +15,25 @@ export interface MetaInsightsData {
   reach: number;
   date_start: string;
   date_end: string;
+  cpc?: number;
+  cpm?: number;
+  ctr?: number;
+  frequency?: number;
 }
 
 export interface MetaInsightsResponse {
   success: boolean;
   data?: MetaInsightsData;
   error?: string;
+  meta?: any;
 }
 
 export async function GET(request: NextRequest): Promise<NextResponse<MetaInsightsResponse>> {
   try {
-    // Get environment variables
-    const accessToken = process.env.META_ACCESS_TOKEN;
-    const adAccountId = process.env.META_AD_ACCOUNT_ID;
-    const apiVersion = process.env.META_API_VERSION || 'v19.0';
-
-    // Validate environment variables
-    if (!accessToken || !adAccountId) {
+    // Keep backward compat: still support ENV check, but use client
+    try {
+      requireMetaConfig();
+    } catch {
       return NextResponse.json(
         {
           success: false,
@@ -39,82 +43,73 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       );
     }
 
-    // Get date range from query params
     const searchParams = request.nextUrl.searchParams;
     const since = searchParams.get('since');
     const until = searchParams.get('until');
+    const level = (searchParams.get('level') as any) || 'account';
+    const useDb = searchParams.get('from') === 'db';
 
-    // Build Meta API URL
-    const url = `https://graph.facebook.com/${apiVersion}/${adAccountId}/insights`;
-
-    // Build params object
-    const params: Record<string, string> = {
-      access_token: accessToken,
-      fields: 'spend,impressions,inline_link_clicks,reach',
-      level: 'account',
-    };
-
-    // Use custom date range if provided, otherwise use today (for daily logging)
-    if (since && until) {
-      params.time_range = JSON.stringify({ since, until });
-    } else {
-      // Default to today's data for daily granularity
-      params.date_preset = 'today';
-    }
-
-    const urlParams = new URLSearchParams(params);
-
-    const apiUrl = `${url}?${urlParams.toString()}`;
-
-    // Fetch data from Meta API
-    const response = await fetch(apiUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    // Handle API errors
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      logger.warn('Meta API Error', { errorData });
-
-      // Handle specific error codes
-      if (errorData?.error?.code === 190) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Invalid or expired access token. Please update META_ACCESS_TOKEN.',
-          },
-          { status: 401 }
-        );
+    // Fast path: if requesting from DB, don't hit Meta API
+    if (useDb) {
+      const { getInsightsRange } = await import('@/lib/repositories/meta-ads');
+      const rows = getInsightsRange({ startDate: since || undefined, endDate: until || undefined, limit: 500 });
+      // aggregate for account level response shape
+      let spend = 0,
+        impressions = 0,
+        inlineLinkClicks = 0,
+        reach = 0;
+      let ds = since || '',
+        de = until || '';
+      for (const r of rows as any[]) {
+        spend += r.spend || 0;
+        impressions += r.impressions || 0;
+        inlineLinkClicks += r.inline_link_clicks || 0;
+        reach += r.reach || 0;
+        if (!ds) ds = r.date_record;
+        de = r.date_record;
       }
-
-      if (errorData?.error?.code === 100) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Invalid ad account ID format. Ensure it starts with "act_" followed by numbers.',
-          },
-          { status: 400 }
-        );
-      }
-
       return NextResponse.json(
         {
-          success: false,
-          error: errorData?.error?.message || 'Failed to fetch data from Meta API',
+          success: true,
+          data: { spend, impressions, inlineLinkClicks, reach, date_start: ds, date_end: de },
+          meta: { source: 'db', count: rows.length },
         },
-        { status: response.status }
+        { status: 200 }
       );
     }
 
-    const data = await response.json();
+    const isSingleDay = (!since && !until) || (since === until);
+    const params: any = {
+      level,
+      fields: DEFAULT_INSIGHT_FIELDS,
+      limit: 500,
+    };
+    if (since && until) {
+      params.time_range = { since, until };
+      // request daily granularity when range >1 day to save to DB properly
+      const diff = new Date(until).getTime() - new Date(since).getTime();
+      const daysDiff = diff / (1000 * 60 * 60 * 24);
+      if (daysDiff > 0) params.time_increment = 1;
+    } else {
+      params.date_preset = 'today';
+    }
 
-    // Check if data exists
-    if (!data.data || data.data.length === 0) {
+    let insightsRows: any[] = [];
+    try {
+      insightsRows = await getInsights(params);
+    } catch (e: any) {
+      const msg = e.message || 'Meta API error';
+      if (e.code === 190) {
+        return NextResponse.json({ success: false, error: 'Invalid or expired access token. Please update META_ACCESS_TOKEN.' }, { status: 401 });
+      }
+      if (e.code === 100) {
+        return NextResponse.json({ success: false, error: 'Invalid ad account ID format. Ensure it starts with "act_" followed by numbers.' }, { status: 400 });
+      }
+      return NextResponse.json({ success: false, error: msg }, { status: e.status || 500 });
+    }
+
+    if (!insightsRows || insightsRows.length === 0) {
       const today = new Date().toISOString().split('T')[0]!;
-
       return NextResponse.json(
         {
           success: true,
@@ -131,23 +126,69 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       );
     }
 
-    // Extract metrics from the first (and only) data point
-    const insights = data.data[0];
+    // If time_increment=1, we have daily rows – upsert all to new table + legacy logic aggregates
+    if (insightsRows.length > 1) {
+      try {
+        upsertInsightsBatch(insightsRows);
+      } catch (err) {
+        logger.warn('Failed to save insights batch (non-critical)', { error: (err as Error).message });
+      }
+
+      // aggregate for backward compat response
+      let spend = 0,
+        impressions = 0,
+        inlineLinkClicks = 0,
+        reach = 0;
+      let ds = insightsRows[0].date_start || since || '';
+      let de = insightsRows[insightsRows.length - 1].date_stop || until || '';
+      let cpc = 0,
+        cpm = 0,
+        ctr = 0,
+        freq = 0,
+        freqCount = 0;
+      for (const row of insightsRows) {
+        spend += parseFloat(row.spend || '0');
+        impressions += parseInt(row.impressions || '0');
+        inlineLinkClicks += parseInt(row.inline_link_clicks || row.clicks || '0');
+        reach += parseInt(row.reach || '0');
+        cpc += parseFloat(row.cpc || '0');
+        cpm += parseFloat(row.cpm || '0');
+        ctr += parseFloat(row.ctr || '0');
+        freq += parseFloat(row.frequency || '0');
+        freqCount++;
+      }
+      if (freqCount > 0) {
+        cpc /= freqCount;
+        cpm /= freqCount;
+        ctr /= freqCount;
+        freq /= freqCount;
+      }
+      return NextResponse.json(
+        {
+          success: true,
+          data: { spend, impressions, inlineLinkClicks, reach, date_start: ds, date_end: de, cpc, cpm, ctr, frequency: freq },
+          meta: { count: insightsRows.length },
+        },
+        { status: 200 }
+      );
+    }
+
+    // Single data point (backward compat)
+    const insights = insightsRows[0];
     const result: MetaInsightsData = {
       spend: parseFloat(insights.spend || '0'),
       impressions: parseInt(insights.impressions || '0'),
-      inlineLinkClicks: parseInt(insights.inline_link_clicks || '0'),
+      inlineLinkClicks: parseInt(insights.inline_link_clicks || insights.clicks || '0'),
       reach: parseInt(insights.reach || '0'),
       date_start: insights.date_start || '',
       date_end: insights.date_stop || '',
+      cpc: parseFloat(insights.cpc || '0'),
+      cpm: parseFloat(insights.cpm || '0'),
+      ctr: parseFloat(insights.ctr || '0'),
+      frequency: parseFloat(insights.frequency || '0'),
     };
 
-    // Save to local database for historical tracking
-    // IMPORANT: Only save if this is a DAILY record (single day)
-    // If getting a range (e.g. 30 days), the API returns the TOTAL for that range
-    // We don't want to save the 30-day total as if it were a single day's record
-    const isSingleDay = (!since && !until) || (since === until);
-
+    // Save daily for backward compat
     if (isSingleDay) {
       try {
         const adsData: AdsData = {
@@ -159,27 +200,20 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
           date_end: result.date_end,
         };
         saveAdsLog(adsData);
+        upsertInsightsBatch([insights]);
       } catch (dbError) {
-        // Log the error but don't fail the request
         logger.warn('Database save failed (non-critical)', { error: (dbError as Error).message });
       }
+    } else {
+      // still save batch
+      try {
+        upsertInsightsBatch([insights]);
+      } catch {}
     }
-    return NextResponse.json(
-      {
-        success: true,
-        data: result,
-      },
-      { status: 200 }
-    );
+
+    return NextResponse.json({ success: true, data: result }, { status: 200 });
   } catch (error) {
     logger.error('Unexpected error in Meta insights API', {}, error as Error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error instanceof Error ? error.message : 'Internal server error' }, { status: 500 });
   }
 }

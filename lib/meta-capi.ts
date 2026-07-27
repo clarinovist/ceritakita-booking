@@ -159,12 +159,15 @@ export async function sendLeadEvent(
 
 /**
  * Helper: Send "Purchase" event when lead converts to booking
+ * Extended with optional fbc/fbp for better attribution matching
  */
 export async function sendPurchaseEvent(
     leadName: string,
     leadPhone: string,
     leadEmail: string | undefined,
-    bookingValue: number
+    bookingValue: number,
+    fbc?: string,
+    fbp?: string
 ): Promise<{ success: boolean; event_id?: string }> {
     const userData: MetaCAPIEvent['user_data'] = {
         ph: [hashSHA256(leadPhone)]
@@ -173,6 +176,9 @@ export async function sendPurchaseEvent(
     if (leadEmail) {
         userData.em = [hashSHA256(leadEmail)];
     }
+
+    if (fbc) userData.fbc = fbc;
+    if (fbp) userData.fbp = fbp;
 
     const nameParts = leadName.split(' ');
     if (nameParts.length > 0) {
@@ -193,6 +199,13 @@ export async function sendPurchaseEvent(
             content_name: 'Photography Session'
         }
     });
+}
+
+export async function sendPurchaseEventFromLead(
+    lead: { name: string; whatsapp: string; email?: string; fbc?: string | null; fbp?: string | null },
+    value: number
+) {
+    return sendPurchaseEvent(lead.name, lead.whatsapp, lead.email, value, lead.fbc || undefined, lead.fbp || undefined);
 }
 
 /**

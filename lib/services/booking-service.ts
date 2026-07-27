@@ -34,11 +34,11 @@ export class BookingService {
      * Create a new booking
      */
     async createBooking(
-        data: CreateBookingInput,
+        data: CreateBookingInput & { lead_id?: string },
         uploadedFile?: { filepath: string; originalFilename?: string; mimetype?: string; size: number } | null,
         requestId: string = crypto.randomUUID()
     ) {
-        const { customer, booking, finance, photographer_id, addons } = data;
+        const { customer, booking, finance, photographer_id, addons, lead_id } = data as any;
 
         // 1. Backend Price Validation and Breakdown Calculation
         const services = await readServices();
@@ -59,7 +59,7 @@ export class BookingService {
                 couponCode = safeProperty(finance, 'coupon_code', undefined);
             }
 
-            const addonsList = (addons || []).map(a => ({
+            const addonsList = (addons || []).map((a: any) => ({
                 price: safeNumber(a.price_at_booking),
                 quantity: safeNumber(a.quantity)
             }));
@@ -196,7 +196,7 @@ export class BookingService {
         }
 
         // 5. Update payment with proof filename
-        const payments = (finance?.payments || []).map((payment, index) => {
+        const payments = (finance?.payments || []).map((payment: any, index: number) => {
             if (index === 0 && proofFilename) {
                 // First payment: add proof data
                 const { proof_base64: _, ...paymentWithoutBase64 } = payment;
@@ -210,7 +210,7 @@ export class BookingService {
             return payment;
         });
 
-        const newBooking: Booking = {
+        const newBooking: any = {
             id: bookingId,
             created_at: new Date().toISOString(),
             status: 'Active',
@@ -230,7 +230,8 @@ export class BookingService {
                 coupon_code: couponCode
             },
             photographer_id,
-            addons
+            addons,
+            lead_id: lead_id || null,
         };
 
         // 6. Save to database
@@ -272,6 +273,46 @@ export class BookingService {
         sendNewBookingNotification(newBooking).catch(e => {
             logger.error('Failed to send Telegram notification', { bookingId: newBooking.id }, e as Error);
         });
+
+        // 8b. CAPI Purchase event with attribution if lead linked
+        try {
+            const { sendPurchaseEvent } = await import('@/lib/meta-capi');
+            let leadForPurchase: any = null;
+            if (newBooking.lead_id) {
+                try {
+                    const { getLeadById } = await import('@/lib/repositories/leads');
+                    leadForPurchase = await getLeadById(newBooking.lead_id);
+                } catch {}
+            }
+            // Include fbc/fbp if available
+            const purchaseEvent = {
+                leadName: newBooking.customer.name,
+                leadPhone: newBooking.customer.whatsapp,
+                leadEmail: newBooking.customer.email,
+                bookingValue: newBooking.finance.total_price,
+                fbc: leadForPurchase?.fbc,
+                fbp: leadForPurchase?.fbp,
+            };
+            if (leadForPurchase?.fbc || leadForPurchase?.fbp || newBooking.customer.whatsapp) {
+                // extended sendPurchaseEvent handles fbc/fbp if we patched, else basic still fires
+                (sendPurchaseEvent as any)(
+                    purchaseEvent.leadName,
+                    purchaseEvent.leadPhone,
+                    purchaseEvent.leadEmail,
+                    purchaseEvent.bookingValue,
+                    purchaseEvent.fbc,
+                    purchaseEvent.fbp
+                ).catch(() => {});
+            }
+        } catch {}
+
+        // 8c. Update lead status to Won if linked
+        if (newBooking.lead_id) {
+            try {
+                const { updateLead } = await import('@/lib/repositories/leads');
+                await updateLead(newBooking.lead_id, { status: 'Won', booking_id: newBooking.id, converted_at: new Date().toISOString() } as any);
+            } catch {}
+        }
 
         // 9. Send Customer Email Confirmation
         if (newBooking.customer.email && settings.customer_email_enabled) {

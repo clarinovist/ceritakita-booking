@@ -63,6 +63,7 @@ export const createBookingSchema = z.object({
   finance: financeSchema,
   photographer_id: z.string().optional(),
   addons: z.array(bookingAddonSchema).optional(),
+  lead_id: z.string().optional(),
 });
 
 // Booking update schema (only allow specific fields to be updated)
@@ -74,6 +75,7 @@ export const updateBookingSchema = z.object({
   customer: customerSchema.partial().optional(),
   photographer_id: z.string().optional(),
   addons: z.array(bookingAddonSchema).optional(),
+  lead_id: z.string().optional(),
 });
 
 // Service validation schema

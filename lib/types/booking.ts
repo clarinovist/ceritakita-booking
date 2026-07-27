@@ -129,6 +129,9 @@ export interface Booking {
 
   /** Reschedule history */
   reschedule_history?: RescheduleHistory[];
+
+  /** Linked lead ID for attribution */
+  lead_id?: string | null;
 }
 
 // Form Data Types

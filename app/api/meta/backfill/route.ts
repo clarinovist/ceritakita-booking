@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-// ✅ Ganti import lama dengan ini:
-import { backfillAdsHistory } from '@/lib/repositories/analytics';
+import { syncAll } from '@/lib/services/meta-ads-service';
 import { logger, createErrorResponse } from '@/lib/logger';
 
 export interface BackfillResponse {
@@ -9,39 +8,21 @@ export interface BackfillResponse {
   daysBackfilled?: number;
   totalDays?: number;
   errors?: string[];
+  campaigns?: number;
+  adsets?: number;
+  ads?: number;
+  insights?: number;
 }
 
 /**
  * POST /api/meta/backfill
- * Backfill historical ads data for the last N days
- *
- * Query params:
- * - days: Number of days to backfill (default: 30, max: 90)
- *
- * This is a one-time operation to populate historical daily data
+ * Refactored to use new sync service (single request per level with time_increment=1)
  */
 export async function POST(request: NextRequest): Promise<NextResponse<BackfillResponse>> {
   try {
-    // Get environment variables
-    const accessToken = process.env.META_ACCESS_TOKEN;
-    const adAccountId = process.env.META_AD_ACCOUNT_ID;
-    const apiVersion = process.env.META_API_VERSION || 'v19.0';
-
-    // Validate environment variables
-    if (!accessToken || !adAccountId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: 'Missing required environment variables: META_ACCESS_TOKEN or META_AD_ACCOUNT_ID',
-        },
-        { status: 500 }
-      );
-    }
-
-    // Get days parameter from query string
     const searchParams = request.nextUrl.searchParams;
     const daysParam = searchParams.get('days');
-    const days = daysParam ? Math.min(parseInt(daysParam), 90) : 30; // Max 90 days
+    const days = daysParam ? Math.min(parseInt(daysParam), 90) : 30;
 
     if (isNaN(days) || days < 1) {
       return NextResponse.json(
@@ -53,19 +34,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<BackfillR
       );
     }
 
-    logger.info(`Starting backfill for ${days} days`, { days });
+    logger.info(`Starting backfill via new sync service for ${days} days`, { days });
 
-    // Perform backfill
-    const result = await backfillAdsHistory(accessToken, adAccountId, days, apiVersion);
+    const result = await syncAll(days, true);
 
-    if (result.success) {
+    if (result.errors.length === 0) {
       return NextResponse.json(
         {
           success: true,
-          message: `Successfully backfilled ${result.daysBackfilled} out of ${days} days`,
-          daysBackfilled: result.daysBackfilled,
+          message: `Successfully backfilled ${days} days. ${result.campaigns} campaigns, ${result.adsets} adsets, ${result.ads} ads, ${result.insights} insight rows`,
+          daysBackfilled: days,
           totalDays: days,
-          errors: result.errors.length > 0 ? result.errors : undefined,
+          campaigns: result.campaigns,
+          adsets: result.adsets,
+          ads: result.ads,
+          insights: result.insights,
         },
         { status: 200 }
       );
@@ -73,12 +56,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<BackfillR
       return NextResponse.json(
         {
           success: false,
-          message: `Backfill completed with errors. ${result.daysBackfilled} out of ${days} days were backfilled.`,
-          daysBackfilled: result.daysBackfilled,
+          message: `Backfill completed with some errors. ${result.insights} insight rows saved. Errors: ${result.errors.join('; ')}`,
+          daysBackfilled: days,
           totalDays: days,
           errors: result.errors,
+          campaigns: result.campaigns,
+          adsets: result.adsets,
+          ads: result.ads,
+          insights: result.insights,
         },
-        { status: 207 } // Multi-status
+        { status: 207 }
       );
     }
   } catch (error) {

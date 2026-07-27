@@ -71,7 +71,18 @@ export async function getLeads(filters: LeadFilters = {}): Promise<Lead[]> {
         booking_id: row.booking_id,
         converted_at: row.converted_at,
         last_contacted_at: row.last_contacted_at,
-        next_follow_up: row.next_follow_up
+        next_follow_up: row.next_follow_up,
+        meta_campaign_id: row.meta_campaign_id,
+        meta_adset_id: row.meta_adset_id,
+        meta_ad_id: row.meta_ad_id,
+        fbclid: row.fbclid,
+        fbc: row.fbc,
+        fbp: row.fbp,
+        utm_campaign: row.utm_campaign,
+        utm_content: row.utm_content,
+        utm_term: row.utm_term,
+        utm_medium: row.utm_medium,
+        utm_source: row.utm_source
       }));
     } catch (error) {
       throw new LeadDatabaseError('Failed to fetch leads', error);
@@ -152,7 +163,18 @@ export async function getLeadsPaginated(
         booking_id: row.booking_id,
         converted_at: row.converted_at,
         last_contacted_at: row.last_contacted_at,
-        next_follow_up: row.next_follow_up
+        next_follow_up: row.next_follow_up,
+        meta_campaign_id: row.meta_campaign_id,
+        meta_adset_id: row.meta_adset_id,
+        meta_ad_id: row.meta_ad_id,
+        fbclid: row.fbclid,
+        fbc: row.fbc,
+        fbp: row.fbp,
+        utm_campaign: row.utm_campaign,
+        utm_content: row.utm_content,
+        utm_term: row.utm_term,
+        utm_medium: row.utm_medium,
+        utm_source: row.utm_source
       }));
 
       return {
@@ -194,7 +216,18 @@ export async function getLeadById(id: string): Promise<Lead | null> {
         booking_id: row.booking_id,
         converted_at: row.converted_at,
         last_contacted_at: row.last_contacted_at,
-        next_follow_up: row.next_follow_up
+        next_follow_up: row.next_follow_up,
+        meta_campaign_id: row.meta_campaign_id,
+        meta_adset_id: row.meta_adset_id,
+        meta_ad_id: row.meta_ad_id,
+        fbclid: row.fbclid,
+        fbc: row.fbc,
+        fbp: row.fbp,
+        utm_campaign: row.utm_campaign,
+        utm_content: row.utm_content,
+        utm_term: row.utm_term,
+        utm_medium: row.utm_medium,
+        utm_source: row.utm_source
       };
     } catch (error) {
       throw new LeadDatabaseError('Failed to fetch lead', error);
@@ -212,8 +245,10 @@ export async function createLead(data: LeadFormData): Promise<Lead> {
       const stmt = db.prepare(`
         INSERT INTO leads (
           id, created_at, updated_at, name, whatsapp, email, status, source, interest,
-          notes, assigned_to, next_follow_up
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          notes, assigned_to, next_follow_up,
+          meta_campaign_id, meta_adset_id, meta_ad_id, fbclid, fbc, fbp,
+          utm_campaign, utm_content, utm_term, utm_medium, utm_source
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       const result = stmt.run(
@@ -228,7 +263,18 @@ export async function createLead(data: LeadFormData): Promise<Lead> {
         data.interest ? JSON.stringify(data.interest) : null,
         data.notes || null,
         data.assigned_to || null,
-        data.next_follow_up || null
+        data.next_follow_up || null,
+        data.meta_campaign_id || null,
+        data.meta_adset_id || null,
+        data.meta_ad_id || null,
+        data.fbclid || null,
+        data.fbc || null,
+        data.fbp || null,
+        data.utm_campaign || null,
+        data.utm_content || null,
+        data.utm_term || null,
+        data.utm_medium || null,
+        data.utm_source || null
       );
 
       if (result.changes === 0) {
@@ -304,6 +350,50 @@ export async function updateLead(id: string, data: LeadUpdateData): Promise<Lead
       if (data.next_follow_up !== undefined) {
         updates.push('next_follow_up = ?');
         params.push(data.next_follow_up);
+      }
+      if (data.meta_campaign_id !== undefined) {
+        updates.push('meta_campaign_id = ?');
+        params.push(data.meta_campaign_id || null);
+      }
+      if (data.meta_adset_id !== undefined) {
+        updates.push('meta_adset_id = ?');
+        params.push(data.meta_adset_id || null);
+      }
+      if (data.meta_ad_id !== undefined) {
+        updates.push('meta_ad_id = ?');
+        params.push(data.meta_ad_id || null);
+      }
+      if (data.fbclid !== undefined) {
+        updates.push('fbclid = ?');
+        params.push(data.fbclid || null);
+      }
+      if (data.fbc !== undefined) {
+        updates.push('fbc = ?');
+        params.push(data.fbc || null);
+      }
+      if (data.fbp !== undefined) {
+        updates.push('fbp = ?');
+        params.push(data.fbp || null);
+      }
+      if (data.utm_campaign !== undefined) {
+        updates.push('utm_campaign = ?');
+        params.push(data.utm_campaign || null);
+      }
+      if (data.utm_content !== undefined) {
+        updates.push('utm_content = ?');
+        params.push(data.utm_content || null);
+      }
+      if (data.utm_term !== undefined) {
+        updates.push('utm_term = ?');
+        params.push(data.utm_term || null);
+      }
+      if (data.utm_medium !== undefined) {
+        updates.push('utm_medium = ?');
+        params.push(data.utm_medium || null);
+      }
+      if (data.utm_source !== undefined) {
+        updates.push('utm_source = ?');
+        params.push(data.utm_source || null);
       }
 
       if (updates.length === 0) {

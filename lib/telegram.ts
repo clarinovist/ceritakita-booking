@@ -210,11 +210,11 @@ export function formatDailyReport(data: DailyReportData): string {
         });
     }
 
-    // Ads + WA Click insights
+    // Ads + WA Click insights (DB)
     if (data.adsInsights) {
         const ads = data.adsInsights;
         lines.push('');
-        lines.push('📢 *Meta Ads (3 Hari Terakhir)*');
+        lines.push('📢 *Meta Ads (DB, 3 Hari Terakhir)*');
         lines.push(`   💸 Spend: ${formatRupiah(ads.spend)}`);
         lines.push(`   👁 Impressions: ${ads.impressions.toLocaleString('id-ID')}`);
         lines.push(`   🔗 Link Clicks: ${ads.linkClicks.toLocaleString('id-ID')}`);
@@ -229,11 +229,31 @@ export function formatDailyReport(data: DailyReportData): string {
                 lines.push(`   • ${label}: ${clicks}`);
             });
         }
-        // Funnel: Meta link clicks → WA clicks
         if (ads.linkClicks > 0 && ads.waClicks > 0) {
             const conversionRate = ((ads.waClicks / ads.linkClicks) * 100).toFixed(1);
             lines.push(`   🔄 Link→WA: ${conversionRate}%`);
         }
+
+        // Try best/worst campaign from DB if available
+        try {
+            const { getDb } = require('@/lib/db');
+            const db = getDb();
+            const best = db.prepare(`
+                SELECT c.name, SUM(i.spend) as spend, COUNT(DISTINCT l.id) as leads, COUNT(DISTINCT b.id) as bookings
+                FROM meta_campaigns c
+                LEFT JOIN meta_insights_daily i ON i.campaign_id = c.id AND i.date_record >= DATE('now','-3 days')
+                LEFT JOIN leads l ON l.meta_campaign_id = c.id AND DATE(l.created_at) >= DATE('now','-3 days')
+                LEFT JOIN bookings b ON b.lead_id = l.id
+                GROUP BY c.id HAVING spend > 0 ORDER BY spend DESC LIMIT 3
+            `).all();
+            if (best && best.length) {
+                lines.push('');
+                lines.push('🏆 *Top Campaigns (3d)*');
+                best.forEach((r: any) => {
+                    lines.push(`   • ${r.name?.slice(0, 30)} — ${formatRupiah(r.spend)} — ${r.leads} leads — ${r.bookings} booking`);
+                });
+            }
+        } catch {}
     } else {
         lines.push('');
         lines.push('📢 _Data iklan tidak tersedia_');

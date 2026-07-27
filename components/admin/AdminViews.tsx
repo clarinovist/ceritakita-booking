@@ -12,6 +12,7 @@ import SettingsManagement from './SettingsManagement';
 import CatalogManagement from './CatalogManagement';
 import HomepageCMS from './HomepageCMS';
 import AdsPerformance from './AdsPerformance';
+import MetaAdsDashboard from './ads/MetaAdsDashboard';
 import LeadPerformance from './analytics/LeadPerformance';
 import { FinanceModule } from './FinanceModule';
 import { FreelancerModule } from './FreelancerModule';
@@ -79,10 +80,17 @@ export function AdminViews({
         case 'ads':
             return (
                 <div className="animate-in fade-in space-y-8">
-                    <AdsPerformance
+                    <MetaAdsDashboard
                         bookings={bookingsHook.bookingsByCreatedDate}
                         dateRange={bookingsHook.dateRange}
                     />
+                    <div className="opacity-60">
+                        <p className="text-xs text-gray-400 mb-2">Legacy (account-level) performance:</p>
+                        <AdsPerformance
+                            bookings={bookingsHook.bookingsByCreatedDate}
+                            dateRange={bookingsHook.dateRange}
+                        />
+                    </div>
                     <LeadPerformance data={adminAnalytics.data as any} />
                 </div>
             );

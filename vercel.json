@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/meta/sync?days=2",
+      "schedule": "0 */3 * * *"
+    }
+  ]
+}

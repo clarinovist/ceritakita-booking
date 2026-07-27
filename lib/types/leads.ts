@@ -52,6 +52,19 @@ export interface Lead {
 
   /** Next follow-up date */
   next_follow_up?: string;
+
+  /** Attribution - Meta */
+  meta_campaign_id?: string | null;
+  meta_adset_id?: string | null;
+  meta_ad_id?: string | null;
+  fbclid?: string | null;
+  fbc?: string | null;
+  fbp?: string | null;
+  utm_campaign?: string | null;
+  utm_content?: string | null;
+  utm_term?: string | null;
+  utm_medium?: string | null;
+  utm_source?: string | null;
 }
 
 export interface LeadFormData {
@@ -64,6 +77,18 @@ export interface LeadFormData {
   notes?: string;
   assigned_to?: string;
   next_follow_up?: string;
+  // attribution optional
+  meta_campaign_id?: string;
+  meta_adset_id?: string;
+  meta_ad_id?: string;
+  fbclid?: string;
+  fbc?: string;
+  fbp?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  utm_medium?: string;
+  utm_source?: string;
 }
 
 export interface LeadUpdateData {
@@ -79,6 +104,17 @@ export interface LeadUpdateData {
   converted_at?: string;
   last_contacted_at?: string;
   next_follow_up?: string;
+  meta_campaign_id?: string;
+  meta_adset_id?: string;
+  meta_ad_id?: string;
+  fbclid?: string;
+  fbc?: string;
+  fbp?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  utm_term?: string;
+  utm_medium?: string;
+  utm_source?: string;
 }
 
 export interface LeadFilters {

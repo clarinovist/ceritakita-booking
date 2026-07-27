@@ -24,6 +24,7 @@ interface BookingRow {
   coupon_discount?: number | null;
   coupon_code?: string | null;
   photographer_id?: string | null;
+  lead_id?: string | null;
 }
 
 interface PaymentRow {
@@ -80,6 +81,7 @@ function rowToBooking(row: BookingRow, payments: Payment[], addons?: BookingAddo
     photographer_id: row.photographer_id ? safeString(row.photographer_id) : undefined,
     addons: addons && addons.length > 0 ? addons : undefined,
     reschedule_history: rescheduleHistory && rescheduleHistory.length > 0 ? rescheduleHistory : undefined,
+    lead_id: (row as any).lead_id ? safeString((row as any).lead_id) : undefined,
   };
 }
 
@@ -437,8 +439,8 @@ export async function createBooking(booking: Booking): Promise<void> {
                 customer_name, customer_whatsapp, customer_category, customer_service_id,
                 booking_date, booking_notes, booking_location_link, drive_link,
                 total_price, service_base_price, base_discount, addons_total, coupon_discount, coupon_code,
-                photographer_id
-              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                photographer_id, lead_id
+              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `);
 
         stmt.run(
@@ -459,7 +461,8 @@ export async function createBooking(booking: Booking): Promise<void> {
           booking.finance.addons_total ?? null,
           booking.finance.coupon_discount ?? null,
           booking.finance.coupon_code || null,
-          booking.photographer_id || null
+          booking.photographer_id || null,
+          (booking as any).lead_id || null
         );
 
         // Insert payments
