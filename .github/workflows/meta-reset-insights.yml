@@ -1,0 +1,94 @@
+name: Reset Meta Insights and Resync
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days to resync after reset'
+        default: '30'
+      confirm:
+        description: 'Type YES to confirm deletion'
+        required: true
+        default: 'NO'
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reset insights on VPS
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 10m
+          script: |
+            set +e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            if [ "${{ inputs.confirm }}" != "YES" ]; then
+              echo "Must type YES to confirm"
+              exit 1
+            fi
+
+            echo "=== Before reset count ==="
+            docker compose exec -T app sh -c "ls -lh data/bookings.db*" || true
+
+            # Use sqlite3 inside container if available, else via node
+            echo "Deleting duplicate insights and resetting..."
+            docker compose exec -T app node -e "
+            const { getDb } = require('/app/lib/db.ts');
+            " 2>&1 | head -20
+
+            # Direct approach: use sqlite3 via npx better-sqlite3 tool
+            docker compose exec -T app sh -c "
+              node <<'NODE'
+            const Database = require('better-sqlite3');
+            const db = new Database('/app/data/bookings.db');
+            console.log('Before:', db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get());
+            // Normalize NULLs to ''
+            db.exec(\"UPDATE meta_insights_daily SET campaign_id = COALESCE(campaign_id, ''), adset_id = COALESCE(adset_id, ''), ad_id = COALESCE(ad_id, ''), breakdown_type = COALESCE(breakdown_type, ''), breakdown_value = COALESCE(breakdown_value, '')\");
+            console.log('After normalize NULLs');
+            // Deduplicate keeping MAX id
+            const before = db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c;
+            db.exec(\"DELETE FROM meta_insights_daily WHERE id NOT IN (SELECT MAX(id) FROM meta_insights_daily GROUP BY date_record, campaign_id, adset_id, ad_id, breakdown_type, breakdown_value)\");
+            const after = db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c;
+            console.log('Dedup:', before, '->', after);
+            // Optional full reset if days param says to reset
+            if ('${{ inputs.days }}' === 'FULLRESET') {
+              db.exec('DELETE FROM meta_insights_daily');
+              console.log('Full reset done');
+            }
+            console.log('Counts by campaign:');
+            const rows = db.prepare('SELECT campaign_id, COUNT(*) as cnt, SUM(spend) as spend FROM meta_insights_daily GROUP BY campaign_id').all();
+            rows.forEach(r=> console.log(r));
+            db.close();
+            NODE
+            " 2>&1 | tail -100
+
+            echo "=== Trigger full resync days=${{ inputs.days }} ==="
+            sleep 2
+            curl -s -X POST --max-time 300 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days }}&full=1" | tail -c 2000
+            echo ""
+
+            echo "=== After resync counts ==="
+            docker compose exec -T app sh -c "
+              node <<'NODE'
+            const Database = require('better-sqlite3');
+            const db = new Database('/app/data/bookings.db');
+            const rows = db.prepare('SELECT campaign_id, COUNT(*) as cnt, SUM(spend) as spend FROM meta_insights_daily GROUP BY campaign_id').all();
+            rows.forEach(r=> console.log(r));
+            console.log('Total rows:', db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c);
+            console.log('Total spend:', db.prepare('SELECT SUM(spend) as s FROM meta_insights_daily').get().s);
+            db.close();
+            NODE
+            " 2>&1 | tail -50
+
+            echo "=== Attribution after ==="
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/attribution" 2>&1 | tail -c 2000
+
+            echo "=== Backfill attribution ==="
+            curl -s -X POST --max-time 60 "http://127.0.0.1:3001/api/meta/backfill-attribution" 2>&1 | tail -c 2000
+
+            echo "✅ Reset + resync done"
