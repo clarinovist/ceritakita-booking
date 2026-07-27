@@ -1,0 +1,100 @@
+name: Update Meta Token on VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days to sync after token update (default 7)'
+        required: false
+        default: '7'
+      full:
+        description: 'Full sync (campaign+ad insights)? true/false'
+        required: false
+        default: 'false'
+
+jobs:
+  update-token:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update .env.local on VPS and restart
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 10m
+          script: |
+            set -euo pipefail
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "Backing up .env.local..."
+            cp -a .env.local .env.local.bak.$(date +%Y%m%d%H%M%S) || true
+
+            # Helper to upsert key without leaking full value in log (show last 8 chars only)
+            upsert_env() {
+              local key="$1"
+              local value="$2"
+              # Remove existing line(s) for the key
+              grep -v "^${key}=" .env.local > .env.local.tmp 2>/dev/null || cp .env.local .env.local.tmp || true
+              mv .env.local.tmp .env.local
+              echo "${key}=${value}" >> .env.local
+              echo "Updated ${key}=...${value: -8}"
+            }
+
+            # Update tokens from GH secrets (these are masked in logs)
+            upsert_env "META_ACCESS_TOKEN" "${{ secrets.META_ACCESS_TOKEN }}"
+            upsert_env "META_ACCESS_TOKEN_CK" "${{ secrets.META_ACCESS_TOKEN_CK }}"
+            # Ensure account id and version present
+            if ! grep -q "^META_AD_ACCOUNT_ID=" .env.local; then
+              echo "META_AD_ACCOUNT_ID=act_203972264282201" >> .env.local
+            fi
+            if ! grep -q "^META_API_VERSION=" .env.local; then
+              echo "META_API_VERSION=v19.0" >> .env.local
+            fi
+            if ! grep -q "^META_PIXEL_ID=" .env.local; then
+              echo "META_PIXEL_ID=726869962677647" >> .env.local
+            fi
+            if ! grep -q "^META_CAMPAIGN_ID=" .env.local; then
+              echo "META_CAMPAIGN_ID=act_203972264282201" >> .env.local
+            fi
+
+            echo "Current META keys (masked):"
+            grep "^META_" .env.local | sed 's/=.*/=***/' || true
+
+            echo "Restarting container..."
+            docker compose up -d --remove-orphans
+
+            HEALTH_URL="http://127.0.0.1:3001/api/health"
+            echo "Waiting health at ${HEALTH_URL}..."
+            OK=0
+            for i in $(seq 1 36); do
+              if RESP="$(curl -fsS --max-time 5 "${HEALTH_URL}" 2>/dev/null)" \
+                && echo "$RESP" | grep -q '"status":"healthy"'; then
+                echo "✅ Health OK attempt ${i}/36"
+                OK=1
+                break
+              fi
+              echo "… attempt ${i}/36 not healthy"
+              sleep 5
+            done
+
+            if [ "$OK" -ne 1 ]; then
+              echo "❌ Health failed"
+              docker compose ps
+              docker compose logs --tail=150 app
+              exit 1
+            fi
+
+            echo "Checking meta health endpoint..."
+            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/health" 2>/dev/null | head -c 2000 || echo "meta/health not reachable yet"
+
+            echo "Triggering meta sync (days=${{ inputs.days }} full=${{ inputs.full }})..."
+            curl -fsS -X POST --max-time 120 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days || 7 }}&full=${{ inputs.full == 'true' && '1' || '0' }}" 2>/dev/null | head -c 3000 || echo "sync trigger failed (non-fatal, check later)"
+
+            echo "DB checks..."
+            # Try count meta tables via sqlite inside container or via api
+            curl -fsS --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" 2>/dev/null | head -c 1000 || echo "campaigns not yet"
+
+            docker compose ps
+            echo "✅ Token update + restart completed"
