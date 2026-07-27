@@ -1,0 +1,41 @@
+name: Debug Campaigns List
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 5m
+          script: |
+            set +e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "=== campaigns from DB ==="
+            docker compose exec -T app sh -c '
+              node <<'"'"'NODE'"'"'
+            const Database = require("better-sqlite3");
+            const db = new Database("/app/data/bookings.db");
+            console.log("meta_campaigns:");
+            db.prepare("SELECT id, name, status, created_time, daily_budget FROM meta_campaigns").all().forEach(r=> console.log(JSON.stringify(r)));
+            console.log("\nleads by month:");
+            db.prepare("SELECT strftime('"'"'%Y-%m'"'"', created_at) as month, COUNT(*) as cnt FROM leads WHERE source='"'"'Meta Ads'"'"' GROUP BY month ORDER BY month").all().forEach(r=> console.log(r));
+            console.log("\nleads Meta Ads sample with created_at:");
+            db.prepare("SELECT id, name, created_at, meta_campaign_id FROM leads WHERE source='"'"'Meta Ads'"'"' ORDER BY created_at DESC LIMIT 20").all().forEach(r=> console.log(r));
+            db.close();
+            NODE
+            ' 2>&1 | tail -100
+
+            echo ""
+            echo "=== via API ==="
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/campaigns" | python3 -m json.tool 2>&1 | head -100
+
+            echo "✅ Done"
