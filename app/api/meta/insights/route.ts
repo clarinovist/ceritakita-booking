@@ -1,6 +1,4 @@
-import { type AdsData } from '@/lib/types';
 import { NextRequest, NextResponse } from 'next/server';
-import { saveAdsLog } from '@/lib/repositories/analytics';
 import { getInsights, DEFAULT_INSIGHT_FIELDS, requireMetaConfig } from '@/lib/meta/client';
 import { upsertInsightsBatch } from '@/lib/repositories/meta-ads';
 import { logger } from '@/lib/logger';
@@ -78,7 +76,6 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       );
     }
 
-    const isSingleDay = (!since && !until) || (since === until);
     const params: any = {
       level,
       fields: DEFAULT_INSIGHT_FIELDS,
@@ -173,7 +170,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       );
     }
 
-    // Single data point (backward compat)
+    // Single data point (now only uses new table)
     const insights = insightsRows[0];
     const result: MetaInsightsData = {
       spend: parseFloat(insights.spend || '0'),
@@ -188,27 +185,10 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
       frequency: parseFloat(insights.frequency || '0'),
     };
 
-    // Save daily for backward compat
-    if (isSingleDay) {
-      try {
-        const adsData: AdsData = {
-          spend: result.spend,
-          impressions: result.impressions,
-          inlineLinkClicks: result.inlineLinkClicks,
-          reach: result.reach,
-          date_start: result.date_start,
-          date_end: result.date_end,
-        };
-        saveAdsLog(adsData);
-        upsertInsightsBatch([insights]);
-      } catch (dbError) {
-        logger.warn('Database save failed (non-critical)', { error: (dbError as Error).message });
-      }
-    } else {
-      // still save batch
-      try {
-        upsertInsightsBatch([insights]);
-      } catch {}
+    try {
+      upsertInsightsBatch([insights]);
+    } catch (dbError) {
+      logger.warn('Database save failed (non-critical)', { error: (dbError as Error).message });
     }
 
     return NextResponse.json({ success: true, data: result }, { status: 200 });

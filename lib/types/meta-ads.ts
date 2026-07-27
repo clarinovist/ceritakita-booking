@@ -1,8 +1,13 @@
 /**
  * Meta Ads Types
  * Centralized type definitions for Meta/Facebook Ads tracking
+ * 
+ * NOTE: Legacy types below (AdsData) kept for backward compat.
+ * New code should use types from lib/repositories/meta-ads (MetaCampaignRow, MetaInsightRow etc)
+ * or lib/meta/client (CampaignRow, AdSetRow, AdRow)
  */
 
+/** @deprecated Use MetaInsightRow from lib/repositories/meta-ads */
 export interface AdsData {
   spend: number;
   impressions: number;
@@ -13,38 +18,23 @@ export interface AdsData {
   updated_at?: string;
 }
 
+/** @deprecated Use MetaInsightRow */
 export interface AdsLogEntry {
-  /** Unique identifier */
   id: number;
-  
-  /** Date of the log entry */
   date_record: string;
-  
   spend: number;
   impressions: number;
   clicks: number;
   reach: number;
-  
-  /** When the entry was updated */
   updated_at: string;
 }
 
+/** @deprecated Use aggregated totals from getAttributionFunnel */
 export interface AdsInsights {
-  /** Total spend across period */
   total_spend: number;
-  
-  /** Total impressions */
   total_impressions: number;
-  
-  /** Total clicks */
   total_clicks: number;
-  
-  /** Total reach */
   total_reach: number;
-  
-  /** Start date of insights */
   start_date: string;
-  
-  /** End date of insights */
   end_date: string;
 }

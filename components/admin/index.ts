@@ -21,8 +21,6 @@
 // Views
 /** Dashboard view component for admin panel */
 export { default as AdminDashboard } from './AdminDashboard';
-/** Ads performance analytics component */
-export { default as AdsPerformance } from './AdsPerformance';
 /** Payment methods management component */
 export { default as PaymentMethodsManagement } from './PaymentMethodsManagement';
 /** System settings management component */

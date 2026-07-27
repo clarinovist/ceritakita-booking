@@ -19,50 +19,50 @@ jobs:
             set +e
             cd ${{ secrets.DEPLOY_PATH }}
 
-            docker compose exec -T app sh -c "
-              node <<'NODE'
-            const Database = require('better-sqlite3');
-            const db = new Database('/app/data/bookings.db');
+            docker compose exec -T app sh -c '
+              node <<'"'"'NODE'"'"'
+            const Database = require("better-sqlite3");
+            const db = new Database("/app/data/bookings.db");
 
-            console.log('=== bookings sample without lead_id (5) ===');
-            db.prepare('SELECT id, customer_name, customer_whatsapp, created_at, lead_id FROM bookings WHERE lead_id IS NULL OR lead_id = \"\" LIMIT 5').all().forEach(r=> console.log(r));
+            console.log("=== bookings sample without lead_id (5) ===");
+            db.prepare("SELECT id, customer_name, customer_whatsapp, created_at, lead_id FROM bookings WHERE lead_id IS NULL OR lead_id = ''\'''' LIMIT 5").all().forEach(r=> console.log(r));
 
-            console.log('=== bookings with lead_id (5) ===');
-            db.prepare('SELECT id, customer_name, customer_whatsapp, created_at, lead_id FROM bookings WHERE lead_id IS NOT NULL AND lead_id != \"\" LIMIT 5').all().forEach(r=> console.log(r));
+            console.log("=== bookings with lead_id (5) ===");
+            db.prepare("SELECT id, customer_name, customer_whatsapp, created_at, lead_id FROM bookings WHERE lead_id IS NOT NULL AND lead_id != ''\'''' LIMIT 5").all().forEach(r=> console.log(r));
 
-            console.log('=== leads sample (10) ===');
-            db.prepare('SELECT id, name, whatsapp, source, meta_campaign_id, created_at FROM leads ORDER BY created_at DESC LIMIT 10').all().forEach(r=> console.log(r));
+            console.log("=== leads sample (10) ===");
+            db.prepare("SELECT id, name, whatsapp, source, meta_campaign_id, created_at FROM leads ORDER BY created_at DESC LIMIT 10").all().forEach(r=> console.log(r));
 
-            console.log('=== leads Meta Ads without campaign (5) ===');
-            db.prepare('SELECT id, name, whatsapp, utm_campaign, meta_campaign_id, created_at FROM leads WHERE source = \"Meta Ads\" AND (meta_campaign_id IS NULL OR meta_campaign_id = \"\") LIMIT 5').all().forEach(r=> console.log(r));
+            console.log("=== leads Meta Ads without campaign (5) ===");
+            db.prepare("SELECT id, name, whatsapp, utm_campaign, meta_campaign_id, created_at FROM leads WHERE source = ''Meta Ads'' AND (meta_campaign_id IS NULL OR meta_campaign_id = ''\''') LIMIT 5").all().forEach(r=> console.log(r));
 
-            console.log('=== wa_clicks sample (5) ===');
-            db.prepare('SELECT id, source, utm_campaign, matched_campaign_id, campaign_id_param, clicked_at FROM wa_clicks ORDER BY clicked_at DESC LIMIT 5').all().forEach(r=> console.log(r));
+            console.log("=== wa_clicks sample (5) ===");
+            db.prepare("SELECT id, source, utm_campaign, matched_campaign_id, campaign_id_param, clicked_at FROM wa_clicks ORDER BY clicked_at DESC LIMIT 5").all().forEach(r=> console.log(r));
 
-            console.log('=== bookings vs leads phone normalize test ===');
-            function normalizePhone(p) { const digits = (p||'').replace(/\D/g,''); return digits.slice(-11); }
-            const bookings = db.prepare('SELECT customer_whatsapp FROM bookings WHERE lead_id IS NULL LIMIT 10').all();
-            const leads = db.prepare('SELECT whatsapp FROM leads LIMIT 20').all().map(r=> r.whatsapp);
+            console.log("=== bookings vs leads phone normalize test ===");
+            function normalizePhone(p) { const digits = (p||"").replace(/\D/g,""); return digits.slice(-11); }
+            const bookings = db.prepare("SELECT customer_whatsapp FROM bookings WHERE lead_id IS NULL LIMIT 10").all();
+            const leads = db.prepare("SELECT whatsapp FROM leads LIMIT 20").all().map(r=> r.whatsapp);
             bookings.forEach(b=> {
               const normB = normalizePhone(b.customer_whatsapp);
-              console.log('booking phone', b.customer_whatsapp, 'norm', normB, 'suffix10', normB.slice(-10));
+              console.log("booking phone", b.customer_whatsapp, "norm", normB, "suffix10", normB.slice(-10));
               leads.slice(0,3).forEach(l=> {
                 const normL = normalizePhone(l);
-                console.log('  vs lead', l, 'norm', normL, 'match?', normB.slice(-10) === normL.slice(-10) || normB.endsWith(normL.slice(-10)) || normL.endsWith(normB.slice(-10)));
+                console.log("  vs lead", l, "norm", normL, "match?", normB.slice(-10) === normL.slice(-10) || normB.endsWith(normL.slice(-10)) || normL.endsWith(normB.slice(-10)));
               });
             });
 
-            console.log('=== bookings count ===');
-            console.log('total bookings', db.prepare('SELECT COUNT(*) as c FROM bookings').get().c);
-            console.log('with lead_id', db.prepare('SELECT COUNT(*) as c FROM bookings WHERE lead_id IS NOT NULL AND lead_id != \"\"').get().c);
-            console.log('without lead_id', db.prepare('SELECT COUNT(*) as c FROM bookings WHERE lead_id IS NULL OR lead_id = \"\"').get().c);
-            console.log('total leads', db.prepare('SELECT COUNT(*) as c FROM leads').get().c);
-            console.log('leads Meta Ads total', db.prepare('SELECT COUNT(*) as c FROM leads WHERE source = \"Meta Ads\"').get().c);
-            console.log('leads Meta Ads with campaign', db.prepare('SELECT COUNT(*) as c FROM leads WHERE source = \"Meta Ads\" AND meta_campaign_id IS NOT NULL AND meta_campaign_id != \"\"').get().c);
-            console.log('leads Meta Ads without campaign', db.prepare('SELECT COUNT(*) as c FROM leads WHERE source = \"Meta Ads\" AND (meta_campaign_id IS NULL OR meta_campaign_id = \"\")').get().c);
+            console.log("=== bookings count ===");
+            console.log("total bookings", db.prepare("SELECT COUNT(*) as c FROM bookings").get().c);
+            console.log("with lead_id", db.prepare("SELECT COUNT(*) as c FROM bookings WHERE lead_id IS NOT NULL AND lead_id != ''\''").get().c);
+            console.log("without lead_id", db.prepare("SELECT COUNT(*) as c FROM bookings WHERE lead_id IS NULL OR lead_id = ''\''").get().c);
+            console.log("total leads", db.prepare("SELECT COUNT(*) as c FROM leads").get().c);
+            console.log("leads Meta Ads total", db.prepare("SELECT COUNT(*) as c FROM leads WHERE source = ''Meta Ads''").get().c);
+            console.log("leads Meta Ads with campaign", db.prepare("SELECT COUNT(*) as c FROM leads WHERE source = ''Meta Ads'' AND meta_campaign_id IS NOT NULL AND meta_campaign_id != ''\''").get().c);
+            console.log("leads Meta Ads without campaign", db.prepare("SELECT COUNT(*) as c FROM leads WHERE source = ''Meta Ads'' AND (meta_campaign_id IS NULL OR meta_campaign_id = ''\''')").get().c);
 
             db.close();
             NODE
-            " 2>&1 | tail -200
+            ' 2>&1 | tail -200
 
             echo "✅ Debug done"
