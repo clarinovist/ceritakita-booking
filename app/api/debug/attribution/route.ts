@@ -3,6 +3,11 @@ import { getDb } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+function normalizePhone(p: string) {
+  const digits = (p || '').replace(/\D/g, '');
+  return digits.slice(-11);
+}
+
 export async function GET() {
   try {
     const db = getDb();
@@ -24,11 +29,6 @@ export async function GET() {
       waTotal: (db.prepare(`SELECT COUNT(*) as c FROM wa_clicks`).get() as any).c,
       waMatched: (db.prepare(`SELECT COUNT(*) as c FROM wa_clicks WHERE matched_campaign_id IS NOT NULL AND matched_campaign_id != ''`).get() as any).c,
     };
-
-    function normalizePhone(p: string) {
-      const digits = (p || '').replace(/\D/g, '');
-      return digits.slice(-11);
-    }
 
     const bookingsForTest = bookingsWithoutLead.slice(0, 5) as any[];
     const leadsForTest = leadsSample.slice(0, 20) as any[];
