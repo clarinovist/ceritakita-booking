@@ -137,9 +137,9 @@ function runMetaAdsMigrations(db: Database.Database) {
     CREATE TABLE IF NOT EXISTS meta_insights_daily (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date_record TEXT NOT NULL,
-      campaign_id TEXT,
-      adset_id TEXT,
-      ad_id TEXT,
+      campaign_id TEXT NOT NULL DEFAULT '',
+      adset_id TEXT NOT NULL DEFAULT '',
+      ad_id TEXT NOT NULL DEFAULT '',
       spend REAL DEFAULT 0,
       impressions INTEGER DEFAULT 0,
       clicks INTEGER DEFAULT 0,
@@ -155,8 +155,8 @@ function runMetaAdsMigrations(db: Database.Database) {
       actions TEXT,
       action_values TEXT,
       video_views INTEGER DEFAULT 0,
-      breakdown_type TEXT,
-      breakdown_value TEXT,
+      breakdown_type TEXT NOT NULL DEFAULT '',
+      breakdown_value TEXT NOT NULL DEFAULT '',
       raw_json TEXT,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(date_record, campaign_id, adset_id, ad_id, breakdown_type, breakdown_value)
@@ -184,6 +184,20 @@ function runMetaAdsMigrations(db: Database.Database) {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // Fix existing DBs where meta_insights_daily had NULLs causing UNIQUE to fail (SQLite NULL != NULL)
+  // Normalize NULLs to '' and deduplicate keeping latest
+  try {
+    db.exec(`
+      UPDATE meta_insights_daily SET campaign_id = COALESCE(campaign_id, ''), adset_id = COALESCE(adset_id, ''), ad_id = COALESCE(ad_id, ''), breakdown_type = COALESCE(breakdown_type, ''), breakdown_value = COALESCE(breakdown_value, '') WHERE campaign_id IS NULL OR adset_id IS NULL OR ad_id IS NULL OR breakdown_type IS NULL OR breakdown_value IS NULL
+    `);
+    // Deduplicate: keep max id per unique key
+    db.exec(`
+      DELETE FROM meta_insights_daily WHERE id NOT IN (
+        SELECT MAX(id) FROM meta_insights_daily GROUP BY date_record, campaign_id, adset_id, ad_id, breakdown_type, breakdown_value
+      )
+    `);
+  } catch {}
 
   // Indexes
   db.exec(`

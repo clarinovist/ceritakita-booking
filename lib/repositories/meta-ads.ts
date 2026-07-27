@@ -271,11 +271,12 @@ function normalizeInsight(r: InsightInput): Omit<MetaInsightRow, 'id'> | null {
     videoViews = vv ? parseInt(vv.value || '0') : 0;
   }
 
+  // Use '' instead of NULL for UNIQUE constraint to work in SQLite (NULL != NULL)
   return {
     date_record: dateRecord,
-    campaign_id: r.campaign_id || null,
-    adset_id: r.adset_id || null,
-    ad_id: r.ad_id || (r as any).ad_id || null,
+    campaign_id: r.campaign_id || '',
+    adset_id: r.adset_id || '',
+    ad_id: r.ad_id || (r as any).ad_id || '',
     spend,
     impressions,
     clicks,
@@ -291,8 +292,8 @@ function normalizeInsight(r: InsightInput): Omit<MetaInsightRow, 'id'> | null {
     actions: actionsStr,
     action_values: actionValuesStr,
     video_views: videoViews,
-    breakdown_type: null,
-    breakdown_value: null,
+    breakdown_type: '',
+    breakdown_value: '',
     raw_json: JSON.stringify(r),
   };
 }
