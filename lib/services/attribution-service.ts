@@ -56,9 +56,12 @@ export function linkBookingsToLeads(): { linked: number; skipped: number; errors
         // try last 10 digits fallback
         const alt = normPhone.slice(-10);
         let found = false;
-        for (const [phone, list] of leadsByPhone.entries()) {
+        const entries = Array.from(leadsByPhone.entries());
+        for (const entry of entries) {
+          const phone = entry[0];
+          const list = entry[1];
           if (phone.endsWith(alt) || alt.endsWith(phone)) {
-            const candidate = list.find(l => new Date(l.created_at) <= new Date(booking.created_at) && new Date(l.created_at) >= new Date(new Date(booking.created_at).getTime() - 90 * 24 * 60 * 60 * 1000));
+            const candidate = list.find((l: any) => new Date(l.created_at) <= new Date(booking.created_at) && new Date(l.created_at) >= new Date(new Date(booking.created_at).getTime() - 90 * 24 * 60 * 60 * 1000));
             if (candidate) {
               try {
                 updateStmt.run(candidate.id, booking.id);
