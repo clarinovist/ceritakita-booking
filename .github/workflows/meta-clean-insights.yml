@@ -1,0 +1,93 @@
+name: Clean Meta Insights (Full Reset + Dedup + Resync)
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: 'Days after clean (30)'
+        default: '30'
+      mode:
+        description: 'CLEAN = delete all then resync, DEDUP = normalize+dedup'
+        default: 'CLEAN'
+
+jobs:
+  clean:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clean insights table on VPS
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 10m
+          script: |
+            set +e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "=== Mode ${{ inputs.mode }} ==="
+
+            docker compose exec -T app sh -c "
+              node <<'NODE'
+            const Database = require('better-sqlite3');
+            const db = new Database('/app/data/bookings.db');
+            const mode='${{ inputs.mode }}';
+            console.log('Before count:', db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c);
+            if (mode === 'CLEAN') {
+              db.exec('DELETE FROM meta_insights_daily');
+              console.log('Cleaned all insights');
+            } else {
+              // DEDUP path: first delete rows where campaign_id IS NULL but we have non-null version
+              // Keep only rows where campaign_id != '' or where it's the max id per date
+              try {
+                // Step 1: delete account-level rows that duplicates campaign rows? Keep account level maybe separate - we will keep them but ensure no null duplicates
+                // For simplicity, delete all where campaign_id IS NULL
+                const delNull = db.prepare('DELETE FROM meta_insights_daily WHERE campaign_id IS NULL OR campaign_id = \"\"').run();
+                console.log('Deleted NULL/empty campaign rows:', delNull.changes);
+              } catch(e){ console.log('del null failed', e.message); }
+
+              // Normalize remaining NULLs to ''
+              try {
+                db.exec(\"UPDATE meta_insights_daily SET campaign_id = COALESCE(campaign_id, ''), adset_id = COALESCE(adset_id, ''), ad_id = COALESCE(ad_id, ''), breakdown_type = COALESCE(breakdown_type, ''), breakdown_value = COALESCE(breakdown_value, '')\");
+                console.log('Normalized NULLs to empty');
+              } catch(e){ console.log('normalize failed', e.message); }
+
+              // Deduplicate
+              try {
+                const before = db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c;
+                db.exec('DELETE FROM meta_insights_daily WHERE id NOT IN (SELECT MAX(id) FROM meta_insights_daily GROUP BY date_record, campaign_id, adset_id, ad_id, breakdown_type, breakdown_value)');
+                const after = db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c;
+                console.log('Dedup', before, '->', after);
+              } catch(e){ console.log('dedup failed', e.message); }
+            }
+            console.log('After count:', db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c);
+            console.log('Spend by campaign after:');
+            db.prepare('SELECT campaign_id, SUM(spend) as spend, COUNT(*) as cnt FROM meta_insights_daily GROUP BY campaign_id').all().forEach(r=> console.log(r));
+            db.close();
+            NODE
+            " 2>&1 | tail -100
+
+            echo "=== Resync ${{ inputs.days }} days ==="
+            curl -s -X POST --max-time 300 "http://127.0.0.1:3001/api/meta/sync?days=${{ inputs.days }}&full=1" | tail -c 2000
+            echo ""
+
+            sleep 2
+            docker compose exec -T app sh -c "
+              node <<'NODE'
+            const Database = require('better-sqlite3');
+            const db = new Database('/app/data/bookings.db');
+            console.log('Final rows:', db.prepare('SELECT COUNT(*) as c FROM meta_insights_daily').get().c);
+            console.log('Final spend total:', db.prepare('SELECT SUM(spend) as s FROM meta_insights_daily').get().s);
+            db.prepare('SELECT campaign_id, SUM(spend) as spend, COUNT(*) as cnt FROM meta_insights_daily GROUP BY campaign_id').all().forEach(r=> console.log(r));
+            db.close();
+            NODE
+            " 2>&1 | tail -30
+
+            echo "=== Attribution after clean ==="
+            curl -s --max-time 10 "http://127.0.0.1:3001/api/meta/attribution" 2>&1 | tail -c 2000
+
+            echo "=== Backfill ==="
+            curl -s -X POST --max-time 60 "http://127.0.0.1:3001/api/meta/backfill-attribution" 2>&1 | tail -c 2000
+
+            echo "✅ Clean + resync done"
