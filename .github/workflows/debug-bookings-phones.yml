@@ -1,0 +1,60 @@
+name: Debug Bookings Phones Deep
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Debug
+        uses: appleboy/ssh-action@v1.2.5
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 5m
+          script: |
+            set +e
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            echo "=== Debug via API ==="
+            curl -s --max-time 20 "http://127.0.0.1:3001/api/debug/attribution" 2>&1 | python3 -m json.tool 2>&1 | head -200
+
+            echo ""
+            echo "=== Raw sqlite bookings without lead detailed ==="
+            docker compose exec -T app sh -c '
+              node <<'"'"'NODE'"'"'
+            const Database = require("better-sqlite3");
+            const db = new Database("/app/data/bookings.db");
+            function normalizePhone(p){ const d=(p||"").replace(/\D/g,""); return d; }
+            const bookings = db.prepare("SELECT id, customer_name, customer_whatsapp, created_at FROM bookings WHERE lead_id IS NULL OR lead_id = '"'"''"'"' LIMIT 20").all();
+            console.log("bookings without lead:", bookings.length);
+            bookings.forEach(b=>{
+              console.log(JSON.stringify({id:b.id, name:b.customer_name, phone:b.customer_whatsapp, norm:normalizePhone(b.customer_whatsapp), created:b.created_at}));
+            });
+
+            console.log("\n=== leads for those phones search ===");
+            const allLeads = db.prepare("SELECT id, name, whatsapp, created_at FROM leads LIMIT 50").all();
+            bookings.slice(0,3).forEach(b=>{
+              const normB = normalizePhone(b.customer_whatsapp);
+              const suffix = normB.slice(-10);
+              console.log("Checking booking", b.id, "phone", b.customer_whatsapp, "suffix", suffix);
+              const found = allLeads.filter(l=>{
+                const normL = normalizePhone(l.whatsapp);
+                return normL.includes(suffix) || suffix.includes(normL.slice(-10)) || normL.slice(-10) === suffix;
+              });
+              console.log("  found leads:", found.length, found.map(f=> f.id + " " + f.whatsapp + " " + f.name).slice(0,3));
+            });
+
+            console.log("\n=== All bookings lead_id status ===");
+            console.log("total bookings", db.prepare("SELECT COUNT(*) as c FROM bookings").get().c);
+            console.log("with lead_id", db.prepare("SELECT COUNT(*) as c FROM bookings WHERE lead_id IS NOT NULL AND lead_id != '"'"''"'"'").get().c);
+            console.log("without lead_id", db.prepare("SELECT COUNT(*) as c FROM bookings WHERE lead_id IS NULL OR lead_id = '"'"''"'"'").get().c);
+
+            db.close();
+            NODE
+            ' 2>&1 | tail -150
+
+            echo "✅ Done"
