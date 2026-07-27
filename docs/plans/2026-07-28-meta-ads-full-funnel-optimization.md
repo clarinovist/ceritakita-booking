@@ -1,9 +1,13 @@
 # Plan: Meta Ads Full-Funnel Optimization
 
 Tanggal: 2026-07-28  
-Status: Completed
-Completed: 2026-07-28
+Status: Completed  
+Completed: 2026-07-28  
 Verified: 2026-07-28 tsc 0 errors, lint 0 warnings  
+Final Verified: 2026-07-27 05:31 UTC VPS container ceritakita-booking healthy, token valid, spend accurate 2.9M, attribution 100%  
+Related Docs:
+- docs/plans/2026-07-28-meta-ads-vps-verification.md (initial deploy)
+- docs/plans/2026-07-28-meta-ads-final-verification.md (final after fixes)
 Owner: CeritaKita Booking  
 Token scope: `ads_read + ads_management + business_management` (full)  
 Goal: semua data Meta masuk DB lokal, bisa kelola sendiri, ROAS per iklan akurat
@@ -397,42 +401,52 @@ Start manual actions first, automation later.
 ## 10. Implementation phases
 
 ### Phase 1: Foundation (1-2 days)
-- [ ] lib/meta/client.ts – wrapper with error handling, paginator, insights fields
-- [ ] lib/db.ts migrations: meta_campaigns, meta_adsets, meta_ads, meta_insights_daily, meta_sync_log, leads columns, wa_clicks columns, bookings lead_id
-- [ ] lib/repositories/meta-ads.ts CRUD
-- [ ] GET /api/meta/health
-- Test: `npm run tsc`, manual curl health
+- [x] lib/meta/client.ts – wrapper with error handling, paginator, insights fields
+- [x] lib/db.ts migrations: meta_campaigns, meta_adsets, meta_ads, meta_insights_daily, meta_sync_log, leads columns, wa_clicks columns, bookings lead_id
+- [x] lib/repositories/meta-ads.ts CRUD
+- [x] GET /api/meta/health
+- Test: `npm run tsc`, manual curl health → 0 errors, health valid true
 
 ### Phase 2: Sync + Read DB (1-2 days)
-- [ ] lib/services/meta-ads-service.ts – syncAll with time_increment=1
-- [ ] POST /api/meta/sync + status
-- [ ] Refactor POST /api/meta/backfill to use service
-- [ ] GET /api/meta/campaigns|adsets|ads|insights reading DB
-- [ ] cron vercel.json
-- Verification: sync 30d, check row counts, dashboard from DB
+- [x] lib/services/meta-ads-service.ts – syncAll with time_increment=1
+- [x] POST /api/meta/sync + status
+- [x] Refactor POST /api/meta/backfill to use service
+- [x] GET /api/meta/campaigns|adsets|ads|insights reading DB
+- [x] cron vercel.json (0 */3 * * * -> /api/meta/sync?days=2)
+- Verification: sync 30d, check row counts, dashboard from DB → 74 rows spend 2.9M accurate after dedup fix
 
 ### Phase 3: Attribution Funnel (1-2 days)
-- [ ] lib/meta/attribution.ts – fbc/fbp parsing, URL builder
-- [ ] Update /api/wa/[source] capture & match
-- [ ] Update leads create to save meta ids + utm
-- [ ] Update bookings add lead_id
-- [ ] GET /api/meta/attribution endpoint
-- [ ] Component AdsFunnel – spend→clicks→WA→leads→bookings→ROAS
-- [ ] Migration to populate existing leads (attempt match via utm_campaign)
-- Test: click WA with ?campaign_id=... → check DB chain
+- [x] lib/meta/attribution.ts – fbc/fbp parsing, URL builder
+- [x] Update /api/wa/[source] capture & match (fbclid,fbc,fbp,campaign_id_param,ad_id_param,utm_*)
+- [x] Update leads create to save meta ids + utm
+- [x] Update bookings add lead_id + auto-link by phone suffix
+- [x] GET /api/meta/attribution endpoint
+- [x] Component AdsFunnel – spend→clicks→WA→leads→bookings→ROAS (MetaAdsDashboard)
+- [x] Migration to populate existing leads (utm_campaign LIKE + date fallback) → 316/316 Meta Ads leads with campaign (was 98)
+- Test: WA click with ?campaign_id=... → wa_clicks matched 8546
 
 ### Phase 4: Management + UI (2 days)
-- [ ] POST /api/meta/manage (pause/resume/budget)
-- [ ] UI /admin/ads pages + tables + budget inline edit + creative preview
-- [ ] Refactor AdsPerformance.tsx to use DB endpoints
-- [ ] CAPI Purchase integration on booking paid (lib/services/booking-service hook)
-- [ ] Telegram daily report include best/worst campaign
+- [x] POST /api/meta/manage (pause/resume/budget) + audit log meta_audit_log
+- [x] UI /admin/ads pages + tables + budget inline edit + creative preview (MetaAdsDashboard.tsx)
+- [x] Refactor AdsPerformance.tsx to use DB endpoints + keep legacy account level
+- [x] CAPI Purchase integration on booking paid (lib/services/booking-service hook) with fbc/fbp
+- [x] Telegram daily report include best/worst campaign (report-generator DB-first + lib/telegram.ts top campaigns)
 
 ### Phase 5: Automation & Polish (optional, 1-2 days)
-- [ ] meta_automation_rules table + evaluate service
-- [ ] Anomaly detection
-- [ ] Creative fatigue alert
-- [ ] Export ROAS report CSV
+- [ ] meta_automation_rules table + evaluate service (optional, not critical)
+- [ ] Anomaly detection (optional)
+- [ ] Creative fatigue alert (optional)
+- [ ] Export ROAS report CSV (optional)
+
+#### Phase 6: VPS Fixes & Final Verification (added post-deploy)
+- [x] Fix DB version 1 early return bug → bump to 2 + always-run runMetaAdsMigrations
+- [x] Fix UNIQUE NULL bug: SQLite NULL != NULL allows duplicate insights → normalize NULL to '' + dedup keeping MAX id
+- [x] Fix getAttributionFunnel cartesian JOIN inflation (136M spend) → separate aggregations per campaign
+- [x] Fix bookings phone match suffix fallback + lead booking_id update
+- [x] Fix attribution date-based fallback for 218 leads without campaign → 0 unassigned
+- [x] Add workflows: update-meta-token.yml (secure token update), meta-sync-trigger.yml, meta-clean-insights.yml, meta-reset-insights.yml, debug-* 
+- [x] Add endpoints: /api/meta/backfill-attribution (idempotent), /api/bookings/link-lead, /api/debug/attribution
+- [x] Final verification: health valid true, sync 74 insights spend 2,944,440 accurate, attribution funnel totals spend 2.9M impr 262k clicks 1138 waClicks 8550 leads 791 bookings 115 revenue 37M, byCampaign leads 298/18 etc
 
 ---
 
