@@ -31,19 +31,28 @@ export function linkBookingsToLeads(): { linked: number; skipped: number; errors
   let skipped = 0;
 
   try {
-    const bookings = db.prepare(`SELECT id, customer_whatsapp, created_at FROM bookings WHERE lead_id IS NULL`).all() as { id: string; customer_whatsapp: string; created_at: string }[];
+    const bookings = db.prepare(`SELECT id, customer_whatsapp, created_at FROM bookings WHERE lead_id IS NULL OR lead_id = ''`).all() as { id: string; customer_whatsapp: string; created_at: string }[];
     const leads = db.prepare(`SELECT id, whatsapp, created_at FROM leads ORDER BY created_at DESC`).all() as { id: string; whatsapp: string; created_at: string }[];
 
-    // build map normalized phone -> leads sorted by date desc
+    // Precompute normalized suffix map for quick fallback
     const leadsByPhone = new Map<string, typeof leads>();
+    const suffixMap = new Map<string, typeof leads>(); // 10-digit suffix -> leads
+
     for (const lead of leads) {
       const norm = normalizePhone(lead.whatsapp);
       if (!norm) continue;
       if (!leadsByPhone.has(norm)) leadsByPhone.set(norm, []);
       leadsByPhone.get(norm)!.push(lead);
+
+      const suffix = norm.slice(-10);
+      if (suffix) {
+        if (!suffixMap.has(suffix)) suffixMap.set(suffix, []);
+        suffixMap.get(suffix)!.push(lead);
+      }
     }
 
     const updateStmt = db.prepare(`UPDATE bookings SET lead_id = ? WHERE id = ?`);
+    const updateLeadStmt = db.prepare(`UPDATE leads SET booking_id = ?, status = COALESCE(CASE WHEN status IN ('Won','Converted') THEN status ELSE 'Won' END, 'Won'), converted_at = ? WHERE id = ?`);
 
     for (const booking of bookings) {
       const normPhone = normalizePhone(booking.customer_whatsapp);
@@ -51,51 +60,67 @@ export function linkBookingsToLeads(): { linked: number; skipped: number; errors
         skipped++;
         continue;
       }
-      const candidates = leadsByPhone.get(normPhone) || [];
+      const suffix = normPhone.slice(-10);
+      let candidates: typeof leads = leadsByPhone.get(normPhone) || suffixMap.get(suffix) || [];
+
+      // Additional fallback: try to find any lead whose normalized phone ends with suffix
       if (candidates.length === 0) {
-        // try last 10 digits fallback
-        const alt = normPhone.slice(-10);
-        let found = false;
-        const entries = Array.from(leadsByPhone.entries());
-        for (const entry of entries) {
-          const phone = entry[0];
-          const list = entry[1];
-          if (phone.endsWith(alt) || alt.endsWith(phone)) {
-            const candidate = list.find((l: any) => new Date(l.created_at) <= new Date(booking.created_at) && new Date(l.created_at) >= new Date(new Date(booking.created_at).getTime() - 90 * 24 * 60 * 60 * 1000));
-            if (candidate) {
-              try {
-                updateStmt.run(candidate.id, booking.id);
-                linked++;
-              } catch (e: any) {
-                errors.push(`booking ${booking.id}: ${e.message}`);
-              }
-              found = true;
-              break;
-            }
+        for (const [phone, list] of Array.from(leadsByPhone.entries())) {
+          if (phone.endsWith(suffix) || suffix.endsWith(phone.slice(-10))) {
+            candidates = candidates.concat(list);
           }
         }
-        if (!found) skipped++;
+      }
+
+      if (candidates.length === 0) {
+        skipped++;
         continue;
       }
 
       const bookingDate = new Date(booking.created_at);
-      // find most recent lead before or within 7 days after booking (some leads created after booking)
       const ninetyDaysMs = 90 * 24 * 60 * 60 * 1000;
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+      // Sort candidates by closest date to booking (prefer lead before booking)
+      candidates.sort((a, b) => {
+        const da = Math.abs(bookingDate.getTime() - new Date(a.created_at).getTime());
+        const dbt = Math.abs(bookingDate.getTime() - new Date(b.created_at).getTime());
+        return da - dbt;
+      });
+
       const candidate = candidates.find(l => {
         const leadDate = new Date(l.created_at);
         const diff = bookingDate.getTime() - leadDate.getTime();
-        return diff >= -7 * 24 * 60 * 60 * 1000 && diff <= ninetyDaysMs;
+        return diff >= -sevenDaysMs && diff <= ninetyDaysMs;
       });
 
       if (candidate) {
         try {
           updateStmt.run(candidate.id, booking.id);
+          try {
+            updateLeadStmt.run(booking.id, new Date().toISOString(), candidate.id);
+          } catch {}
           linked++;
         } catch (e: any) {
           errors.push(`booking ${booking.id}: ${e.message}`);
         }
       } else {
-        skipped++;
+        // If still not found, take closest regardless of date proximity (better than 0)
+        const closest = candidates[0];
+        if (closest) {
+          try {
+            updateStmt.run(closest.id, booking.id);
+            try {
+              updateLeadStmt.run(booking.id, new Date().toISOString(), closest.id);
+            } catch {}
+            linked++;
+          } catch (e: any) {
+            errors.push(`booking ${booking.id}: ${e.message}`);
+            skipped++;
+          }
+        } else {
+          skipped++;
+        }
       }
     }
   } catch (e: any) {

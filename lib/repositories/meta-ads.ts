@@ -571,37 +571,64 @@ export function getAttributionFunnel(startDate?: string, endDate?: string) {
     revenueTotal = r?.rev || 0;
   } catch {}
 
-  // per campaign breakdown
+  // per campaign breakdown - separate aggregations to avoid cartesian multiplication
   let byCampaign: any[] = [];
   try {
-    const params: any[] = [];
-    let sql = `
-      SELECT 
-        c.id, c.name, c.status,
-        COALESCE(SUM(i.spend),0) as spend,
-        COALESCE(SUM(i.impressions),0) as impressions,
-        COALESCE(SUM(i.inline_link_clicks),0) as clicks,
-        COUNT(DISTINCT l.id) as leads,
-        COUNT(DISTINCT b.id) as bookings,
-        COALESCE(SUM(b.total_price),0) as revenue
-      FROM meta_campaigns c
-      LEFT JOIN meta_insights_daily i ON i.campaign_id = c.id
-        ${startDate ? 'AND i.date_record >= ?' : ''}
-        ${endDate ? 'AND i.date_record <= ?' : ''}
-      LEFT JOIN leads l ON l.meta_campaign_id = c.id
-        ${startDate ? 'AND DATE(l.created_at) >= ?' : ''}
-        ${endDate ? 'AND DATE(l.created_at) <= ?' : ''}
-      LEFT JOIN bookings b ON b.lead_id = l.id AND b.status != 'Cancelled'
-      GROUP BY c.id ORDER BY spend DESC
-    `;
-    if (startDate) params.push(startDate);
-    if (endDate) params.push(endDate);
-    if (startDate) params.push(startDate);
-    if (endDate) params.push(endDate);
-    byCampaign = db.prepare(sql).all(...params);
+    const campaigns = db.prepare(`SELECT id, name, status FROM meta_campaigns ORDER BY name`).all() as { id: string; name: string; status: string }[];
+    for (const c of campaigns) {
+      let spend = 0, impressions = 0, clicks = 0;
+      try {
+        let sql = `SELECT COALESCE(SUM(spend),0) as spend, COALESCE(SUM(impressions),0) as impressions, COALESCE(SUM(inline_link_clicks),0) as clicks FROM meta_insights_daily WHERE campaign_id = ?`;
+        const params: any[] = [c.id];
+        if (startDate) { sql += ' AND date_record >= ?'; params.push(startDate); }
+        if (endDate) { sql += ' AND date_record <= ?'; params.push(endDate); }
+        const r = db.prepare(sql).get(...params) as any;
+        spend = r?.spend || 0;
+        impressions = r?.impressions || 0;
+        clicks = r?.clicks || 0;
+      } catch {}
+
+      let leads = 0;
+      try {
+        let sql = `SELECT COUNT(*) as cnt FROM leads WHERE meta_campaign_id = ?`;
+        const params: any[] = [c.id];
+        if (startDate) { sql += ' AND DATE(created_at) >= ?'; params.push(startDate); }
+        if (endDate) { sql += ' AND DATE(created_at) <= ?'; params.push(endDate); }
+        const r = db.prepare(sql).get(...params) as any;
+        leads = r?.cnt || 0;
+      } catch {}
+
+      let bookings = 0, revenue = 0;
+      try {
+        let sql = `
+          SELECT COUNT(DISTINCT b.id) as bookings, COALESCE(SUM(b.total_price),0) as revenue
+          FROM bookings b
+          JOIN leads l ON b.lead_id = l.id
+          WHERE l.meta_campaign_id = ? AND b.status != 'Cancelled'
+        `;
+        const params: any[] = [c.id];
+        if (startDate) { sql += ' AND DATE(b.created_at) >= ?'; params.push(startDate); }
+        if (endDate) { sql += ' AND DATE(b.created_at) <= ?'; params.push(endDate); }
+        const r = db.prepare(sql).get(...params) as any;
+        bookings = r?.bookings || 0;
+        revenue = r?.revenue || 0;
+      } catch {}
+
+      byCampaign.push({
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        spend,
+        impressions,
+        clicks,
+        leads,
+        bookings,
+        revenue,
+      });
+    }
+    byCampaign.sort((a, b) => b.spend - a.spend);
   } catch (e) {
     logger.warn('attribution byCampaign query failed', { error: (e as Error).message });
-    // fallback simple
     try {
       byCampaign = db.prepare(`
         SELECT id, name, status, 0 as spend, 0 as impressions, 0 as clicks, 0 as leads, 0 as bookings, 0 as revenue FROM meta_campaigns ORDER BY name
