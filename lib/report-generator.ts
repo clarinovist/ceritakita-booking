@@ -242,7 +242,7 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
         const yesterday = format(subDays(now, 1), 'yyyy-MM-dd');
         const todayStr = format(now, 'yyyy-MM-dd');
 
-        // Try DB insights last 3d
+        // Try DB insights last 3d from new table (legacy table dropped)
         let spend = 0, impressions = 0, clicks = 0, reach = 0, ctr = 0, cpc = 0, cpm = 0;
         try {
             const row = db.prepare(`
@@ -252,19 +252,9 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
                 FROM meta_insights_daily
                 WHERE date_record >= ? AND date_record <= ?
             `).get(yesterday, todayStr) as any;
-            if (row && row.spend > 0) {
+            if (row) {
                 spend = row.spend; impressions = row.impressions; clicks = row.clicks; reach = row.reach;
                 ctr = row.ctr; cpc = row.cpc; cpm = row.cpm;
-            } else {
-                // fallback to legacy ads_performance_log if new table empty
-                const legacy = db.prepare(`
-                    SELECT COALESCE(SUM(spend),0) as spend, COALESCE(SUM(impressions),0) as impressions,
-                           COALESCE(SUM(clicks),0) as linkClicks, COALESCE(SUM(reach),0) as reach
-                    FROM ads_performance_log WHERE date_record >= ? AND date_record <= ?
-                `).get(yesterday, todayStr) as any;
-                if (legacy) {
-                    spend = legacy.spend; impressions = legacy.impressions; reach = legacy.reach;
-                }
             }
         } catch {}
 

@@ -136,33 +136,7 @@ export async function syncAll(days = 30, full = false): Promise<SyncResult> {
       }
     }
 
-    // 6. also sync legacy ads_performance_log for backward compat using account level insights
-    try {
-      const rowsAcct = await getInsights({
-        level: 'account',
-        time_range: { since, until },
-        time_increment: 1,
-        fields: ['spend', 'impressions', 'inline_link_clicks', 'reach', 'date_start', 'date_stop'],
-        limit: 500,
-      });
-      const db = getDb();
-      const stmt = db.prepare(`
-        INSERT OR REPLACE INTO ads_performance_log (date_record, spend, impressions, clicks, reach, updated_at)
-        VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `);
-      const tx = db.transaction(() => {
-        for (const r of rowsAcct) {
-          const ds = (r as any).date_start as string;
-          if (!ds) continue;
-          stmt.run(ds, parseFloat((r as any).spend || '0'), parseInt((r as any).impressions || '0'), parseInt((r as any).inline_link_clicks || '0'), parseInt((r as any).reach || '0'));
-        }
-      });
-      tx();
-    } catch (e) {
-      logger.warn('Failed sync legacy ads_performance_log', { error: (e as Error).message });
-    }
-
-    // 6b. Auto backfill attribution links (non-blocking)
+    // 6. Auto backfill attribution links (non-blocking)
     try {
       const { backfillAttribution } = await import('./attribution-service');
       const bf = backfillAttribution();

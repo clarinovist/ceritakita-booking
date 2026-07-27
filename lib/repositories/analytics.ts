@@ -5,22 +5,8 @@ import { AdsData } from '@/lib/types';
 import crypto from 'crypto';
 
 /**
- * Database row interface for ads_performance_log table (DEPRECATED - kept for backward compat)
- * New code should use meta_insights_daily via lib/repositories/meta-ads
- */
-interface AdsLogRow {
-  spend: number;
-  impressions: number;
-  clicks: number;
-  reach: number;
-  date_record: string;
-  updated_at: string;
-}
-
-/**
- * @deprecated Use meta_insights_daily via lib/repositories/meta-ads instead.
- * This function now reads from meta_insights_daily and aggregates by date.
- * Kept for backward compat for any external callers.
+ * @deprecated Legacy table dropped. Now reads from meta_insights_daily.
+ * Kept for backward compat.
  */
 export function getAdsLog(
   dateRecord?: string,
@@ -29,80 +15,34 @@ export function getAdsLog(
   limit: number = 30
 ): AdsData[] {
   try {
-    const db = getDb();
-
-    // Try new table first
-    try {
-      const { getInsightsRange } = require('@/lib/repositories/meta-ads');
-      const rows = getInsightsRange({ startDate, endDate, limit: limit * 5 }) as any[];
-      const grouped = new Map<string, AdsData>();
-      for (const r of rows) {
-        const key = r.date_record;
-        const existing = grouped.get(key);
-        if (existing) {
-          existing.spend += r.spend || 0;
-          existing.impressions += r.impressions || 0;
-          existing.inlineLinkClicks += r.inline_link_clicks || 0;
-          existing.reach += r.reach || 0;
-        } else {
-          grouped.set(key, {
-            spend: r.spend || 0,
-            impressions: r.impressions || 0,
-            inlineLinkClicks: r.inline_link_clicks || 0,
-            reach: r.reach || 0,
-            date_start: r.date_record,
-            date_end: r.date_record,
-            updated_at: r.updated_at,
-          });
-        }
+    const { getInsightsRange } = require('@/lib/repositories/meta-ads');
+    const rows = getInsightsRange({ startDate, endDate, limit: limit * 5 }) as any[];
+    const grouped = new Map<string, AdsData>();
+    for (const r of rows) {
+      const key = r.date_record;
+      const existing = grouped.get(key);
+      if (existing) {
+        existing.spend += r.spend || 0;
+        existing.impressions += r.impressions || 0;
+        existing.inlineLinkClicks += r.inline_link_clicks || 0;
+        existing.reach += r.reach || 0;
+      } else {
+        grouped.set(key, {
+          spend: r.spend || 0,
+          impressions: r.impressions || 0,
+          inlineLinkClicks: r.inline_link_clicks || 0,
+          reach: r.reach || 0,
+          date_start: r.date_record,
+          date_end: r.date_record,
+          updated_at: r.updated_at,
+        });
       }
-      let result = Array.from(grouped.values()).sort((a, b) => (b.date_start || '').localeCompare(a.date_start || ''));
-      if (dateRecord) result = result.filter(r => r.date_start === dateRecord);
-      return result.slice(0, limit);
-    } catch {}
-
-    // Fallback to legacy table
-    const mapRowToAdsData = (row: AdsLogRow): AdsData => ({
-      spend: row.spend,
-      impressions: row.impressions,
-      inlineLinkClicks: row.clicks,
-      reach: row.reach,
-      date_start: row.date_record,
-      date_end: row.date_record,
-      updated_at: row.updated_at
-    });
-
-    if (dateRecord) {
-      const stmt = db.prepare(`
-        SELECT spend, impressions, clicks, reach, date_record, updated_at
-        FROM ads_performance_log
-        WHERE date_record = ?
-        ORDER BY updated_at DESC
-        LIMIT 1
-      `);
-      const rows = stmt.all(dateRecord) as AdsLogRow[];
-      return rows.map(mapRowToAdsData);
-    } else if (startDate && endDate) {
-      const stmt = db.prepare(`
-        SELECT spend, impressions, clicks, reach, date_record, updated_at
-        FROM ads_performance_log
-        WHERE date_record >= ? AND date_record <= ?
-        ORDER BY date_record ASC
-      `);
-      const rows = stmt.all(startDate, endDate) as AdsLogRow[];
-      return rows.map(mapRowToAdsData);
-    } else {
-      const stmt = db.prepare(`
-        SELECT spend, impressions, clicks, reach, date_record, updated_at
-        FROM ads_performance_log
-        ORDER BY date_record DESC
-        LIMIT ?
-      `);
-      const rows = stmt.all(limit) as AdsLogRow[];
-      return rows.map(mapRowToAdsData);
     }
+    let result = Array.from(grouped.values()).sort((a, b) => (b.date_start || '').localeCompare(a.date_start || ''));
+    if (dateRecord) result = result.filter(r => r.date_start === dateRecord);
+    return result.slice(0, limit);
   } catch (error) {
-    logger.error('Failed to retrieve ads performance log', {
+    logger.error('Failed to retrieve ads log from new table', {
       error: error instanceof Error ? error.message : String(error),
       dateRecord,
       startDate,
