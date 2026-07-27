@@ -38,18 +38,19 @@ function runMigrations(db: Database.Database) {
   const row = db.prepare('SELECT MAX(version) as current_version FROM schema_migrations').get() as { current_version: number | null };
   let currentVersion = row?.current_version || 0;
 
-  const TARGET_VERSION = 1;
-
-  if (currentVersion >= TARGET_VERSION) {
-    return;
-  }
-
   const migrationsList = [
     {
       version: 1,
       name: 'baseline',
       up: (database: Database.Database) => {
         runBaselineSchema(database);
+      }
+    },
+    {
+      version: 2,
+      name: 'meta_ads_full_funnel',
+      up: (database: Database.Database) => {
+        runMetaAdsMigrations(database);
       }
     }
   ];
@@ -67,6 +68,183 @@ function runMigrations(db: Database.Database) {
   });
 
   runTx();
+
+  // Always-run idempotent migrations for existing DBs that already passed version check
+  // (covers VPS that already has version 1 but missed meta tables)
+  try {
+    runMetaAdsMigrations(db);
+  } catch (e) {
+    console.warn('runMetaAdsMigrations always-run failed (non-critical)', e);
+  }
+}
+
+function runMetaAdsMigrations(db: Database.Database) {
+  // ── Meta Ads Core Tables ──
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_campaigns (
+      id TEXT PRIMARY KEY,
+      account_id TEXT,
+      name TEXT NOT NULL,
+      status TEXT,
+      objective TEXT,
+      daily_budget INTEGER,
+      lifetime_budget INTEGER,
+      bid_strategy TEXT,
+      created_time TEXT,
+      updated_time TEXT,
+      raw_json TEXT,
+      synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_adsets (
+      id TEXT PRIMARY KEY,
+      campaign_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      status TEXT,
+      daily_budget INTEGER,
+      lifetime_budget INTEGER,
+      bid_amount INTEGER,
+      targeting TEXT,
+      optimization_goal TEXT,
+      billing_event TEXT,
+      created_time TEXT,
+      updated_time TEXT,
+      raw_json TEXT,
+      synced_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(campaign_id) REFERENCES meta_campaigns(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_ads (
+      id TEXT PRIMARY KEY,
+      adset_id TEXT NOT NULL,
+      campaign_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      status TEXT,
+      creative_id TEXT,
+      creative_json TEXT,
+      tracking_specs TEXT,
+      created_time TEXT,
+      updated_time TEXT,
+      raw_json TEXT,
+      synced_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(adset_id) REFERENCES meta_adsets(id) ON DELETE CASCADE,
+      FOREIGN KEY(campaign_id) REFERENCES meta_campaigns(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_insights_daily (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date_record TEXT NOT NULL,
+      campaign_id TEXT,
+      adset_id TEXT,
+      ad_id TEXT,
+      spend REAL DEFAULT 0,
+      impressions INTEGER DEFAULT 0,
+      clicks INTEGER DEFAULT 0,
+      inline_link_clicks INTEGER DEFAULT 0,
+      reach INTEGER DEFAULT 0,
+      frequency REAL DEFAULT 0,
+      cpc REAL DEFAULT 0,
+      cpm REAL DEFAULT 0,
+      ctr REAL DEFAULT 0,
+      cpp REAL DEFAULT 0,
+      results INTEGER DEFAULT 0,
+      cost_per_result REAL DEFAULT 0,
+      actions TEXT,
+      action_values TEXT,
+      video_views INTEGER DEFAULT 0,
+      breakdown_type TEXT,
+      breakdown_value TEXT,
+      raw_json TEXT,
+      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE(date_record, campaign_id, adset_id, ad_id, breakdown_type, breakdown_value)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_sync_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sync_type TEXT,
+      started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      finished_at TEXT,
+      status TEXT,
+      records_synced INTEGER DEFAULT 0,
+      error_msg TEXT
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_audit_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      entity_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      action TEXT NOT NULL,
+      payload TEXT,
+      performed_by TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Indexes
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_meta_campaigns_status ON meta_campaigns(status);
+    CREATE INDEX IF NOT EXISTS idx_meta_adsets_campaign ON meta_adsets(campaign_id);
+    CREATE INDEX IF NOT EXISTS idx_meta_adsets_status ON meta_adsets(status);
+    CREATE INDEX IF NOT EXISTS idx_meta_ads_adset ON meta_ads(adset_id);
+    CREATE INDEX IF NOT EXISTS idx_meta_ads_campaign ON meta_ads(campaign_id);
+    CREATE INDEX IF NOT EXISTS idx_meta_ads_status ON meta_ads(status);
+    CREATE INDEX IF NOT EXISTS idx_meta_insights_date ON meta_insights_daily(date_record);
+    CREATE INDEX IF NOT EXISTS idx_meta_insights_campaign_date ON meta_insights_daily(campaign_id, date_record);
+    CREATE INDEX IF NOT EXISTS idx_meta_insights_ad_date ON meta_insights_daily(ad_id, date_record);
+    CREATE INDEX IF NOT EXISTS idx_meta_insights_adset_date ON meta_insights_daily(adset_id, date_record);
+    CREATE INDEX IF NOT EXISTS idx_meta_sync_log_status ON meta_sync_log(status);
+    CREATE INDEX IF NOT EXISTS idx_meta_audit_log_entity ON meta_audit_log(entity_type, entity_id);
+  `);
+
+  // Attribution columns (idempotent)
+  const attributionMigrations: Array<{ table: string; col: string; def: string }> = [
+    { table: 'leads', col: 'meta_campaign_id', def: 'TEXT' },
+    { table: 'leads', col: 'meta_adset_id', def: 'TEXT' },
+    { table: 'leads', col: 'meta_ad_id', def: 'TEXT' },
+    { table: 'leads', col: 'fbclid', def: 'TEXT' },
+    { table: 'leads', col: 'fbc', def: 'TEXT' },
+    { table: 'leads', col: 'fbp', def: 'TEXT' },
+    { table: 'leads', col: 'utm_campaign', def: 'TEXT' },
+    { table: 'leads', col: 'utm_content', def: 'TEXT' },
+    { table: 'leads', col: 'utm_term', def: 'TEXT' },
+    { table: 'leads', col: 'utm_medium', def: 'TEXT' },
+    { table: 'leads', col: 'utm_source', def: 'TEXT' },
+    { table: 'bookings', col: 'lead_id', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'fbclid', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'fbc', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'fbp', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'matched_ad_id', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'matched_campaign_id', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'matched_adset_id', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'utm_term', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'utm_source', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'campaign_id_param', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'adset_id_param', def: 'TEXT' },
+    { table: 'wa_clicks', col: 'ad_id_param', def: 'TEXT' },
+  ];
+  for (const m of attributionMigrations) {
+    try {
+      db.exec(`ALTER TABLE ${m.table} ADD COLUMN ${m.col} ${m.def}`);
+      console.log(`✅ Migration: Added ${m.table}.${m.col}`);
+    } catch {
+      // exists
+    }
+  }
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_leads_meta_campaign ON leads(meta_campaign_id);
+    CREATE INDEX IF NOT EXISTS idx_leads_meta_ad ON leads(meta_ad_id);
+    CREATE INDEX IF NOT EXISTS idx_leads_fbclid ON leads(fbclid);
+    CREATE INDEX IF NOT EXISTS idx_leads_utm_campaign ON leads(utm_campaign);
+    CREATE INDEX IF NOT EXISTS idx_bookings_lead_id ON bookings(lead_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_clicks_fbclid ON wa_clicks(fbclid);
+    CREATE INDEX IF NOT EXISTS idx_wa_clicks_matched_campaign ON wa_clicks(matched_campaign_id);
+    CREATE INDEX IF NOT EXISTS idx_wa_clicks_matched_ad ON wa_clicks(matched_ad_id);
+  `);
 }
 
 /**
@@ -395,116 +573,10 @@ function runBaselineSchema(db: Database.Database) {
     )
   `);
 
-  // ── Meta Ads Full Funnel Schema ──
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS meta_campaigns (
-      id TEXT PRIMARY KEY,
-      account_id TEXT,
-      name TEXT NOT NULL,
-      status TEXT,
-      objective TEXT,
-      daily_budget INTEGER,
-      lifetime_budget INTEGER,
-      bid_strategy TEXT,
-      created_time TEXT,
-      updated_time TEXT,
-      raw_json TEXT,
-      synced_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS meta_adsets (
-      id TEXT PRIMARY KEY,
-      campaign_id TEXT NOT NULL,
-      name TEXT NOT NULL,
-      status TEXT,
-      daily_budget INTEGER,
-      lifetime_budget INTEGER,
-      bid_amount INTEGER,
-      targeting TEXT,
-      optimization_goal TEXT,
-      billing_event TEXT,
-      created_time TEXT,
-      updated_time TEXT,
-      raw_json TEXT,
-      synced_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(campaign_id) REFERENCES meta_campaigns(id) ON DELETE CASCADE
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS meta_ads (
-      id TEXT PRIMARY KEY,
-      adset_id TEXT NOT NULL,
-      campaign_id TEXT NOT NULL,
-      name TEXT NOT NULL,
-      status TEXT,
-      creative_id TEXT,
-      creative_json TEXT,
-      tracking_specs TEXT,
-      created_time TEXT,
-      updated_time TEXT,
-      raw_json TEXT,
-      synced_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY(adset_id) REFERENCES meta_adsets(id) ON DELETE CASCADE,
-      FOREIGN KEY(campaign_id) REFERENCES meta_campaigns(id) ON DELETE CASCADE
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS meta_insights_daily (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      date_record TEXT NOT NULL,
-      campaign_id TEXT,
-      adset_id TEXT,
-      ad_id TEXT,
-      spend REAL DEFAULT 0,
-      impressions INTEGER DEFAULT 0,
-      clicks INTEGER DEFAULT 0,
-      inline_link_clicks INTEGER DEFAULT 0,
-      reach INTEGER DEFAULT 0,
-      frequency REAL DEFAULT 0,
-      cpc REAL DEFAULT 0,
-      cpm REAL DEFAULT 0,
-      ctr REAL DEFAULT 0,
-      cpp REAL DEFAULT 0,
-      results INTEGER DEFAULT 0,
-      cost_per_result REAL DEFAULT 0,
-      actions TEXT,
-      action_values TEXT,
-      video_views INTEGER DEFAULT 0,
-      breakdown_type TEXT,
-      breakdown_value TEXT,
-      raw_json TEXT,
-      updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(date_record, campaign_id, adset_id, ad_id, breakdown_type, breakdown_value)
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS meta_sync_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      sync_type TEXT,
-      started_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      finished_at TEXT,
-      status TEXT,
-      records_synced INTEGER DEFAULT 0,
-      error_msg TEXT
-    )
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS meta_audit_log (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      entity_type TEXT NOT NULL,
-      entity_id TEXT NOT NULL,
-      action TEXT NOT NULL,
-      payload TEXT,
-      performed_by TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
+  // ── Meta Ads Full Funnel Schema (handled by runMetaAdsMigrations, kept for backward compat bootstrap) ──
+  try {
+    runMetaAdsMigrations(db);
+  } catch {}
 
   // Create system_settings table for dynamic business info
   db.exec(`
@@ -1139,68 +1211,7 @@ function runBaselineSchema(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_wa_events_conv ON whatsapp_ai_events(conversation_id);
   `);
 
-  // ── Meta Ads index + attribution migration ──
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_meta_campaigns_status ON meta_campaigns(status);
-    CREATE INDEX IF NOT EXISTS idx_meta_adsets_campaign ON meta_adsets(campaign_id);
-    CREATE INDEX IF NOT EXISTS idx_meta_adsets_status ON meta_adsets(status);
-    CREATE INDEX IF NOT EXISTS idx_meta_ads_adset ON meta_ads(adset_id);
-    CREATE INDEX IF NOT EXISTS idx_meta_ads_campaign ON meta_ads(campaign_id);
-    CREATE INDEX IF NOT EXISTS idx_meta_ads_status ON meta_ads(status);
-    CREATE INDEX IF NOT EXISTS idx_meta_insights_date ON meta_insights_daily(date_record);
-    CREATE INDEX IF NOT EXISTS idx_meta_insights_campaign_date ON meta_insights_daily(campaign_id, date_record);
-    CREATE INDEX IF NOT EXISTS idx_meta_insights_ad_date ON meta_insights_daily(ad_id, date_record);
-    CREATE INDEX IF NOT EXISTS idx_meta_insights_adset_date ON meta_insights_daily(adset_id, date_record);
-    CREATE INDEX IF NOT EXISTS idx_meta_sync_log_status ON meta_sync_log(status);
-    CREATE INDEX IF NOT EXISTS idx_meta_audit_log_entity ON meta_audit_log(entity_type, entity_id);
-  `);
-
-  // Attribution columns migrations (idempotent ALTER TABLE)
-  const attributionMigrations: Array<{ table: string; col: string; def: string }> = [
-    { table: 'leads', col: 'meta_campaign_id', def: 'TEXT' },
-    { table: 'leads', col: 'meta_adset_id', def: 'TEXT' },
-    { table: 'leads', col: 'meta_ad_id', def: 'TEXT' },
-    { table: 'leads', col: 'fbclid', def: 'TEXT' },
-    { table: 'leads', col: 'fbc', def: 'TEXT' },
-    { table: 'leads', col: 'fbp', def: 'TEXT' },
-    { table: 'leads', col: 'utm_campaign', def: 'TEXT' },
-    { table: 'leads', col: 'utm_content', def: 'TEXT' },
-    { table: 'leads', col: 'utm_term', def: 'TEXT' },
-    { table: 'leads', col: 'utm_medium', def: 'TEXT' },
-    { table: 'leads', col: 'utm_source', def: 'TEXT' },
-    { table: 'bookings', col: 'lead_id', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'fbclid', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'fbc', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'fbp', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'matched_ad_id', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'matched_campaign_id', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'matched_adset_id', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'utm_term', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'utm_source', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'campaign_id_param', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'adset_id_param', def: 'TEXT' },
-    { table: 'wa_clicks', col: 'ad_id_param', def: 'TEXT' },
-  ];
-
-  for (const m of attributionMigrations) {
-    try {
-      db.exec(`ALTER TABLE ${m.table} ADD COLUMN ${m.col} ${m.def}`);
-      console.log(`✅ Migration: Added ${m.table}.${m.col}`);
-    } catch {
-      // column exists
-    }
-  }
-
-  db.exec(`
-    CREATE INDEX IF NOT EXISTS idx_leads_meta_campaign ON leads(meta_campaign_id);
-    CREATE INDEX IF NOT EXISTS idx_leads_meta_ad ON leads(meta_ad_id);
-    CREATE INDEX IF NOT EXISTS idx_leads_fbclid ON leads(fbclid);
-    CREATE INDEX IF NOT EXISTS idx_leads_utm_campaign ON leads(utm_campaign);
-    CREATE INDEX IF NOT EXISTS idx_bookings_lead_id ON bookings(lead_id);
-    CREATE INDEX IF NOT EXISTS idx_wa_clicks_fbclid ON wa_clicks(fbclid);
-    CREATE INDEX IF NOT EXISTS idx_wa_clicks_matched_campaign ON wa_clicks(matched_campaign_id);
-    CREATE INDEX IF NOT EXISTS idx_wa_clicks_matched_ad ON wa_clicks(matched_ad_id);
-  `);
+  // Ensure WhatsApp follow-up columns etc already handled above
 }
 
 /**
