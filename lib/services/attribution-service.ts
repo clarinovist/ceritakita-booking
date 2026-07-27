@@ -178,9 +178,7 @@ export function linkLeadsToCampaigns(): { byUtm: number; byParam: number; byPack
         // Fallback: if only one active campaign recently, assign to it? Skip to avoid wrong attribution
         // Instead, check if lead created date falls within campaign active period with spend
         if (!matched) {
-          // pick campaign with most spend in last 30d as fallback for old Meta Ads leads without interest
-          const recentCamp = campaigns.find(c => c.name.toLowerCase().includes('self foto'))?.id || campaigns[0]?.id;
-          // Only auto-assign if campaigns exist and lead is old? We'll skip auto-assign to keep accurate
+          // Fallback disabled to keep accurate attribution - skip auto-assign
           continue;
         }
 
