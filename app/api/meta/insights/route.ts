@@ -50,7 +50,9 @@ export async function GET(request: NextRequest): Promise<NextResponse<MetaInsigh
     // Fast path: if requesting from DB, don't hit Meta API
     if (useDb) {
       const { getInsightsRange } = await import('@/lib/repositories/meta-ads');
-      const rows = getInsightsRange({ startDate: since || undefined, endDate: until || undefined, limit: 500 });
+      // Account response must use one hierarchy level. Summing account,
+      // campaign and ad rows together would multiply the same Meta metrics.
+      const rows = getInsightsRange({ startDate: since || undefined, endDate: until || undefined, level: 'campaign', limit: 500 });
       // aggregate for account level response shape
       let spend = 0,
         impressions = 0,

@@ -251,6 +251,9 @@ export async function generateDailyReport(dateInput?: Date): Promise<DailyReport
                        COALESCE(SUM(reach),0) as reach, COALESCE(AVG(ctr),0) as ctr, COALESCE(AVG(cpc),0) as cpc, COALESCE(AVG(cpm),0) as cpm
                 FROM meta_insights_daily
                 WHERE date_record >= ? AND date_record <= ?
+                  AND COALESCE(campaign_id, '') != ''
+                  AND COALESCE(adset_id, '') = ''
+                  AND COALESCE(ad_id, '') = ''
             `).get(yesterday, todayStr) as any;
             if (row) {
                 spend = row.spend; impressions = row.impressions; clicks = row.clicks; reach = row.reach;

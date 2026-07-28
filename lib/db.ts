@@ -81,6 +81,19 @@ function runMigrations(db: Database.Database) {
 function runMetaAdsMigrations(db: Database.Database) {
   // ── Meta Ads Core Tables ──
   db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_accounts (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      account_status TEXT,
+      currency TEXT,
+      timezone_name TEXT,
+      timezone_offset_hours REAL,
+      business_id TEXT,
+      raw_json TEXT,
+      synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.exec(`
     CREATE TABLE IF NOT EXISTS meta_campaigns (
       id TEXT PRIMARY KEY,
       account_id TEXT,
@@ -134,6 +147,21 @@ function runMetaAdsMigrations(db: Database.Database) {
     )
   `);
   db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_creatives (
+      id TEXT PRIMARY KEY,
+      ad_id TEXT,
+      campaign_id TEXT,
+      creative_type TEXT,
+      title TEXT,
+      body TEXT,
+      call_to_action TEXT,
+      thumbnail_url TEXT,
+      asset_ids_json TEXT,
+      raw_json TEXT,
+      synced_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  db.exec(`
     CREATE TABLE IF NOT EXISTS meta_insights_daily (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       date_record TEXT NOT NULL,
@@ -160,6 +188,92 @@ function runMetaAdsMigrations(db: Database.Database) {
       raw_json TEXT,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(date_record, campaign_id, adset_id, ad_id, breakdown_type, breakdown_value)
+    )
+  `);
+
+  // Extend meta_insights_daily columns idempotently
+  const insightCols = [
+    { col: 'level', def: "TEXT NOT NULL DEFAULT 'campaign'" },
+    { col: 'date_start', def: 'TEXT' },
+    { col: 'date_stop', def: 'TEXT' },
+    { col: 'dimensions_json', def: 'TEXT' },
+    { col: 'dimensions_json_hash', def: "TEXT NOT NULL DEFAULT ''" },
+    { col: 'purchase_roas_json', def: 'TEXT' },
+    { col: 'video_metrics_json', def: 'TEXT' },
+    { col: 'request_id', def: 'TEXT' },
+    { col: 'sync_run_id', def: 'INTEGER' },
+  ];
+  for (const c of insightCols) {
+    try {
+      db.exec(`ALTER TABLE meta_insights_daily ADD COLUMN ${c.col} ${c.def}`);
+    } catch {
+      // column already exists
+    }
+  }
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_insight_actions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      insight_id INTEGER NOT NULL,
+      action_type TEXT NOT NULL,
+      value REAL DEFAULT 0,
+      action_attribution_window TEXT DEFAULT '',
+      raw_json TEXT,
+      FOREIGN KEY(insight_id) REFERENCES meta_insights_daily(id) ON DELETE CASCADE,
+      UNIQUE(insight_id, action_type, action_attribution_window)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_sync_runs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      scope TEXT,
+      since TEXT,
+      until TEXT,
+      status TEXT,
+      records_synced INTEGER DEFAULT 0,
+      request_count INTEGER DEFAULT 0,
+      rate_limit_count INTEGER DEFAULT 0,
+      started_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      finished_at TEXT,
+      error_json TEXT
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_sync_errors (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      sync_run_id INTEGER,
+      endpoint TEXT,
+      field_set TEXT,
+      http_status INTEGER,
+      error_code TEXT,
+      error_message TEXT,
+      retryable INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(sync_run_id) REFERENCES meta_sync_runs(id) ON DELETE CASCADE
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_capabilities (
+      account_id TEXT NOT NULL,
+      api_version TEXT NOT NULL,
+      capability_key TEXT NOT NULL,
+      supported INTEGER NOT NULL DEFAULT 0,
+      last_checked_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      error_code TEXT,
+      error_message TEXT,
+      PRIMARY KEY(account_id, api_version, capability_key)
+    )
+  `);
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS meta_object_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      object_type TEXT NOT NULL,
+      object_id TEXT NOT NULL,
+      status TEXT,
+      budget REAL,
+      effective_from TEXT DEFAULT CURRENT_TIMESTAMP,
+      source TEXT DEFAULT 'system',
+      raw_json TEXT
     )
   `);
   db.exec(`
@@ -191,6 +305,17 @@ function runMetaAdsMigrations(db: Database.Database) {
     db.exec(`
       UPDATE meta_insights_daily SET campaign_id = COALESCE(campaign_id, ''), adset_id = COALESCE(adset_id, ''), ad_id = COALESCE(ad_id, ''), breakdown_type = COALESCE(breakdown_type, ''), breakdown_value = COALESCE(breakdown_value, '') WHERE campaign_id IS NULL OR adset_id IS NULL OR ad_id IS NULL OR breakdown_type IS NULL OR breakdown_value IS NULL
     `);
+    // Backfill level based on ID hierarchy
+    db.exec(`
+      UPDATE meta_insights_daily
+      SET level = CASE
+        WHEN ad_id IS NOT NULL AND ad_id != '' THEN 'ad'
+        WHEN adset_id IS NOT NULL AND adset_id != '' THEN 'adset'
+        WHEN campaign_id IS NOT NULL AND campaign_id != '' THEN 'campaign'
+        ELSE 'account'
+      END
+      WHERE level IS NULL OR level = '' OR level = 'campaign';
+    `);
     // Deduplicate: keep max id per unique key
     db.exec(`
       DELETE FROM meta_insights_daily WHERE id NOT IN (
@@ -208,9 +333,17 @@ function runMetaAdsMigrations(db: Database.Database) {
     CREATE INDEX IF NOT EXISTS idx_meta_ads_campaign ON meta_ads(campaign_id);
     CREATE INDEX IF NOT EXISTS idx_meta_ads_status ON meta_ads(status);
     CREATE INDEX IF NOT EXISTS idx_meta_insights_date ON meta_insights_daily(date_record);
+    CREATE INDEX IF NOT EXISTS idx_meta_insights_level ON meta_insights_daily(level);
     CREATE INDEX IF NOT EXISTS idx_meta_insights_campaign_date ON meta_insights_daily(campaign_id, date_record);
     CREATE INDEX IF NOT EXISTS idx_meta_insights_ad_date ON meta_insights_daily(ad_id, date_record);
     CREATE INDEX IF NOT EXISTS idx_meta_insights_adset_date ON meta_insights_daily(adset_id, date_record);
+    CREATE INDEX IF NOT EXISTS idx_meta_creatives_ad ON meta_creatives(ad_id);
+    CREATE INDEX IF NOT EXISTS idx_meta_creatives_campaign ON meta_creatives(campaign_id);
+    CREATE INDEX IF NOT EXISTS idx_meta_insight_actions_insight ON meta_insight_actions(insight_id);
+    CREATE INDEX IF NOT EXISTS idx_meta_insight_actions_type ON meta_insight_actions(action_type);
+    CREATE INDEX IF NOT EXISTS idx_meta_sync_runs_status ON meta_sync_runs(status);
+    CREATE INDEX IF NOT EXISTS idx_meta_sync_errors_run ON meta_sync_errors(sync_run_id);
+    CREATE INDEX IF NOT EXISTS idx_meta_object_history_object ON meta_object_history(object_type, object_id);
     CREATE INDEX IF NOT EXISTS idx_meta_sync_log_status ON meta_sync_log(status);
     CREATE INDEX IF NOT EXISTS idx_meta_audit_log_entity ON meta_audit_log(entity_type, entity_id);
   `);

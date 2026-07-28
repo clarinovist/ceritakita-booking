@@ -153,6 +153,33 @@ export async function metaGraphFetchAll<T = any>(path: string, params: Record<st
 }
 
 // Typed helpers
+export interface AccountRow {
+  id: string;
+  name: string;
+  account_status?: number | string;
+  currency?: string;
+  timezone_name?: string;
+  timezone_offset_hours_utc?: number;
+  business?: any;
+  spend_cap?: number | string;
+  amount_spent?: number | string;
+  balance?: number | string;
+  [k: string]: any;
+}
+
+export interface CreativeRow {
+  id: string;
+  name?: string;
+  title?: string;
+  body?: string;
+  call_to_action_type?: string;
+  thumbnail_url?: string;
+  image_url?: string;
+  object_story_spec?: any;
+  asset_feed_spec?: any;
+  [k: string]: any;
+}
+
 export interface CampaignRow {
   id: string;
   name: string;
@@ -195,9 +222,16 @@ export interface AdRow {
   [k: string]: any;
 }
 
+export async function getAdAccount(fields?: string[]): Promise<AccountRow> {
+  const cfg = requireMetaConfig();
+  const f = fields || ['id', 'name', 'account_status', 'currency', 'timezone_name', 'timezone_offset_hours_utc', 'business', 'spend_cap', 'amount_spent', 'balance', 'created_time'];
+  const { data } = await metaGraphFetch<AccountRow>(cfg.adAccountId, { fields: f.join(',') }, 'GET');
+  return data;
+}
+
 export async function listCampaigns(fields?: string[]): Promise<CampaignRow[]> {
   const cfg = requireMetaConfig();
-  const f = fields || ['id', 'name', 'status', 'objective', 'daily_budget', 'lifetime_budget', 'bid_strategy', 'created_time', 'updated_time'];
+  const f = fields || ['id', 'name', 'status', 'objective', 'daily_budget', 'lifetime_budget', 'bid_strategy', 'buying_type', 'special_ad_categories', 'created_time', 'updated_time'];
   const path = `${cfg.adAccountId}/campaigns`;
   return metaGraphFetchAll<CampaignRow>(path, { fields: f.join(','), limit: 100 }, 1000);
 }
@@ -217,6 +251,29 @@ export async function listAds(adsetId?: string, campaignId?: string, fields?: st
   else if (campaignId) path = `${campaignId}/ads`;
   else path = `${cfg.adAccountId}/ads`;
   return metaGraphFetchAll<AdRow>(path, { fields: f.join(','), limit: 100 }, 5000);
+}
+
+export async function listCreatives(fields?: string[]): Promise<CreativeRow[]> {
+  const cfg = requireMetaConfig();
+  const f = fields || ['id', 'name', 'title', 'body', 'call_to_action_type', 'thumbnail_url', 'image_url', 'object_story_spec', 'asset_feed_spec', 'status'];
+  const path = `${cfg.adAccountId}/adcreatives`;
+  try {
+    return await metaGraphFetchAll<CreativeRow>(path, { fields: f.join(','), limit: 100 }, 2000);
+  } catch (e) {
+    logger.warn('listCreatives failed (non-critical)', { error: (e as Error).message });
+    return [];
+  }
+}
+
+export async function getAccountActivities(limit = 100): Promise<any[]> {
+  const cfg = requireMetaConfig();
+  const path = `${cfg.adAccountId}/activities`;
+  try {
+    return await metaGraphFetchAll(path, { fields: 'event_time,event_type,extra_data,object_id,object_name', limit }, limit);
+  } catch (e) {
+    logger.warn('getAccountActivities failed', { error: (e as Error).message });
+    return [];
+  }
 }
 
 export interface InsightsParams {
@@ -239,7 +296,7 @@ export const DEFAULT_INSIGHT_FIELDS = [
   'cpc', 'cpm', 'ctr', 'cpp',
   'results', 'cost_per_result',
   'actions', 'action_values',
-  'video_p25_watched_actions', 'video_p50_watched_actions', 'video_p100_watched_actions',
+  'video_p25_watched_actions', 'video_p50_watched_actions', 'video_p75_watched_actions', 'video_p100_watched_actions',
   'purchase_roas',
   'date_start', 'date_stop',
 ];
@@ -261,6 +318,45 @@ export async function getInsights(params: InsightsParams): Promise<any[]> {
   return metaGraphFetchAll(path, p, 5000);
 }
 
+export interface CapabilityCheckResult {
+  key: string;
+  supported: boolean;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+export async function probeCapabilities(): Promise<CapabilityCheckResult[]> {
+  const cfg = requireMetaConfig();
+  const checks: Array<{ key: string; fn: () => Promise<any> }> = [
+    { key: 'account_read', fn: () => getAdAccount(['id', 'name']) },
+    { key: 'campaigns_read', fn: () => metaGraphFetch(`${cfg.adAccountId}/campaigns`, { limit: 1 }) },
+    { key: 'adsets_read', fn: () => metaGraphFetch(`${cfg.adAccountId}/adsets`, { limit: 1 }) },
+    { key: 'ads_read', fn: () => metaGraphFetch(`${cfg.adAccountId}/ads`, { limit: 1 }) },
+    { key: 'creatives_read', fn: () => metaGraphFetch(`${cfg.adAccountId}/adcreatives`, { limit: 1 }) },
+    { key: 'insights_read', fn: () => metaGraphFetch(`${cfg.adAccountId}/insights`, { level: 'campaign', date_preset: 'today', limit: 1 }) },
+    { key: 'insights_breakdown_demographic', fn: () => metaGraphFetch(`${cfg.adAccountId}/insights`, { level: 'campaign', breakdowns: 'age,gender', date_preset: 'today', limit: 1 }) },
+    { key: 'insights_breakdown_placement', fn: () => metaGraphFetch(`${cfg.adAccountId}/insights`, { level: 'campaign', breakdowns: 'publisher_platform,platform_position', date_preset: 'today', limit: 1 }) },
+    { key: 'insights_breakdown_geographic', fn: () => metaGraphFetch(`${cfg.adAccountId}/insights`, { level: 'campaign', breakdowns: 'country,region', date_preset: 'today', limit: 1 }) },
+    { key: 'activities_read', fn: () => metaGraphFetch(`${cfg.adAccountId}/activities`, { limit: 1 }) },
+  ];
+
+  const results: CapabilityCheckResult[] = [];
+  for (const check of checks) {
+    try {
+      await check.fn();
+      results.push({ key: check.key, supported: true });
+    } catch (e: any) {
+      results.push({
+        key: check.key,
+        supported: false,
+        errorCode: String(e.code || e.status || 'ERROR'),
+        errorMessage: e.message || String(e),
+      });
+    }
+  }
+  return results;
+}
+
 // Management (write)
 export async function updateCampaign(id: string, payload: Record<string, any>): Promise<any> {
   const { raw } = await metaGraphFetch(id, payload, 'POST');
@@ -274,3 +370,4 @@ export async function updateAd(id: string, payload: Record<string, any>): Promis
   const { raw } = await metaGraphFetch(id, payload, 'POST');
   return raw;
 }
+
