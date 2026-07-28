@@ -49,29 +49,29 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
   return (
     <div className="space-y-6">
       {/* Warning banner against double counting */}
-      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 p-4 rounded-2xl flex items-start gap-3 text-xs text-amber-800 dark:text-amber-300">
+      <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-start gap-3 text-xs text-amber-800">
         <AlertTriangle size={18} className="text-amber-600 shrink-0 mt-0.5" />
         <div>
           <p className="font-bold">Penting — Aturan Agregasi Breakdown</p>
           <p className="mt-0.5 leading-relaxed">
-            Data breakdown (age, gender, placement, device) diambil per dimensi terpisah. Total spend di tabel breakdown ini (Rp {totalBreakdownSpend.toLocaleString('id-ID')}) adalah **sum of slice rows**, dan **TIDAK boleh dijumlahkan** ke total overview dashboard utama agar tidak terjadi double counting.
+            Data breakdown (age, gender, placement, device, geographic) diambil per dimensi terpisah. Total spend di tabel breakdown ini (Rp {totalBreakdownSpend.toLocaleString('id-ID')}) adalah **sum of slice rows**, dan **TIDAK boleh dijumlahkan** ke total overview dashboard utama agar tidak terjadi double counting.
           </p>
         </div>
       </div>
 
       {/* Analytics Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 flex items-center justify-between">
             Total Slice Spend <PieChart size={16} className="text-purple-600" />
           </p>
-          <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+          <p className="text-xl font-bold text-gray-900 mt-1">
             Rp {totalBreakdownSpend.toLocaleString('id-ID')}
           </p>
           <p className="text-[11px] text-gray-400 mt-1">{data.length} unique segments</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 flex items-center justify-between">
             Top Segment (Spend) <Award size={16} className="text-amber-500" />
           </p>
@@ -83,7 +83,7 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 flex items-center justify-between">
             Highest CTR Segment <TrendingUp size={16} className="text-green-600" />
           </p>
@@ -95,11 +95,11 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+        <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
           <p className="text-xs text-gray-500 flex items-center justify-between">
             Total Slice Engagement <Sparkles size={16} className="text-blue-600" />
           </p>
-          <p className="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+          <p className="text-xl font-bold text-gray-900 mt-1">
             {totalBreakdownClicks.toLocaleString()} <span className="text-xs font-normal text-gray-400">clicks</span>
           </p>
           <p className="text-[11px] text-gray-400 mt-1">{totalBreakdownImpressions.toLocaleString()} impressions</p>
@@ -107,13 +107,13 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
       </div>
 
       {/* Header controls & Type selector */}
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <PieChart size={20} className="text-purple-600" /> Audience & Placement Breakdown
           </h3>
           <p className="text-xs text-gray-500 mt-1">
-            Performance distribution sliced by demographic, placement, and device dimensions.
+            Performance distribution sliced by demographic, placement, device, and geographic dimensions.
           </p>
         </div>
 
@@ -125,11 +125,11 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
               placeholder="Search segment..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-1.5 border dark:border-gray-800 rounded-xl text-xs bg-gray-50 dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-purple-500 w-48"
+              className="pl-9 pr-4 py-1.5 border rounded-xl text-xs bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 w-48"
             />
           </div>
 
-          <div className="flex bg-gray-100 dark:bg-gray-800 p-1.5 rounded-xl gap-1">
+          <div className="flex bg-gray-100 p-1.5 rounded-xl gap-1">
             {[
               { id: 'demographic', label: 'Age & Gender', icon: Users },
               { id: 'placement', label: 'Platform & Position', icon: MapPin },
@@ -143,7 +143,7 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
                   key={tab.id}
                   onClick={() => setBreakdownType(tab.id as any)}
                   className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition ${
-                    active ? 'bg-white dark:bg-gray-900 shadow-sm text-purple-600' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900'
+                    active ? 'bg-white shadow-sm text-purple-600' : 'text-gray-600 hover:text-gray-900'
                   }`}
                 >
                   <Icon size={14} /> {tab.label}
@@ -156,7 +156,7 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
 
       {/* Visual Bar Distribution Card */}
       {!loading && filteredData.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+        <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
           <h4 className="font-bold text-xs uppercase tracking-wider text-gray-500">Spend Share Distribution Visual</h4>
           <div className="space-y-3">
             {filteredData.slice(0, 8).map((row, idx) => {
@@ -164,10 +164,10 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
               return (
                 <div key={idx} className="space-y-1">
                   <div className="flex justify-between text-xs font-medium">
-                    <span className="text-gray-900 dark:text-gray-100">{row.breakdown_value || 'Unknown'}</span>
+                    <span className="text-gray-900">{row.breakdown_value || 'Unknown'}</span>
                     <span className="font-mono text-gray-500">Rp {(row.total_spend || 0).toLocaleString('id-ID')} ({pct.toFixed(1)}%)</span>
                   </div>
-                  <div className="w-full bg-gray-100 dark:bg-gray-800 h-3 rounded-full overflow-hidden">
+                  <div className="w-full bg-gray-100 h-3 rounded-full overflow-hidden">
                     <div
                       className="bg-gradient-to-r from-purple-500 to-indigo-600 h-full rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(pct, 1)}%` }}
@@ -181,7 +181,7 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
       )}
 
       {/* Breakdown Data Table */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
         {loading ? (
           <div className="p-12 text-center text-sm text-gray-400 animate-pulse flex items-center justify-center gap-2">
             <RefreshCcw size={16} className="animate-spin text-purple-600" /> Loading breakdown data...
@@ -190,7 +190,7 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-gray-500">
+                <tr className="border-b bg-gray-50 text-gray-500">
                   <th className="p-3">Dimension Slice Value</th>
                   <th className="p-3">Spend</th>
                   <th className="p-3">% of Slice Spend</th>
@@ -201,25 +201,25 @@ export default function ExplorerBreakdownsTab({ dateRange }: Props) {
                   <th className="p-3">Recorded Rows</th>
                 </tr>
               </thead>
-              <tbody className="divide-y dark:divide-gray-800 font-mono">
+              <tbody className="divide-y font-mono">
                 {filteredData.map((row, idx) => {
                   const spendPct = totalBreakdownSpend > 0 ? ((row.total_spend / totalBreakdownSpend) * 100).toFixed(1) : '0';
                   return (
-                    <tr key={idx} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
-                      <td className="p-3 font-sans font-bold text-gray-900 dark:text-gray-100">{row.breakdown_value || 'Unknown'}</td>
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="p-3 font-sans font-bold text-gray-900">{row.breakdown_value || 'Unknown'}</td>
                       <td className="p-3 font-bold text-purple-600">Rp {(row.total_spend || 0).toLocaleString('id-ID')}</td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                          <div className="w-16 bg-gray-200 h-2 rounded-full overflow-hidden">
                             <div className="bg-purple-600 h-full rounded-full" style={{ width: `${spendPct}%` }} />
                           </div>
                           <span>{spendPct}%</span>
                         </div>
                       </td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400">{(row.total_impressions || 0).toLocaleString()}</td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400">{(row.total_clicks || 0).toLocaleString()}</td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400">Rp {Math.round(row.avg_cpc || 0).toLocaleString('id-ID')}</td>
-                      <td className="p-3 text-gray-600 dark:text-gray-400">{(row.avg_ctr || 0).toFixed(2)}%</td>
+                      <td className="p-3 text-gray-600">{(row.total_impressions || 0).toLocaleString()}</td>
+                      <td className="p-3 text-gray-600">{(row.total_clicks || 0).toLocaleString()}</td>
+                      <td className="p-3 text-gray-600">Rp {Math.round(row.avg_cpc || 0).toLocaleString('id-ID')}</td>
+                      <td className="p-3 text-gray-600">{(row.avg_ctr || 0).toFixed(2)}%</td>
                       <td className="p-3 text-gray-400">{row.row_count || 0}</td>
                     </tr>
                   );

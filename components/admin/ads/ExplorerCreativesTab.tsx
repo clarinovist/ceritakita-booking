@@ -34,9 +34,9 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
   return (
     <div className="space-y-6">
       {/* Header controls */}
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <Sparkles size={20} className="text-purple-600" /> Ad Creatives Explorer ({creatives.length})
           </h3>
           <p className="text-xs text-gray-500 mt-1">
@@ -52,20 +52,20 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
               placeholder="Search headline or body..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 border dark:border-gray-800 rounded-xl text-xs bg-gray-50 dark:bg-gray-950 focus:outline-none focus:ring-2 focus:ring-purple-500 w-64"
+              className="pl-9 pr-4 py-2 border rounded-xl text-xs bg-gray-50 focus:outline-none focus:ring-2 focus:ring-purple-500 w-64"
             />
           </div>
 
-          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+          <div className="flex bg-gray-100 p-1 rounded-xl">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-lg text-xs flex items-center gap-1 font-medium transition ${viewMode === 'grid' ? 'bg-white dark:bg-gray-900 shadow-sm text-purple-600' : 'text-gray-500'}`}
+              className={`p-1.5 rounded-lg text-xs flex items-center gap-1 font-medium transition ${viewMode === 'grid' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-500'}`}
             >
               <LayoutGrid size={14} /> Cards
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`p-1.5 rounded-lg text-xs flex items-center gap-1 font-medium transition ${viewMode === 'table' ? 'bg-white dark:bg-gray-900 shadow-sm text-purple-600' : 'text-gray-500'}`}
+              className={`p-1.5 rounded-lg text-xs flex items-center gap-1 font-medium transition ${viewMode === 'table' ? 'bg-white shadow-sm text-purple-600' : 'text-gray-500'}`}
             >
               <List size={14} /> Table
             </button>
@@ -77,7 +77,7 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
+            <div key={i} className="h-64 bg-gray-100 animate-pulse rounded-2xl" />
           ))}
         </div>
       ) : viewMode === 'grid' ? (
@@ -85,11 +85,11 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
           {creatives.map((item) => (
             <div
               key={item.id}
-              className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
+              className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm hover:shadow-md transition flex flex-col justify-between"
             >
               <div>
                 {/* Image Thumbnail */}
-                <div className="relative h-44 bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                <div className="relative h-44 bg-gray-100 flex items-center justify-center overflow-hidden">
                   {item.thumbnail_url ? (
                     <img src={item.thumbnail_url} alt={item.title || 'Creative'} className="w-full h-full object-cover" />
                   ) : (
@@ -108,14 +108,14 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
                 {/* Text Metadata */}
                 <div className="p-5 space-y-3">
                   <div>
-                    <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 line-clamp-1" title={item.title}>
+                    <h4 className="font-bold text-sm text-gray-900 line-clamp-1" title={item.title}>
                       {item.title || 'Untitled Creative'}
                     </h4>
                     <p className="text-[11px] font-mono text-purple-600 mt-0.5">ID: {item.id}</p>
                   </div>
 
                   {item.body && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl border border-gray-100 dark:border-gray-800">
+                    <p className="text-xs text-gray-600 line-clamp-3 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
                       {item.body}
                     </p>
                   )}
@@ -123,13 +123,13 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
               </div>
 
               {/* Card Footer */}
-              <div className="px-5 py-3 border-t dark:border-gray-800 bg-gray-50/50 dark:bg-gray-950/30 flex items-center justify-between text-xs">
+              <div className="px-5 py-3 border-t bg-gray-50/50 flex items-center justify-between text-xs">
                 <span className="text-gray-400 font-mono text-[10px]">
                   Synced: {item.synced_at ? new Date(item.synced_at).toLocaleDateString() : 'N/A'}
                 </span>
                 <button
                   onClick={() => onInspectRaw('creative', item.id)}
-                  className="px-3 py-1 bg-white dark:bg-gray-800 hover:bg-purple-50 text-purple-600 dark:text-purple-400 font-medium rounded-lg border border-purple-200 dark:border-purple-900/50 flex items-center gap-1 transition text-[11px]"
+                  className="px-3 py-1 bg-white hover:bg-purple-50 text-purple-600 font-medium rounded-lg border border-purple-200 flex items-center gap-1 transition text-[11px]"
                 >
                   <FileJson size={12} /> Inspect Raw
                 </button>
@@ -138,7 +138,7 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
           ))}
 
           {creatives.length === 0 && (
-            <div className="col-span-full py-16 text-center text-gray-400 bg-white dark:bg-gray-900 rounded-2xl border border-dashed border-gray-300 dark:border-gray-800">
+            <div className="col-span-full py-16 text-center text-gray-400 bg-white rounded-2xl border border-dashed border-gray-300">
               <Sparkles size={32} className="mx-auto mb-2 text-gray-300" />
               <p className="font-medium text-sm">No creatives ingested yet</p>
               <p className="text-xs text-gray-500 mt-1">Go to Sync Center and trigger &quot;Ad Creatives&quot; sync.</p>
@@ -146,11 +146,11 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
           )}
         </div>
       ) : (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-gray-500">
+                <tr className="border-b bg-gray-50 text-gray-500">
                   <th className="p-3">Creative ID</th>
                   <th className="p-3">Title / Headline</th>
                   <th className="p-3">Body Copy</th>
@@ -158,17 +158,17 @@ export default function ExplorerCreativesTab({ onInspectRaw }: Props) {
                   <th className="p-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y dark:divide-gray-800">
+              <tbody className="divide-y">
                 {creatives.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                  <tr key={item.id} className="hover:bg-gray-50">
                     <td className="p-3 font-mono font-medium text-purple-600">{item.id}</td>
                     <td className="p-3 font-bold max-w-[200px] truncate" title={item.title}>{item.title || '-'}</td>
-                    <td className="p-3 max-w-[300px] truncate text-gray-600 dark:text-gray-400" title={item.body}>{item.body || '-'}</td>
-                    <td className="p-3 uppercase font-semibold text-gray-700 dark:text-gray-300">{item.call_to_action || '-'}</td>
+                    <td className="p-3 max-w-[300px] truncate text-gray-600" title={item.body}>{item.body || '-'}</td>
+                    <td className="p-3 uppercase font-semibold text-gray-700">{item.call_to_action || '-'}</td>
                     <td className="p-3">
                       <button
                         onClick={() => onInspectRaw('creative', item.id)}
-                        className="px-2.5 py-1 bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-300 font-medium rounded-lg flex items-center gap-1 text-[11px]"
+                        className="px-2.5 py-1 bg-purple-50 text-purple-600 font-medium rounded-lg flex items-center gap-1 text-[11px]"
                       >
                         <FileJson size={12} /> Inspect
                       </button>

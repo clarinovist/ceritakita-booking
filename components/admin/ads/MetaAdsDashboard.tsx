@@ -166,31 +166,31 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
   return (
     <div className="space-y-6">
       {/* Top Bar with Account Badge & Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <BarChart3 className="text-purple-600" /> Meta Ads Data Explorer
             {health && !health.valid && <span className="text-xs bg-red-100 text-red-700 px-2.5 py-1 rounded-full font-normal">Token Invalid</span>}
           </h2>
           <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-1">
             <span>Source: Local Warehouse DB</span>
-            {account && <span className="bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300 px-2 py-0.5 rounded font-mono font-medium">{account.name} ({account.currency || 'IDR'})</span>}
+            {account && <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-mono font-medium">{account.name} ({account.currency || 'IDR'})</span>}
             {health?.valid && <span className="text-green-600 font-medium">Token Connected ({health.tokenPreview})</span>}
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+          <div className="flex bg-gray-100 p-1 rounded-xl">
             <button
               onClick={() => handleExport('insights', 'csv')}
-              className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 flex items-center gap-1"
+              className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 flex items-center gap-1"
               title="Export CSV"
             >
               <Download size={12} /> CSV
             </button>
             <button
               onClick={() => handleExport('insights', 'json')}
-              className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 dark:text-gray-300 flex items-center gap-1"
+              className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:text-gray-900 flex items-center gap-1"
               title="Export JSON"
             >
               <FileJson size={12} /> JSON
@@ -199,7 +199,7 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
 
           <button
             onClick={() => fetchAll()}
-            className="px-3.5 py-2 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl text-xs font-medium flex items-center gap-1.5 hover:bg-gray-50 transition"
+            className="px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium flex items-center gap-1.5 hover:bg-gray-50 transition"
           >
             <RefreshCcw size={14} /> Refresh
           </button>
@@ -215,17 +215,17 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-2xl p-4 flex gap-3">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 flex gap-3">
           <AlertCircle size={20} className="text-red-600 shrink-0" />
           <div>
-            <p className="font-semibold text-red-800 dark:text-red-300 text-sm">Meta Sync Warning</p>
-            <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{error}</p>
+            <p className="font-semibold text-red-800 text-sm">Meta Sync Warning</p>
+            <p className="text-xs text-red-600 mt-0.5">{error}</p>
           </div>
         </div>
       )}
 
       {/* Navigation Tabs */}
-      <div className="flex overflow-x-auto bg-white dark:bg-gray-900 p-1.5 rounded-2xl border border-gray-200 dark:border-gray-800 gap-1">
+      <div className="flex overflow-x-auto bg-white p-1.5 rounded-2xl border border-gray-200 gap-1">
         {[
           { id: 'overview', label: 'Overview & Funnel', icon: BarChart3 },
           { id: 'explorer', label: 'Hierarchy Explorer', icon: Layers },
@@ -243,7 +243,7 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
               className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition whitespace-nowrap ${
                 active
                   ? 'bg-purple-600 text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
               }`}
             >
               <Icon size={14} /> {tab.label}
@@ -260,51 +260,51 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="h-28 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-2xl" />
+                <div key={i} className="h-28 bg-gray-100 animate-pulse rounded-2xl" />
               ))}
             </div>
           ) : (
             <>
               {/* Funnel totals */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                   <div className="flex justify-between items-center mb-2">
                     <Target size={20} className="text-purple-600" />
                     <span className="text-[10px] text-gray-400 font-mono">{dateRange.start || 'Start'} → {dateRange.end || 'End'}</span>
                   </div>
                   <p className="text-xs text-gray-500">Spend (Canonical Campaign)</p>
-                  <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">Rp {(totals?.spend || 0).toLocaleString('id-ID')}</p>
+                  <p className="text-2xl font-bold text-purple-700">Rp {(totals?.spend || 0).toLocaleString('id-ID')}</p>
                   <p className="text-xs text-gray-400 mt-1">{totals?.impressions?.toLocaleString()} impr · {totals?.reach?.toLocaleString()} reach</p>
                 </div>
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                   <div className="flex justify-between items-center mb-2">
                     <TrendingUp size={20} className="text-orange-600" />
                   </div>
                   <p className="text-xs text-gray-500">WA Clicks</p>
-                  <p className="text-2xl font-bold text-orange-700 dark:text-orange-400">{totals?.waClicks || 0}</p>
+                  <p className="text-2xl font-bold text-orange-700">{totals?.waClicks || 0}</p>
                   <p className="text-xs text-gray-400 mt-1">{totals?.clicks ? `${((totals.waClicks / totals.clicks) * 100).toFixed(1)}% from ad clicks` : '-'}</p>
                 </div>
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                   <div className="flex justify-between items-center mb-2">
                     <Users size={20} className="text-blue-600" />
                   </div>
                   <p className="text-xs text-gray-500">Leads / Bookings</p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{totals?.leads || 0} / {totals?.bookings || 0}</p>
+                  <p className="text-2xl font-bold text-blue-700">{totals?.leads || 0} / {totals?.bookings || 0}</p>
                   <p className="text-xs text-gray-400 mt-1">Leads total · bookings converted</p>
                 </div>
-                <div className="bg-white dark:bg-gray-900 p-5 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+                <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
                   <div className="flex justify-between items-center mb-2">
                     <DollarSign size={20} className="text-green-600" />
                   </div>
                   <p className="text-xs text-gray-500">Revenue / ROAS</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-400">Rp {(totals?.revenue || 0).toLocaleString('id-ID')}</p>
+                  <p className="text-2xl font-bold text-green-700">Rp {(totals?.revenue || 0).toLocaleString('id-ID')}</p>
                   <p className="text-xs text-gray-400 mt-1">{totals?.spend ? `${(totals.revenue / totals.spend).toFixed(2)}x ROAS` : 'No spend'}</p>
                 </div>
               </div>
 
               {/* Visual Funnel Step */}
-              <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 space-y-4">
-                <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Attribution Funnel</h3>
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
+                <h3 className="font-bold text-sm text-gray-900">Attribution Funnel</h3>
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   {[
                     { label: 'Spend', value: `Rp ${(totals?.spend || 0).toLocaleString('id-ID')}` },
@@ -316,21 +316,21 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
                     { label: 'Revenue', value: `Rp ${(totals?.revenue || 0).toLocaleString('id-ID')}` },
                   ].map((step, i) => (
                     <div key={step.label} className="flex items-center gap-2">
-                      <div className="bg-gray-50 dark:bg-gray-800 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700">
+                      <div className="bg-gray-50 px-3.5 py-2 rounded-xl border border-gray-200">
                         <p className="text-[10px] text-gray-400 uppercase tracking-wider">{step.label}</p>
-                        <p className="font-bold text-gray-900 dark:text-gray-100">{step.value}</p>
+                        <p className="font-bold text-gray-900">{step.value}</p>
                       </div>
                       {i < 6 && <div className="text-gray-400 font-bold">→</div>}
                     </div>
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t dark:border-gray-800 text-xs">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t text-xs">
                   <div>
-                    <p className="font-semibold mb-2 text-gray-700 dark:text-gray-300">WA Clicks by Source</p>
+                    <p className="font-semibold mb-2 text-gray-700">WA Clicks by Source</p>
                     <div className="space-y-1 font-mono">
                       {funnel?.waBySource?.slice(0, 8).map((r: any) => (
-                        <div key={r.source} className="flex justify-between bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg">
+                        <div key={r.source} className="flex justify-between bg-gray-50 px-3 py-1.5 rounded-lg">
                           <span>{r.source}</span>
                           <span className="font-bold">{r.cnt}</span>
                         </div>
@@ -338,10 +338,10 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
                     </div>
                   </div>
                   <div>
-                    <p className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Leads by Source</p>
+                    <p className="font-semibold mb-2 text-gray-700">Leads by Source</p>
                     <div className="space-y-1 font-mono">
                       {funnel?.leadsBySource?.slice(0, 8).map((r: any) => (
-                        <div key={r.source} className="flex justify-between bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5 rounded-lg">
+                        <div key={r.source} className="flex justify-between bg-gray-50 px-3 py-1.5 rounded-lg">
                           <span>{r.source}</span>
                           <span className="font-bold">{r.cnt}</span>
                         </div>
@@ -352,17 +352,17 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
               </div>
 
               {/* Insights daily chart summary table */}
-              <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 space-y-3">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-3">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Daily Insights (DB · Campaign Level)</h3>
+                    <h3 className="font-bold text-sm text-gray-900">Daily Insights (DB · Campaign Level)</h3>
                     <p className="text-xs text-gray-500">Satu baris per campaign per hari. Metrik canonical.</p>
                   </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left">
                     <thead>
-                      <tr className="border-b dark:border-gray-800 text-gray-500 bg-gray-50 dark:bg-gray-950">
+                      <tr className="border-b text-gray-500 bg-gray-50">
                         <th className="p-2.5">Date</th>
                         <th className="p-2.5">Campaign ID</th>
                         <th className="p-2.5">Spend</th>
@@ -373,9 +373,9 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
                         <th className="p-2.5">Raw</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y dark:divide-gray-800 font-mono">
+                    <tbody className="divide-y font-mono">
                       {insights.slice(0, 15).map((row: any, i: number) => (
-                        <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
+                        <tr key={i} className="hover:bg-gray-50">
                           <td className="p-2.5 font-sans font-medium">{row.date_record}</td>
                           <td className="p-2.5 truncate max-w-[160px] font-semibold text-purple-600">{row.campaign_id}</td>
                           <td className="p-2.5 font-bold">Rp {Number(row.spend).toLocaleString('id-ID')}</td>
@@ -404,17 +404,17 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
 
       {/* TAB 2: HIERARCHY EXPLORER */}
       {activeTab === 'explorer' && (
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 space-y-4">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="font-bold text-sm text-gray-900 dark:text-gray-100">Campaigns Hierarchy</h3>
+              <h3 className="font-bold text-sm text-gray-900">Campaigns Hierarchy</h3>
               <p className="text-xs text-gray-500">{campaigns.length} campaigns ingested in local database</p>
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left">
               <thead>
-                <tr className="border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-950 text-gray-500">
+                <tr className="border-b bg-gray-50 text-gray-500">
                   <th className="p-3">Campaign Name / ID</th>
                   <th className="p-3">Status</th>
                   <th className="p-3">Budget</th>
@@ -428,17 +428,17 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
                   <th className="p-3">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y dark:divide-gray-800 font-mono">
+              <tbody className="divide-y font-mono">
                 {campaigns.map((c) => (
-                  <tr key={c.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/40 ${selectedCampaign === c.id ? 'bg-purple-50 dark:bg-purple-950/20' : ''}`}>
+                  <tr key={c.id} className={`hover:bg-gray-50 ${selectedCampaign === c.id ? 'bg-purple-50' : ''}`}>
                     <td className="p-3 font-sans">
                       <div className="max-w-[220px]">
-                        <p className="font-bold truncate text-gray-900 dark:text-gray-100" title={c.name}>{c.name}</p>
+                        <p className="font-bold truncate text-gray-900" title={c.name}>{c.name}</p>
                         <p className="text-[10px] text-gray-400 font-mono">{c.id}</p>
                       </div>
                     </td>
                     <td className="p-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'}`}>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${c.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
                         {c.status}
                       </span>
                     </td>
@@ -461,7 +461,7 @@ export default function MetaAdsDashboard({ dateRange }: Props) {
                             <Play size={12} />
                           </button>
                         )}
-                        <button onClick={() => setSelectedCampaign(selectedCampaign === c.id ? null : c.id)} className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded text-[11px] font-medium">
+                        <button onClick={() => setSelectedCampaign(selectedCampaign === c.id ? null : c.id)} className="px-2 py-1 bg-gray-100 rounded text-[11px] font-medium">
                           Detail
                         </button>
                         <button onClick={() => setRawTarget({ type: 'campaign', id: c.id })} className="p-1 bg-purple-50 text-purple-600 rounded" title="Raw Payload">
@@ -540,12 +540,12 @@ function SelectedCampaignDetail({ campaignId, dateRange, onManage, onInspectRaw 
   if (loading) return <div className="mt-4 text-xs text-gray-500 animate-pulse">Loading adsets and ads...</div>;
 
   return (
-    <div className="mt-6 space-y-4 border-t dark:border-gray-800 pt-4">
+    <div className="mt-6 space-y-4 border-t pt-4">
       <h4 className="font-bold text-xs uppercase tracking-wider text-purple-600">AdSets for Campaign {campaignId}</h4>
       <div className="overflow-x-auto">
         <table className="w-full text-xs text-left font-mono">
           <thead>
-            <tr className="text-gray-500 border-b dark:border-gray-800">
+            <tr className="text-gray-500 border-b">
               <th className="p-2">Name / ID</th>
               <th className="p-2">Status</th>
               <th className="p-2">Spend</th>
@@ -554,7 +554,7 @@ function SelectedCampaignDetail({ campaignId, dateRange, onManage, onInspectRaw 
           </thead>
           <tbody>
             {adsets.map((a: any) => (
-              <tr key={a.id} className="border-b dark:border-gray-800">
+              <tr key={a.id} className="border-b">
                 <td className="p-2 font-sans">
                   <span title={a.name} className="font-bold">{a.name}</span>
                   <span className="text-gray-400 font-mono ml-2 text-[10px]">{a.id}</span>
@@ -579,7 +579,7 @@ function SelectedCampaignDetail({ campaignId, dateRange, onManage, onInspectRaw 
       <div className="overflow-x-auto">
         <table className="w-full text-xs text-left font-mono">
           <thead>
-            <tr className="text-gray-500 border-b dark:border-gray-800">
+            <tr className="text-gray-500 border-b">
               <th className="p-2">Name / ID</th>
               <th className="p-2">Status</th>
               <th className="p-2">Spend</th>
@@ -588,7 +588,7 @@ function SelectedCampaignDetail({ campaignId, dateRange, onManage, onInspectRaw 
           </thead>
           <tbody>
             {ads.map((ad: any) => (
-              <tr key={ad.id} className="border-b dark:border-gray-800">
+              <tr key={ad.id} className="border-b">
                 <td className="p-2 font-sans">
                   <span className="font-bold">{ad.name}</span> <span className="text-gray-400 font-mono text-[10px]">{ad.id}</span>
                 </td>

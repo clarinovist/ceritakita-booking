@@ -35,28 +35,27 @@ export default function ExplorerSyncCenterTab({ onSyncTriggered }: Props) {
     fetchSyncCenterData();
   }, []);
 
-  const triggerScopedSync = async (scope: string, days = selectedDays, full = false) => {
+  const triggerScopedSync = async (scope: string) => {
     setSyncing(scope);
     try {
-      const res = await fetch(`/api/meta/sync?days=${days}&full=${full ? '1' : '0'}&scope=${scope}`, {
+      const res = await fetch(`/api/meta/sync?scope=${encodeURIComponent(scope)}&days=${selectedDays}`, {
         method: 'POST',
       });
       const data = await res.json();
-      if (data.success) {
-        alert(`Sync scope '${scope}' finished: ${data.insights || 0} insights, ${data.campaigns || 0} campaigns synced.`);
-        fetchSyncCenterData();
-        onSyncTriggered?.();
+      if (data.success || data.synced) {
+        await fetchSyncCenterData();
+        if (onSyncTriggered) onSyncTriggered();
       } else {
-        alert(`Sync error: ${data.error || 'Unknown error'}`);
+        alert(data.error || 'Sync failed');
       }
     } catch (e: any) {
-      alert(`Sync failed: ${e.message}`);
+      alert(e.message);
     } finally {
       setSyncing(null);
     }
   };
 
-  const handleReconcile = async () => {
+  const triggerReconciliation = async () => {
     setReconciling(true);
     setReconcileResult(null);
     try {
@@ -67,8 +66,9 @@ export default function ExplorerSyncCenterTab({ onSyncTriggered }: Props) {
       });
       const data = await res.json();
       setReconcileResult(data);
+      await fetchSyncCenterData();
     } catch (e: any) {
-      alert(`Reconcile failed: ${e.message}`);
+      alert(e.message);
     } finally {
       setReconciling(false);
     }
@@ -76,230 +76,200 @@ export default function ExplorerSyncCenterTab({ onSyncTriggered }: Props) {
 
   return (
     <div className="space-y-6">
-      {/* Top Action Header */}
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      {/* Sync Control & Days Selector Bar */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Zap className="text-purple-600" size={20} /> Sync Center & Capability Matrix
+          <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+            <Zap size={20} className="text-purple-600" /> Scoped Sync Controls & Reconciliation Center
           </h3>
           <p className="text-xs text-gray-500 mt-1">
-            Execute scoped ingestion pipelines, inspect API token permissions, and reconcile local DB facts against live Meta Graph API.
+            Trigger granular background ingestion scopes and verify database consistency against live Graph API.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-xl text-xs">
-            <Clock size={14} className="text-gray-500" /> Range:
+          <div className="flex items-center gap-2 bg-gray-50 px-3 py-2 border border-gray-200 rounded-xl text-xs">
+            <Clock size={14} className="text-gray-400" />
+            <span className="text-gray-500 font-medium">Sync Window:</span>
             <select
               value={selectedDays}
               onChange={(e) => setSelectedDays(Number(e.target.value))}
-              className="bg-transparent font-medium focus:outline-none cursor-pointer"
+              className="bg-transparent font-bold focus:outline-none cursor-pointer text-gray-800"
             >
               <option value={7}>7 Days</option>
               <option value={14}>14 Days</option>
               <option value={30}>30 Days</option>
-              <option value={60}>60 Days</option>
               <option value={90}>90 Days</option>
             </select>
           </div>
 
           <button
-            onClick={handleReconcile}
+            onClick={triggerReconciliation}
             disabled={reconciling}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl flex items-center gap-2 transition disabled:opacity-50"
+            className="px-4 py-2 bg-emerald-600 text-white font-medium rounded-xl text-xs flex items-center gap-1.5 hover:bg-emerald-700 disabled:opacity-50 transition shadow-sm"
           >
-            <ShieldCheck size={14} />
-            {reconciling ? 'Reconciling...' : 'Run Live Reconciliation'}
+            {reconciling ? 'Reconciling...' : <><ShieldCheck size={14} /> Live Reconciliation Check</>}
           </button>
         </div>
       </div>
 
-      {/* Reconciliation result alert */}
+      {/* Reconciliation Result Card */}
       {reconcileResult && (
-        <div className={`p-5 rounded-2xl border ${reconcileResult.reconciled ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/20 dark:border-emerald-900' : 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900'} space-y-2`}>
-          <div className="flex items-center justify-between">
-            <h4 className={`font-bold text-sm flex items-center gap-2 ${reconcileResult.reconciled ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}`}>
-              {reconcileResult.reconciled ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
-              Reconciliation Result ({reconcileResult.range?.since} → {reconcileResult.range?.until})
-            </h4>
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white/50 dark:bg-black/30">
-              {reconcileResult.reconciled ? 'RECONCILED 100%' : 'VARIANCE DETECTED'}
+        <div className={`p-5 rounded-2xl border ${reconcileResult.success ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-red-50 border-red-200 text-red-900'}`}>
+          <div className="flex items-start justify-between">
+            <div>
+              <h4 className="font-bold text-sm flex items-center gap-2">
+                {reconcileResult.success ? <CheckCircle2 size={18} className="text-emerald-600" /> : <AlertCircle size={18} className="text-red-600" />}
+                Reconciliation Audit Results ({reconcileResult.days} Days)
+              </h4>
+              <p className="text-xs mt-1 leading-relaxed">
+                Graph API Live Spend: <strong>Rp {Number(reconcileResult.graphApiTotalSpend || 0).toLocaleString('id-ID')}</strong> | Local Database Spend: <strong>Rp {Number(reconcileResult.dbTotalSpend || 0).toLocaleString('id-ID')}</strong>
+              </p>
+            </div>
+            <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${reconcileResult.status === 'MATCH' ? 'bg-emerald-200 text-emerald-800' : 'bg-amber-200 text-amber-800'}`}>
+              {reconcileResult.status || 'CHECKED'}
             </span>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs pt-2">
-            <div className="bg-white/60 dark:bg-gray-900/60 p-3 rounded-xl">
-              <p className="text-gray-500">Live Meta Spend</p>
-              <p className="font-bold text-sm">Rp {(reconcileResult.metaLive?.spend || 0).toLocaleString('id-ID')}</p>
-            </div>
-            <div className="bg-white/60 dark:bg-gray-900/60 p-3 rounded-xl">
-              <p className="text-gray-500">Local DB Spend</p>
-              <p className="font-bold text-sm">Rp {(reconcileResult.dbLocal?.spend || 0).toLocaleString('id-ID')}</p>
-            </div>
-            <div className="bg-white/60 dark:bg-gray-900/60 p-3 rounded-xl">
-              <p className="text-gray-500">Difference</p>
-              <p className="font-bold text-sm">Rp {(reconcileResult.difference?.spendDiff || 0).toLocaleString('id-ID')}</p>
-            </div>
-            <div className="bg-white/60 dark:bg-gray-900/60 p-3 rounded-xl">
-              <p className="text-gray-500">Status</p>
-              <p className="font-bold text-sm">{reconcileResult.reconciled ? 'Accurate' : 'Sync recommended'}</p>
-            </div>
           </div>
         </div>
       )}
 
-      {/* Scoped Sync Controls */}
-      <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm">
-        <h4 className="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2 text-sm">
-          <Layers size={16} className="text-purple-600" /> Scoped Ingestion Actions
-        </h4>
+      {/* Scoped Sync Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { scope: 'capabilities', title: 'Capabilities Matrix', desc: 'Probe Meta Graph API token permissions & endpoints.', icon: ShieldAlert },
+          { scope: 'account', title: 'Account Metadata', desc: 'Sync currency, timezone, spend cap, balance.', icon: Database },
+          { scope: 'objects', title: 'Objects & Hierarchy', desc: 'Fetch all Campaigns, AdSets, and Ads.', icon: Layers },
+          { scope: 'creatives', title: 'Ad Creatives', desc: 'Fetch Headlines, Body Copy, CTAs & Thumbnails.', icon: Zap },
+          { scope: 'insights:campaign', title: 'Campaign Insights', desc: 'Daily canonical facts at campaign level.', icon: RefreshCcw },
+          { scope: 'insights:adset', title: 'AdSet Insights', desc: 'Daily facts sliced at adset level.', icon: RefreshCcw },
+          { scope: 'insights:ad', title: 'Ad Level Insights', desc: 'Daily facts sliced at ad level.', icon: RefreshCcw },
+          { scope: 'breakdowns', title: 'Audience Breakdowns', desc: 'Sync Age, Gender, Placement, Device, Region.', icon: RefreshCcw },
+        ].map((item) => {
+          const Icon = item.icon;
+          const isBusy = syncing === item.scope;
+          return (
+            <div key={item.scope} className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm flex flex-col justify-between space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="p-2 bg-purple-50 text-purple-600 rounded-xl">
+                    <Icon size={18} />
+                  </div>
+                  <span className="text-[10px] font-mono font-semibold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                    {item.scope}
+                  </span>
+                </div>
+                <h4 className="font-bold text-sm text-gray-900">{item.title}</h4>
+                <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.desc}</p>
+              </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[
-            { scope: 'capabilities', label: 'Capability Probe', desc: 'Verify Token Scopes' },
-            { scope: 'account', label: 'Account Info', desc: 'Sync Balance & Currency' },
-            { scope: 'objects', label: 'Campaigns/Sets/Ads', desc: 'Sync Hierarchy Objects' },
-            { scope: 'creatives', label: 'Ad Creatives', desc: 'Sync Assets & Copy' },
-            { scope: 'insights:campaign', label: 'Campaign Insights', desc: 'Daily Campaign Facts' },
-            { scope: 'insights:adset', label: 'Adset Insights', desc: 'Daily Adset Facts' },
-            { scope: 'insights:ad', label: 'Ad Insights', desc: 'Daily Ad Facts' },
-            { scope: 'breakdowns', label: 'Breakdowns', desc: 'Age/Gender/Placement' },
-          ].map((item) => (
-            <button
-              key={item.scope}
-              onClick={() => triggerScopedSync(item.scope)}
-              disabled={syncing !== null}
-              className="p-4 bg-gray-50 dark:bg-gray-800/50 hover:bg-purple-50 dark:hover:bg-purple-950/30 border border-gray-200 dark:border-gray-700/60 rounded-xl text-left transition group disabled:opacity-50"
+              <button
+                onClick={() => triggerScopedSync(item.scope)}
+                disabled={isBusy}
+                className="w-full py-2 bg-gray-50 hover:bg-purple-50 text-purple-600 font-semibold rounded-xl text-xs border border-purple-100 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+              >
+                {isBusy ? (
+                  <>
+                    <RefreshCcw size={12} className="animate-spin" /> Ingesting...
+                  </>
+                ) : (
+                  <>
+                    <Zap size={12} /> Sync Scope
+                  </>
+                )}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Capability Matrix Section */}
+      <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-4">
+        <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+          <ShieldCheck size={18} className="text-purple-600" /> Active Token Capabilities Matrix ({capabilities.length})
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
+          {capabilities.map((cap) => (
+            <div
+              key={cap.capability_key}
+              className={`p-3 rounded-xl border flex items-center justify-between ${
+                cap.supported ? 'bg-green-50/50 border-green-200 text-green-900' : 'bg-red-50/50 border-red-200 text-red-900'
+              }`}
             >
-              <p className="font-bold text-xs text-gray-900 dark:text-gray-100 group-hover:text-purple-600 flex justify-between items-center">
-                {item.label}
-                {syncing === item.scope ? <RefreshCcw size={12} className="animate-spin text-purple-600" /> : <Zap size={12} className="text-gray-400 group-hover:text-purple-600" />}
-              </p>
-              <p className="text-[11px] text-gray-500 mt-1">{item.desc}</p>
-            </button>
+              <span className="font-semibold text-xs truncate mr-2" title={cap.capability_key}>
+                {cap.capability_key}
+              </span>
+              {cap.supported ? (
+                <span className="text-[10px] bg-green-200 text-green-800 font-bold px-2 py-0.5 rounded-full">Active</span>
+              ) : (
+                <span className="text-[10px] bg-red-200 text-red-800 font-bold px-2 py-0.5 rounded-full" title={cap.error_message}>
+                  Error
+                </span>
+              )}
+            </div>
           ))}
-        </div>
 
-        <div className="mt-4 pt-4 border-t dark:border-gray-800 flex justify-between items-center">
-          <p className="text-xs text-gray-500">Need full backfill across all data domains?</p>
-          <button
-            onClick={() => triggerScopedSync('all', selectedDays, true)}
-            disabled={syncing !== null}
-            className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs rounded-xl flex items-center gap-2 shadow-sm transition disabled:opacity-50"
-          >
-            <Database size={14} /> Full Deep Backfill ({selectedDays} Days)
-          </button>
+          {capabilities.length === 0 && (
+            <div className="col-span-full p-4 text-center text-gray-400 font-sans text-xs">
+              No capability checks logged yet. Click &quot;Capabilities Matrix&quot; scope sync above.
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Two column layout: Capabilities & Sync History */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Capability Matrix */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <ShieldCheck size={16} className="text-green-600" /> Capability Matrix ({capabilities.length})
-            </h4>
-            <button
-              onClick={() => triggerScopedSync('capabilities')}
-              className="text-xs text-purple-600 hover:underline flex items-center gap-1"
-            >
-              <RefreshCcw size={12} /> Probe
-            </button>
-          </div>
+      {/* Sync Execution Runs Log Table */}
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm space-y-3 p-6">
+        <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+          <Clock size={18} className="text-purple-600" /> Recent Sync Execution History
+        </h3>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b dark:border-gray-800 text-gray-500">
-                  <th className="py-2">Capability</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Last Checked</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="border-b bg-gray-50 text-gray-500">
+                <th className="p-2.5">Run ID</th>
+                <th className="p-2.5">Scope</th>
+                <th className="p-2.5">Status</th>
+                <th className="p-2.5">Trigger</th>
+                <th className="p-2.5">Records Ingested</th>
+                <th className="p-2.5">Duration</th>
+                <th className="p-2.5">Start Time</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y font-mono">
+              {syncRuns.map((run) => (
+                <tr key={run.id} className="hover:bg-gray-50">
+                  <td className="p-2.5 font-bold text-purple-600">#{run.id}</td>
+                  <td className="p-2.5 font-sans font-semibold">{run.scope}</td>
+                  <td className="p-2.5">
+                    <span
+                      className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        run.status === 'SUCCESS'
+                          ? 'bg-green-100 text-green-700'
+                          : run.status === 'RUNNING'
+                          ? 'bg-blue-100 text-blue-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {run.status}
+                    </span>
+                  </td>
+                  <td className="p-2.5 text-gray-500">{run.triggered_by}</td>
+                  <td className="p-2.5 font-bold">{run.records_count || 0}</td>
+                  <td className="p-2.5 text-gray-500">{run.duration_ms ? `${run.duration_ms}ms` : '-'}</td>
+                  <td className="p-2.5 text-gray-400 text-[10px]">{run.started_at ? new Date(run.started_at).toLocaleString() : '-'}</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y dark:divide-gray-800">
-                {capabilities.map((cap) => (
-                  <tr key={cap.capability_key} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
-                    <td className="py-2 font-mono text-[11px] font-medium text-gray-800 dark:text-gray-200">{cap.capability_key}</td>
-                    <td className="py-2">
-                      {cap.supported ? (
-                        <span className="px-2 py-0.5 bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300 rounded-full text-[10px] font-semibold flex items-center gap-1 w-fit">
-                          <CheckCircle2 size={10} /> Supported
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 rounded-full text-[10px] font-semibold flex items-center gap-1 w-fit" title={cap.error_message}>
-                          <ShieldAlert size={10} /> Restricted
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-2 text-gray-500 font-mono text-[10px]">{cap.last_checked_at ? new Date(cap.last_checked_at).toLocaleTimeString() : 'N/A'}</td>
-                  </tr>
-                ))}
-                {capabilities.length === 0 && (
-                  <tr>
-                    <td colSpan={3} className="py-6 text-center text-gray-400">
-                      No capabilities recorded. Click Probe to discover token permissions.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+              ))}
 
-        {/* Sync Runs History */}
-        <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
-            <h4 className="font-bold text-sm text-gray-900 dark:text-gray-100 flex items-center gap-2">
-              <Clock size={16} className="text-blue-600" /> Recent Sync Runs
-            </h4>
-            <button onClick={fetchSyncCenterData} className="text-xs text-blue-600 hover:underline flex items-center gap-1">
-              <RefreshCcw size={12} /> Refresh Logs
-            </button>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b dark:border-gray-800 text-gray-500">
-                  <th className="py-2">ID / Scope</th>
-                  <th className="py-2">Status</th>
-                  <th className="py-2">Records</th>
-                  <th className="py-2">Started</th>
+              {syncRuns.length === 0 && (
+                <tr>
+                  <td colSpan={7} className="p-6 text-center text-gray-400 font-sans">
+                    No sync run history recorded yet.
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y dark:divide-gray-800">
-                {syncRuns.map((run) => (
-                  <tr key={run.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40">
-                    <td className="py-2 font-mono text-[11px]">
-                      <div className="font-semibold text-gray-900 dark:text-gray-100">#{run.id}</div>
-                      <div className="text-[10px] text-gray-400 truncate max-w-[140px]" title={run.scope}>{run.scope}</div>
-                    </td>
-                    <td className="py-2">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                        run.status === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' :
-                        run.status === 'partial' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' :
-                        'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                      }`}>
-                        {run.status}
-                      </span>
-                    </td>
-                    <td className="py-2 font-mono font-medium">{run.records_synced || 0}</td>
-                    <td className="py-2 text-gray-500 font-mono text-[10px]">
-                      {run.started_at ? new Date(run.started_at).toLocaleTimeString() : '-'}
-                    </td>
-                  </tr>
-                ))}
-                {syncRuns.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="py-6 text-center text-gray-400">
-                      No sync runs logged yet.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
