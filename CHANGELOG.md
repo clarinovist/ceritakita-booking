@@ -5,6 +5,44 @@ All notable changes to the CeritaKita Studio Booking System will be documented i
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.2.0...v1.3.0) (2026-07-28)
+
+
+### Features
+
+* add /api/v1/ agent API with Bearer token auth ([040da08](https://github.com/clarinovist/ceritakita-booking/commit/040da087a621dad5574ce3f31bc0a95e11b729f5))
+* add /api/v1/ discovery endpoint for auto-discoverable API ([6d36b27](https://github.com/clarinovist/ceritakita-booking/commit/6d36b2749cd04638fe10569214a04338a6104048))
+* **attribution:** auto-link bookings→leads by phone + leads→campaigns via utm + backfill endpoint + cron chain ([7844912](https://github.com/clarinovist/ceritakita-booking/commit/7844912faedfdbcd49c8a39692b650cb65d14367))
+* **blog:** tambah artikel foto keluarga adat jawa ([70fb075](https://github.com/clarinovist/ceritakita-booking/commit/70fb075b05372299d1ddb9c4a638ef81d11f93b0))
+* **crm:** implement Module A — daily digest, assisted follow-up, lead scoring ([64d0aac](https://github.com/clarinovist/ceritakita-booking/commit/64d0aac87ecd1f799fd2bf4dd487b32ef404a89d))
+* **debug:** add debug attribution endpoint to inspect bookings/leads matching ([0bd9e6d](https://github.com/clarinovist/ceritakita-booking/commit/0bd9e6d9489ed0dab1a9d6ba7d9023eb315e405d))
+* **meta-ads:** complete data explorer with granular ingestion, breakdowns, & geographic analytics ([2cce2d8](https://github.com/clarinovist/ceritakita-booking/commit/2cce2d87c926cbacf8eba7c15ab8ba8512139488))
+* **meta-ads:** full-funnel optimization - DB as source of truth ([2573e2c](https://github.com/clarinovist/ceritakita-booking/commit/2573e2cea18aff4b9a92955cbdfac7850f892462))
+* **seo:** add 13 blog posts — full Solo Raya coverage ([20c5ac1](https://github.com/clarinovist/ceritakita-booking/commit/20c5ac1e78f3413f61dca8cd5020ed20d5506865))
+* **seo:** add blog posts for Klaten + Wonogiri + update sitemap ([1fff9c9](https://github.com/clarinovist/ceritakita-booking/commit/1fff9c9a95dbc2376b30594bfd931444a459e54d))
+* **seo:** add blog posts for Sragen + Karanganyar ([83151d2](https://github.com/clarinovist/ceritakita-booking/commit/83151d29b0f07902e8f103943e9641d197688150))
+* **seo:** add tips-foto-studio-pertama-kali blog post ([b58df75](https://github.com/clarinovist/ceritakita-booking/commit/b58df7585c7cb72a7df97e33c2bdb5d78c8a0259))
+* **whatsapp:** 24h session guard, template send, and failed delivery sync ([304dbe0](https://github.com/clarinovist/ceritakita-booking/commit/304dbe0ab97a64b15ad485a9f3200f058074a864))
+* **whatsapp:** Module B — Customer 360 enhancements + AI/CS metrics ([f00d9c3](https://github.com/clarinovist/ceritakita-booking/commit/f00d9c30baf48a61159db149ee89e07e15a1a097))
+
+
+### Bug Fixes
+
+* **admin-ads:** align Data Explorer cards styling to light theme admin layout ([5dc8239](https://github.com/clarinovist/ceritakita-booking/commit/5dc8239c0db8fdfb7e5c326fb91e08230db2c642))
+* **attribution:** avoid cartesian spend inflation + improve bookings phone match with suffix fallback + lead booking_id update ([21a5d9e](https://github.com/clarinovist/ceritakita-booking/commit/21a5d9ebc46de908a4d8754728087513780436b4))
+* **db:** meta tables always-run migration + version bump to 2 - fix VPS no such table meta_sync_log ([7eed5ac](https://github.com/clarinovist/ceritakita-booking/commit/7eed5ac5800e7ff025c1ea818b4ef0e18a3018fd))
+* **debug:** move normalizePhone outside handler ([70d950b](https://github.com/clarinovist/ceritakita-booking/commit/70d950b2915f79a5d94d365f8fefe362b0ddbcda))
+* escape characters in self-photo-solo-raya blog post ([f11087d](https://github.com/clarinovist/ceritakita-booking/commit/f11087d6616b293e7317d34fa285c163856e0ecb))
+* **lint:** remove unused getDb import ([9b4b3c5](https://github.com/clarinovist/ceritakita-booking/commit/9b4b3c585f7701033a07bc158687c801af83b51b))
+* **lint:** remove unused recentCamp var ([26cc799](https://github.com/clarinovist/ceritakita-booking/commit/26cc799d69106dc298527908e141627552fcd866))
+* **meta:** deduplicate insights with NULL UNIQUE bug + normalize to '' for upsert correctness ([6bc2991](https://github.com/clarinovist/ceritakita-booking/commit/6bc2991f373d6d4cf5891aca5671a59a3368c643))
+* **meta:** health endpoint resilient + workflows set+e avoid curl -f exit ([00ad42e](https://github.com/clarinovist/ceritakita-booking/commit/00ad42eefc73634bfe45342b0fe76bcf11c0afc6))
+* **ts:** add ! ([43c90c4](https://github.com/clarinovist/ceritakita-booking/commit/43c90c4b0efe35ff6751e7fb07e037aaf6d6bf8c))
+* **ts:** downlevelIteration for Map entries + typed l ([1d6cd60](https://github.com/clarinovist/ceritakita-booking/commit/1d6cd60ef320b9f160259b5c9e967e403d09b3f2))
+* TypeScript errors in cash-position route and benchmark script ([4b405a4](https://github.com/clarinovist/ceritakita-booking/commit/4b405a466e5c6d4807aafe514f9584b710545578))
+* **whatsapp:** review fixes — metrics formula, label, layering, interval ([2164313](https://github.com/clarinovist/ceritakita-booking/commit/21643139540317ae70e47714ed30438e42564928))
+* **whatsapp:** show outgoing CS replies in admin UI and drop WATI ([5479ddd](https://github.com/clarinovist/ceritakita-booking/commit/5479ddd9a9026a5450116c8919d87615e0d1a723))
+
 ## [1.2.0](https://github.com/clarinovist/ceritakita-booking/compare/v1.1.0...v1.2.0) (2026-06-14)
 
 
