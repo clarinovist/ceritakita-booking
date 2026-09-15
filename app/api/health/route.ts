@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 import { logger } from '@/lib/logger';
 
+// Never prerender/cache a health probe: check the mounted runtime DB on every request.
+export const dynamic = 'force-dynamic';
+
 /**
  * Health Check Endpoint
  *

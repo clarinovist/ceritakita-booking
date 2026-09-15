@@ -116,5 +116,9 @@ Pencarian layering menemukan penggunaan `getDb()` yang sudah ada sebelum task pa
 - Baseline agregat: bookings 131, payments 234, coupons 1, coupon_usage 0, meta_insights_daily 99, wa_clicks 8550; total harga booking 41.123.000, total pembayaran 40.898.000.
 - Pre-push lint/typecheck/36 regression checks kembali lolos. Build diulang terakhir sebelum commit: **exit 0**.
 - Hanya perubahan fitur ini yang di-stage; `.commandcode/` dan plan SaaS di luar commit.
-- Setelah push: pantau workflow SHA yang tepat dengan `gh run watch --exit-status`, lalu verifikasi container/image, health, log, schema migration, data counts/sums, dan backup di VPS. Jangan membuat booking atau menukar paket customer produksi untuk smoke test.
+- Run pertama `34925572355` untuk commit `e689d10`: release-please/build/deploy sukses, `gh run watch --exit-status` exit 0. Image runtime cocok dengan digest hasil CI.
+- Verifikasi VPS membuka gap operasional: `/api/health` ter-prerender/cached oleh Next.js; timestamp tetap dari build dan migrasi runtime belum dipicu walau health hijau. Tabel `booking_package_history` belum ada saat query read-only pertama. Tidak menyimpulkan CI green sebagai data sehat.
+- Follow-up fix scope hanya `app/api/health/route.ts`: tambahkan `dynamic = 'force-dynamic'` agar probe menjalankan `getDb()`/SELECT 1 setiap request dan memicu migrasi idempoten pada startup/probe pertama. Plan dicatat sebelum fix; tidak melakukan manual DDL atau mengganti data customer.
+- Follow-up health force-dynamic selesai; gap kode 0. Lint/typecheck/36 regression dan build ulang exit 0; output build memastikan `/api/health` adalah route **ƒ dynamic**, bukan static. Berikutnya commit/push → watch run kedua → verifikasi timestamps bergerak, schema, counts/sums, log, backup, dan image.
+- Jangan membuat booking atau menukar paket customer produksi untuk smoke test.
 - Rollback bila diperlukan: jalankan image lama yang sudah ditag; migrasi baru hanya menambah tabel history sehingga tidak perlu restore DB yang berisiko menghapus transaksi customer baru. Restore backup hanya dengan keputusan eksplisit jika data benar-benar rusak.
