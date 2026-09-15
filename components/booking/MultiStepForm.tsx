@@ -65,6 +65,8 @@ interface MultiStepFormContextType {
   formData: FormData;
   errors: Record<number, StepError[]>;
   isSubmitting: boolean;
+  couponLoading: boolean;
+  setCouponLoading: (loading: boolean) => void;
   isMobile: boolean;
 
   // Actions
@@ -142,6 +144,8 @@ export function MultiStepFormProvider({
 
   const [errors, setErrors] = useState<Record<number, StepError[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [progressRestored, setProgressRestored] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedPortfolioImage, setSelectedPortfolioImage] = useState<string | null>(null);
 
@@ -150,7 +154,20 @@ export function MultiStepFormProvider({
   }, []);
 
   const updateFormData = useCallback((data: Partial<FormData>) => {
-    setFormData(prev => ({ ...prev, ...data }));
+    if (data.couponDiscount !== undefined || data.serviceId !== undefined || data.addons !== undefined) {
+      setErrors(prev => ({ ...prev, 5: (prev[5] || []).filter(e => e.field !== 'dp_amount' && e.field !== 'proofFile') }));
+    }
+    setFormData(prev => {
+      const pricingChanged = (data.serviceId !== undefined && data.serviceId !== prev.serviceId)
+        || (data.serviceBasePrice !== undefined && data.serviceBasePrice !== prev.serviceBasePrice)
+        || (data.baseDiscount !== undefined && data.baseDiscount !== prev.baseDiscount)
+        || (data.addons !== undefined && JSON.stringify(data.addons) !== JSON.stringify(prev.addons))
+        || (data.addonsTotal !== undefined && data.addonsTotal !== prev.addonsTotal);
+      const next = { ...prev, ...data, ...(pricingChanged ? { couponCode: '', couponDiscount: 0 } : {}) };
+      next.totalPrice = Math.max(0, next.serviceBasePrice - next.baseDiscount + next.addonsTotal - next.couponDiscount);
+      if (next.totalPrice === 0) next.dp_amount = '0';
+      return next;
+    });
   }, []);
 
   const setFieldError = useCallback((field: string, message: string, step?: number) => {
@@ -224,6 +241,12 @@ export function MultiStepFormProvider({
           couponDiscount: _couponDiscount,
           couponCode: _couponCode,
           addonsTotal: _addonsTotal,
+          addons: _addons,
+          serviceId: _serviceId,
+          serviceName: _serviceName,
+          serviceBasePrice: _serviceBasePrice,
+          baseDiscount: _baseDiscount,
+          paymentSettings: _paymentSettings,
           ...safeRestoreData
         } = parsed;
         setFormData(prev => ({ ...prev, ...safeRestoreData }));
@@ -231,13 +254,16 @@ export function MultiStepFormProvider({
         console.error('Failed to load saved form data');
       }
     }
+    setProgressRestored(true);
   }, []);
 
   useEffect(() => {
+    // Do not overwrite saved progress with defaults before restore completes (StrictMode too).
+    if (!progressRestored) return;
     // Save only non-sensitive data
     const { proofFile: _proofFile, proofPreview: _proofPreview, ...safeData } = formData;
     localStorage.setItem('bookingFormProgress', JSON.stringify(safeData));
-  }, [formData]);
+  }, [formData, progressRestored]);
 
   // Auto-recalculate total price when components change
   useEffect(() => {
@@ -314,7 +340,7 @@ export function MultiStepFormProvider({
     // Step 5: Payment
     if (currentStep === 5) {
       const dpError = fieldValidators.dp_amount(formData.dp_amount, formData.totalPrice);
-      const proofError = !formData.proofFile ? 'Bukti transfer wajib diupload' : null;
+      const proofError = formData.totalPrice > 0 && !formData.proofFile ? 'Bukti transfer wajib diupload' : null;
 
       if (dpError) {
         newErrors.push({ field: 'dp_amount', message: dpError });
@@ -382,6 +408,7 @@ export function MultiStepFormProvider({
   };
 
   const submitForm = async () => {
+    if (isSubmitting || couponLoading) return;
     if (!validateCurrentStep()) {
       return;
     }
@@ -435,7 +462,7 @@ export function MultiStepFormProvider({
       const formPayload = new FormData();
       formPayload.append('data', JSON.stringify(jsonPayload));
 
-      if (formData.proofFile) {
+      if (formData.proofFile && formData.totalPrice > 0) {
         formPayload.append('proof', formData.proofFile);
       }
 
@@ -458,11 +485,12 @@ export function MultiStepFormProvider({
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.error || 'Booking failed');
+        throw new Error(errorData.message || errorData.error || 'Booking failed');
       }
 
       const result = await res.json();
       const bookingId = result.id || 'NEW';
+      const confirmedTotal = result.finance?.total_price ?? formData.totalPrice;
 
       // Success - clear saved data
       localStorage.removeItem('bookingFormProgress');
@@ -477,7 +505,7 @@ export function MultiStepFormProvider({
           service: formData.serviceName,
           date: new Date(formData.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }),
           time: formData.time,
-          total_price: formData.totalPrice.toLocaleString('id-ID'),
+          total_price: confirmedTotal.toLocaleString('id-ID'),
           booking_id: bookingId,
         };
 
@@ -503,7 +531,7 @@ export function MultiStepFormProvider({
           `📸 Layanan: ${formData.serviceName}\n` +
           `📅 Tanggal: ${new Date(formData.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}\n` +
           `⏰ Waktu: ${formData.time}\n` +
-          `💰 Total: Rp ${formData.totalPrice.toLocaleString('id-ID')}\n\n` +
+          `💰 Total: Rp ${confirmedTotal.toLocaleString('id-ID')}\n\n` +
           `Mohon konfirmasinya ya! 🙏`;
       }
 
@@ -526,7 +554,6 @@ export function MultiStepFormProvider({
       console.error(error);
       const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan saat booking.';
       alert(errorMessage);
-      throw error;
     } finally {
       setIsSubmitting(false);
     }
@@ -538,6 +565,8 @@ export function MultiStepFormProvider({
     formData,
     errors,
     isSubmitting,
+    couponLoading,
+    setCouponLoading,
     isMobile,
     nextStep,
     prevStep,

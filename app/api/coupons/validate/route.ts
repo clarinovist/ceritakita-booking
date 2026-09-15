@@ -1,20 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateCoupon } from '@/lib/repositories/coupons';
+import { validateBookingCoupon } from '@/lib/services/coupon-service';
+import { z } from 'zod';
+import { rateLimiters } from '@/lib/rate-limit';
 import { logger, createErrorResponse } from '@/lib/logger';
 
 export async function POST(req: NextRequest) {
     try {
-        const body = await req.json();
-        const { code, totalAmount } = body;
+        const limited = rateLimiters.moderate(req);
+        if (limited) return limited;
+        const parsed = z.object({
+            code: z.string().trim().min(1).max(100),
+            totalAmount: z.number().finite().nonnegative(),
+        }).safeParse(await req.json());
 
-        if (!code || typeof totalAmount !== 'number') {
+        if (!parsed.success) {
             return NextResponse.json(
                 { error: 'Kode kupon dan total pembelian diperlukan' },
                 { status: 400 }
             );
         }
 
-        const result = validateCoupon(code, totalAmount);
+        const result = validateBookingCoupon(parsed.data.code, parsed.data.totalAmount);
 
         if (!result.valid) {
             return NextResponse.json(

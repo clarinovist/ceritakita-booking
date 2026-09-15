@@ -3,6 +3,7 @@
 import { MessageSquare, Upload } from 'lucide-react';
 import Image from 'next/image';
 import { PaymentDetails } from '../components/PaymentDetails';
+import { BookingCoupon } from '../components/BookingCoupon';
 import { useMultiStepForm } from '../MultiStepForm';
 import { useEffect, useState, useMemo } from 'react';
 import { fieldValidators } from '@/lib/validation/schemas';
@@ -113,6 +114,10 @@ export const PaymentInfo = ({
                 <h3 className="font-display text-xl">Pembayaran DP</h3>
             </div>
 
+            {isContextMode && <BookingCoupon />}
+            {isContextMode && context.formData.totalPrice === 0 ? (
+                <p className="rounded-lg bg-green-50 p-4 text-sm text-green-800">Total Rp 0 — tidak perlu transfer atau upload bukti pembayaran.</p>
+            ) : <>
             {/* Payment Methods Display */}
             <PaymentDetails
                 paymentSettings={paymentSettings}
@@ -178,6 +183,8 @@ export const PaymentInfo = ({
                     </div>
                 )}
             </div>
+
+            </>}
 
             {/* Validation Error */}
             {isContextMode && proofError && (

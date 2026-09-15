@@ -3,12 +3,15 @@
 import React from 'react';
 import Image from 'next/image';
 import { formatDateTime } from '@/utils/dateFormatter';
-import type { Booking, Addon, BookingUpdate, Photographer } from '@/lib/types';
+import type { Booking, Addon, BookingUpdate, Photographer, Service } from '@/lib/types';
+import { ChangePackagePanel } from './ChangePackagePanel';
 
 interface BookingDetailModalProps {
   booking: Booking | null;
   photographers: Photographer[];
   addons: Addon[]; // Added addons prop
+  services: Service[];
+  onPackageChanged: (booking: Booking) => void;
   onClose: () => void;
   onDelete: (id: string) => void;
   onUpdateStatus: (id: string, status: Booking['status']) => void;
@@ -30,6 +33,8 @@ export function BookingDetailModal({
   booking,
   photographers,
   addons,
+  services,
+  onPackageChanged,
   onClose,
   onDelete,
   onUpdateStatus,
@@ -163,6 +168,8 @@ export function BookingDetailModal({
                   )}
                 </div>
               </div>
+
+              <ChangePackagePanel booking={booking} services={services} onChanged={onPackageChanged} />
 
               {/* Immutability Warning for Completed Bookings */}
               {booking.status === 'Completed' && (
@@ -354,15 +361,18 @@ export function BookingDetailModal({
                           </div>
                         )}
 
+                        {finance.paid > finance.total && (
+                          <p className="text-sm text-amber-800 bg-amber-50 p-2 rounded">Kelebihan bayar: Rp {(finance.paid - finance.total).toLocaleString('id-ID')}. Refund/kredit perlu tindak lanjut manual.</p>
+                        )}
                         <div className="mt-2">
                           <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-gradient-to-r from-green-500 to-green-600 transition-all"
-                              style={{ width: `${(finance.paid / finance.total) * 100}%` }}
+                              style={{ width: `${finance.total > 0 ? Math.min(100, (finance.paid / finance.total) * 100) : 100}%` }}
                             />
                           </div>
                           <p className="text-xs text-gray-500 mt-1 text-center">
-                            {((finance.paid / finance.total) * 100).toFixed(0)}% terbayar
+                            {(finance.total > 0 ? (finance.paid / finance.total) * 100 : 100).toFixed(0)}% terbayar
                           </p>
                         </div>
                       </>

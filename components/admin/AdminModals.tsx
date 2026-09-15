@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Service } from '@/lib/types';
+import { Service, Booking } from '@/lib/types';
 import { Photographer } from '@/lib/types';
 
 import { ServiceModal } from './modals/ServiceModal';
@@ -99,6 +99,11 @@ export function AdminModals({
                 booking={bookingsHook.selectedBooking}
                 photographers={photographers}
                 addons={addonsHook.addons}
+                services={services}
+                onPackageChanged={updated => {
+                    bookingsHook.setBookings((prev: Booking[]) => prev.map(b => b.id === updated.id ? updated : b));
+                    bookingsHook.setSelectedBooking(updated);
+                }}
                 onClose={() => bookingsHook.setSelectedBooking(null)}
                 onDelete={bookingsHook.handleDeleteBooking}
                 onUpdateStatus={bookingsHook.handleUpdateStatus}

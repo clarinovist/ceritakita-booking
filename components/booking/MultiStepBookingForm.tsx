@@ -38,6 +38,7 @@ function MultiStepBookingFormContent() {
     totalSteps,
     errors,
     isSubmitting,
+    couponLoading,
     nextStep,
     prevStep,
     submitForm,
@@ -194,8 +195,17 @@ function MultiStepBookingFormContent() {
                   </div>
                 )}
 
+                {formData.serviceId && (
+                  <>
+                    <div className="flex justify-between"><span>Harga paket</span><span>Rp {formData.serviceBasePrice.toLocaleString('id-ID')}</span></div>
+                    {formData.baseDiscount > 0 && <div className="flex justify-between text-green-700"><span>Diskon paket</span><span>− Rp {formData.baseDiscount.toLocaleString('id-ID')}</span></div>}
+                    {formData.addonsTotal !== 0 && <div className="flex justify-between"><span>Tambahan</span><span>Rp {formData.addonsTotal.toLocaleString('id-ID')}</span></div>}
+                    <div className="flex justify-between"><span>Subtotal</span><span>Rp {Math.max(0, formData.serviceBasePrice - formData.baseDiscount + formData.addonsTotal).toLocaleString('id-ID')}</span></div>
+                    {formData.couponCode && <div className="flex justify-between text-green-700 gap-2"><span>Promo {formData.couponCode}</span><span>− Rp {formData.couponDiscount.toLocaleString('id-ID')}</span></div>}
+                  </>
+                )}
                 {/* Total */}
-                {currentStep >= 1 && formData.totalPrice > 0 && (
+                {currentStep >= 1 && formData.serviceId && (
                   <div className="border-t-2 border-olive-300 pt-2 mt-2">
                     <div className="flex justify-between items-center">
                       <span className="font-display text-olive-900">Total:</span>
@@ -224,7 +234,7 @@ function MultiStepBookingFormContent() {
             totalSteps={totalSteps}
             onBack={handleBack}
             onNext={handleNext}
-            isNextDisabled={isSubmitting || currentErrors.length > 0}
+            isNextDisabled={isSubmitting || couponLoading || currentErrors.length > 0}
           />
         </div>
       </form>

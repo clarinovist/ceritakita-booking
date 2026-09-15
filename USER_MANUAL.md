@@ -16,6 +16,30 @@ This manual provides non-technical instructions for managing the booking system 
 7. [Leads Management (Kanban Board)](#leads-management-kanban-board)
 8. [Analytics & SEO Configuration](#analytics--seo-configuration)
 9. [Invoice Management](#invoice-management)
+10. [Kode Promo dan Ganti Paket](#kode-promo-dan-ganti-paket)
+
+---
+
+## Kode Promo dan Ganti Paket
+
+### Kode promo saat booking
+
+1. Admin membuat/mengaktifkan kode melalui menu **Kupon**.
+2. Customer membuka `/booking`, memilih paket dan tambahan, lalu pada langkah **Pembayaran** mengisi **Kode promo / voucher** → **Terapkan**.
+3. Periksa subtotal, potongan promo, dan total sebelum mengisi DP. Gunakan **Hapus** untuk melepas promo.
+4. Mengubah paket atau tambahan melepas promo; terapkan kembali jika masih memenuhi syarat. Kuota/masa berlaku diperiksa lagi saat booking dikirim.
+5. Jika promo membuat total Rp0, tidak perlu transfer atau mengunggah bukti. Untuk total di bawah Rp10.000, DP minimal sama dengan total.
+
+### Ganti paket customer yang sudah booking
+
+1. Buka detail booking berstatus **Active** → **Paket Booking → Ganti Paket**. Memerlukan izin `booking.update`.
+2. Pilih paket baru, tulis alasan → **Lihat Preview**.
+3. Periksa harga katalog terbaru, selisih total, DP terbayar, sisa tagihan, dan item yang dilepas.
+4. Promo lama dilepas. Add-on biasa yang masih aktif/cocok dipertahankan pada harga booking; item tidak cocok/nonaktif, harga negatif, dan penyesuaian bernama upgrade/downgrade/penyesuaian dilepas.
+5. Klik **Konfirmasi Ganti Paket**. ID booking, jadwal, DP, dan bukti pembayaran tidak berubah. Riwayat paket/alasan/aktor tersimpan dan dapat dibuka kembali.
+6. Jika data/harga berubah sejak preview, buat preview baru. Jika downgrade menyebabkan kelebihan bayar, tindak lanjuti refund/kredit secara manual; aplikasi tidak mengirim refund otomatis.
+
+**Batasan:** Completed dan Cancelled tidak dapat diganti paketnya. Booking Rescheduled harus dikembalikan ke Active sebelum perubahan harga/paket. Riwayat penggunaan promo lama tetap disimpan; kuota tidak dikembalikan otomatis.
 
 ---
 

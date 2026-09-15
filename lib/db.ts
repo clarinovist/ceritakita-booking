@@ -68,6 +68,8 @@ function runMigrations(db: Database.Database) {
   });
 
   runTx();
+  // Critical booking schema also runs for databases already at the latest version.
+  runBookingPackageSchema(db);
 
   // Always-run idempotent migrations for existing DBs that already passed version check
   // (covers VPS that already has version 1 but missed meta tables)
@@ -397,6 +399,22 @@ function runMetaAdsMigrations(db: Database.Database) {
 /**
  * Baseline schema initialization
  */
+function runBookingPackageSchema(db: Database.Database) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS booking_package_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      booking_id TEXT NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+      changed_at TEXT NOT NULL,
+      actor TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      before_json TEXT NOT NULL,
+      after_json TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_booking_package_history_booking
+      ON booking_package_history(booking_id, id);
+  `);
+}
+
 function runBaselineSchema(db: Database.Database) {
   // Create photographers table
   db.exec(`
@@ -448,6 +466,8 @@ function runBaselineSchema(db: Database.Database) {
       FOREIGN KEY (photographer_id) REFERENCES photographers(id)
     )
   `);
+
+  runBookingPackageSchema(db);
 
   // Add new columns to existing tables (migration)
   try {

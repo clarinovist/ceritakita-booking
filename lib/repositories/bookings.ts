@@ -423,12 +423,9 @@ export async function writeData(bookings: Booking[]): Promise<void> {
 /**
  * Create a new booking with type safety and file locking
  */
-export async function createBooking(booking: Booking): Promise<void> {
+export function createBooking(booking: Booking): void {
   const db = getDb();
-
-  const result = await executeTransaction(
-    async () => {
-      const transaction = db.transaction(() => {
+  const transaction = db.transaction(() => {
         // Validate and normalize status
         const normalizedStatus = normalizeBookingStatus(booking.status);
 
@@ -493,20 +490,8 @@ export async function createBooking(booking: Booking): Promise<void> {
             price: safeNumber(addon.price_at_booking)
           })));
         }
-      });
-
-      transaction();
-    },
-    async () => {
-      // Rollback logic would go here if needed
-      logger.warn('Transaction rolled back for createBooking', { bookingId: booking.id });
-    }
-  );
-
-  if (!result.success) {
-    logger.error('Failed to create booking', { bookingId: booking.id, error: result.error }, undefined, undefined, undefined);
-    throw new AppError('Failed to create booking', 500, 'BOOKING_CREATE_FAILED', result.error);
-  }
+  });
+  transaction();
 
   logger.audit('CREATE_BOOKING', `booking:${booking.id}`, booking.customer.name, {
     bookingId: booking.id,

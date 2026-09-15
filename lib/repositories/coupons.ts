@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import 'server-only';
 import { getDb } from '@/lib/db';
+import { evaluateCoupon } from '@/lib/coupon-rules';
 
 export interface Coupon {
   id: string;
@@ -40,87 +41,8 @@ export function validateCoupon(
   code: string,
   totalAmount: number
 ): CouponValidationResult {
-  const db = getDb();
-
-  const stmt = db.prepare(`
-    SELECT * FROM coupons
-    WHERE UPPER(code) = UPPER(?)
-      AND is_active = 1
-  `);
-
-  const row = stmt.get(code) as any;
-
-  if (!row) {
-    return {
-      valid: false,
-      error: 'Kode kupon tidak valid'
-    };
-  }
-
-  const coupon: Coupon = {
-    id: row.id,
-    code: row.code,
-    discount_type: row.discount_type,
-    discount_value: row.discount_value,
-    min_purchase: row.min_purchase,
-    max_discount: row.max_discount,
-    usage_limit: row.usage_limit,
-    usage_count: row.usage_count,
-    valid_from: row.valid_from,
-    valid_until: row.valid_until,
-    is_active: row.is_active === 1,
-    created_at: row.created_at
-  };
-
-  const now = new Date();
-  if (coupon.valid_from && new Date(coupon.valid_from) > now) {
-    return {
-      valid: false,
-      error: 'Kupon belum berlaku'
-    };
-  }
-
-  if (coupon.valid_until && new Date(coupon.valid_until) < now) {
-    return {
-      valid: false,
-      error: 'Kupon sudah kadaluarsa'
-    };
-  }
-
-  if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
-    return {
-      valid: false,
-      error: 'Kupon sudah mencapai batas penggunaan'
-    };
-  }
-
-  if (coupon.min_purchase && totalAmount < coupon.min_purchase) {
-    return {
-      valid: false,
-      error: `Minimal pembelian Rp ${coupon.min_purchase.toLocaleString('id-ID')}`
-    };
-  }
-
-  let discountAmount = 0;
-  if (coupon.discount_type === 'percentage') {
-    discountAmount = (totalAmount * coupon.discount_value) / 100;
-
-    if (coupon.max_discount && discountAmount > coupon.max_discount) {
-      discountAmount = coupon.max_discount;
-    }
-  } else {
-    discountAmount = coupon.discount_value;
-
-    if (discountAmount > totalAmount) {
-      discountAmount = totalAmount;
-    }
-  }
-
-  return {
-    valid: true,
-    coupon,
-    discount_amount: Math.round(discountAmount)
-  };
+  // Compatibility facade for existing callers; rules are pure and reusable by services.
+  return evaluateCoupon(getCouponByCode(code.trim()), totalAmount);
 }
 
 export function incrementCouponUsage(code: string): void {

@@ -268,11 +268,13 @@ export const fieldValidators = {
   },
   
   dp_amount: (value: string, total?: number) => {
+    if (total === 0 && (value === '' || Number(value) === 0)) return null;
     if (!value) return 'Jumlah DP wajib diisi';
     const amount = Number(value);
-    if (isNaN(amount)) return 'DP harus berupa angka';
-    if (amount < 10000) return 'DP minimal Rp 10.000';
-    if (total && amount > total) return 'DP tidak boleh melebihi total';
+    if (!Number.isFinite(amount)) return 'DP harus berupa angka';
+    const minimum = total !== undefined ? Math.min(10000, total) : 10000;
+    if (amount < minimum) return `DP minimal Rp ${minimum.toLocaleString('id-ID')}`;
+    if (total !== undefined && amount > total) return 'DP tidak boleh melebihi total';
     return null;
   },
   

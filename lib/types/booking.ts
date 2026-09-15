@@ -102,6 +102,33 @@ export interface RescheduleHistory {
   reason?: string;
 }
 
+export interface PackageSnapshot {
+  serviceId?: string;
+  serviceName: string;
+  finance: Omit<FinanceData, 'payments'>;
+  addons: BookingAddon[];
+}
+
+export interface PackageChangeHistory {
+  id: number;
+  changed_at: string;
+  actor: string;
+  reason: string;
+  before: PackageSnapshot;
+  after: PackageSnapshot;
+}
+
+export interface PackageChangePreview {
+  token: string;
+  before: PackageSnapshot;
+  after: PackageSnapshot;
+  removedAddons: BookingAddon[];
+  paid: number;
+  balance: number;
+  overpaid: number;
+  difference: number;
+}
+
 export interface Booking {
   /** Unique booking identifier */
   id: string;

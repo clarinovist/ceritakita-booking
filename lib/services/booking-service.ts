@@ -10,18 +10,18 @@ import {
 import { getSystemSettings } from '@/lib/repositories/settings';
 import { readServices } from '@/lib/repositories/services';
 import { saveUploadedFile, validateFile } from '@/lib/file-storage';
-import { calculateDetailedPricing } from '@/lib/pricing';
 import {
     recordCouponUsage,
-    incrementCouponUsage,
-    getCouponByCode
+    incrementCouponUsage
 } from '@/lib/repositories/coupons';
 import { generateWhatsAppMessage, generateWhatsAppLink } from '@/lib/whatsapp-template';
 import { sendNewBookingNotification, sendNewPaymentNotification } from '@/lib/telegram';
 import { sendEmail } from '@/lib/email';
 import { buildCustomerBookingEmail } from '@/lib/email-templates';
 import { logger, AppError } from '@/lib/logger';
-import { safeNumber, safeProperty, safeString } from '@/lib/type-utils';
+import { safeNumber, safeString } from '@/lib/type-utils';
+import { priceNewBooking } from '@/lib/services/booking-pricing-service';
+import { inBookingTransaction } from '@/lib/repositories/transaction';
 import { Booking } from '@/lib/types';
 import { createBookingSchema, updateBookingSchema } from '@/lib/validation';
 
@@ -52,23 +52,10 @@ export class BookingService {
         let couponCode: string | undefined;
 
         if (service && service.isActive) {
-            // Get coupon discount if provided in finance data
-            if (finance && typeof finance === 'object' && 'coupon_discount' in finance) {
-                // Use type-safe property access
-                couponDiscount = safeProperty(finance, 'coupon_discount', 0);
-                couponCode = safeProperty(finance, 'coupon_code', undefined);
-            }
-
-            const addonsList = (addons || []).map((a: any) => ({
-                price: safeNumber(a.price_at_booking),
-                quantity: safeNumber(a.quantity)
-            }));
-
-            const breakdown = calculateDetailedPricing(
-                service,
-                addonsList,
-                couponDiscount
-            );
+            const priced = priceNewBooking(service, addons || [], finance?.coupon_code);
+            couponDiscount = priced.breakdown.couponDiscount;
+            couponCode = priced.applied?.coupon.code;
+            const breakdown = priced.breakdown;
 
             serviceBasePrice = breakdown.serviceBasePrice;
             baseDiscount = breakdown.baseDiscount;
@@ -253,33 +240,34 @@ export class BookingService {
             lead_id: lead_id || autoLeadId || null,
         };
 
-        // 6. Save to database
-        await createBooking(newBooking);
-
-        // 7. Record coupon usage
-        if (couponCode && couponDiscount > 0) {
-            try {
-                const coupon = getCouponByCode(couponCode);
-                if (coupon) {
-                    incrementCouponUsage(couponCode);
-                    recordCouponUsage(
-                        coupon.id,
-                        bookingId,
-                        customer.name,
-                        customer.whatsapp,
-                        couponDiscount,
-                        validatedTotalPrice + couponDiscount
-                    );
-                }
-            } catch (couponError) {
-                // Log but don't fail the booking
-                logger.error('Failed to record coupon usage', {
-                    requestId,
-                    bookingId,
-                    couponCode
-                }, couponError as Error);
+        // Re-read catalog after async uploads; validate coupon/quota inside the write lock.
+        const currentService = (await readServices()).find(s => s.id === customer.serviceId && s.isActive);
+        if (!currentService) throw new AppError('Paket tidak tersedia', 400, 'SERVICE_INACTIVE');
+        inBookingTransaction(() => {
+            const priced = priceNewBooking(currentService, addons || [], finance?.coupon_code);
+            if (!checkSlotAvailability(booking.date)) throw new AppError('Jadwal sudah terisi', 409, 'SLOT_UNAVAILABLE');
+            const paid = payments.reduce((sum: number, p: { amount: number }) => sum + p.amount, 0);
+            if (!Number.isFinite(paid) || paid > priced.breakdown.total) {
+                throw new AppError('Jumlah pembayaran melebihi total setelah promo. Periksa kembali DP.', 400, 'PAYMENT_EXCEEDS_TOTAL');
             }
-        }
+            newBooking.customer = { ...customer, category: currentService.name };
+            newBooking.addons = priced.addons;
+            newBooking.finance = {
+                payments,
+                total_price: priced.breakdown.total,
+                service_base_price: priced.breakdown.serviceBasePrice,
+                base_discount: priced.breakdown.baseDiscount,
+                addons_total: priced.breakdown.addonsTotal,
+                coupon_discount: priced.breakdown.couponDiscount,
+                coupon_code: priced.applied?.coupon.code
+            };
+            createBooking(newBooking);
+            if (priced.applied) {
+                incrementCouponUsage(priced.applied.coupon.code);
+                recordCouponUsage(priced.applied.coupon.id, bookingId, customer.name, customer.whatsapp,
+                    priced.applied.discount, priced.subtotal);
+            }
+        });
 
         logger.info('Booking created successfully', {
             requestId,
@@ -434,6 +422,11 @@ export class BookingService {
                 currentStatus: currentBooking.status
             });
             throw new AppError('Completed bookings are immutable and cannot be edited', 403, 'BOOKING_IMMUTABLE');
+        }
+
+        if ((updates.customer?.serviceId !== undefined && updates.customer.serviceId !== currentBooking.customer.serviceId)
+            || (updates.customer?.category !== undefined && updates.customer.category !== currentBooking.customer.category)) {
+            throw new AppError('Gunakan fitur Ganti Paket untuk mengubah paket booking', 400, 'USE_PACKAGE_CHANGE');
         }
 
         // VALIDATION: Check status transition if status is being updated

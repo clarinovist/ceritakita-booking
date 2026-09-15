@@ -107,7 +107,7 @@ export const useBookings = () => {
         const rawBalance = total - paid;
         const balance = Math.max(0, rawBalance);
         // Is considered paid off if raw balance is <= 0 (including overpayment) and total > 0
-        return { total, paid, balance, isPaidOff: rawBalance <= 0 && total > 0 };
+        return { total, paid, balance, isPaidOff: rawBalance <= 0 };
     };
 
     const getOrReconstructBreakdown = (booking: Booking | null) => {
